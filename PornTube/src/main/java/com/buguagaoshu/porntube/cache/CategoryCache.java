@@ -1,0 +1,34 @@
+package com.buguagaoshu.porntube.cache;
+
+import com.buguagaoshu.porntube.entity.CategoryEntity;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * @author Pu Zhiwei {@literal puzhiweipuzhiwei@foxmail.com}
+ * create          2020-09-05 18:45
+ */
+@Component
+public class CategoryCache {
+    private List<CategoryEntity> categoryEntities;
+
+    private Map<Integer, CategoryEntity> categoryEntityMap;
+
+    public List<CategoryEntity> getCategoryEntities() {
+        return categoryEntities;
+    }
+
+    public void setCategoryEntities(List<CategoryEntity> categoryEntities) {
+        this.categoryEntities = categoryEntities;
+    }
+
+    public Map<Integer, CategoryEntity> getCategoryEntityMap() {
+        return categoryEntityMap;
+    }
+
+    public void setCategoryEntityMap(Map<Integer, CategoryEntity> categoryEntityMap) {
+        this.categoryEntityMap = categoryEntityMap;
+    }
+}

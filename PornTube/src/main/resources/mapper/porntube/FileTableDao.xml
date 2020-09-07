@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.buguagaoshu.porntube.dao.FileTableDao">
+
+	<!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.buguagaoshu.porntube.entity.FileTableEntity" id="fileTableMap">
+        <result property="id" column="id"/>
+        <result property="articleId" column="article_id"/>
+        <result property="fileUrl" column="file_url"/>
+        <result property="fileOriginalName" column="file_original_name"/>
+        <result property="fileNewName" column="file_new_name"/>
+        <result property="size" column="size"/>
+        <result property="uploadTime" column="upload_time"/>
+        <result property="uploadUserId" column="upload_user_id"/>
+        <result property="type" column="type"/>
+        <result property="suffixName" column="suffix_name"/>
+    </resultMap>
+
+
+</mapper>

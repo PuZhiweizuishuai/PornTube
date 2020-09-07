@@ -1,0 +1,26 @@
+server:
+  port: 8080
+  http2:
+    enabled: true
+
+spring:
+  datasource:
+    driverClassName: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://192.168.43.128:3306/porn_tube?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+    username: root
+    password: 123456
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 100000000MB
+      max-request-size: 1024000000MB
+
+mybatis-plus:
+  mapper-locations: classpath:/mapper/**/*.xml
+
+
+logging:
+  level:
+    com:
+      buguagaoshu:
+        porntub: debug

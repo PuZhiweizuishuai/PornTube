@@ -1,0 +1,154 @@
+<template>
+  <div>
+    <v-navigation-drawer
+      v-model="drawer"
+      app
+      clipped
+    >
+      <router-link v-for="item in items" :key="item.text" :to="item.link">
+        <v-list-item
+          link
+        >
+          <v-list-item-action>
+            <v-icon>{{ item.icon }}</v-icon>
+          </v-list-item-action>
+          <v-list-item-content>
+            <v-list-item-title>
+              {{ item.text }}
+            </v-list-item-title>
+          </v-list-item-content>
+
+        </v-list-item>
+      </router-link>
+    </v-navigation-drawer>
+
+    <v-app-bar
+      :clipped-left="$vuetify.breakpoint.lgAndUp"
+      app
+      color="red"
+      dark
+    >
+      <v-app-bar-nav-icon @click.stop="drawer = !drawer" />
+      <v-toolbar-title
+        class="hidden-sm-and-down ml-0 pl-4"
+        style="width: 300px"
+      >
+        <span style="cursor:pointer" @click="goToHome()">{{ this.$store.state.webInfo.name }}</span>
+      </v-toolbar-title>
+      <v-text-field
+        flat
+        solo-inverted
+        hide-details
+        prepend-inner-icon="mdi-magnify"
+        label="搜索"
+      />
+      <v-spacer />
+      <v-tooltip bottom>
+        <template v-slot:activator="{ on, attrs }">
+          <v-btn
+            icon
+            v-bind="attrs"
+            v-on="on"
+            @click="goToPublish"
+          >
+            <v-icon>mdi-video</v-icon>
+          </v-btn>
+        </template>
+        <span>发布</span>
+      </v-tooltip>
+      <v-tooltip bottom>
+        <template v-slot:activator="{ on, attrs }">
+          <v-btn
+            icon
+            v-bind="attrs"
+            v-on="on"
+          >
+            <v-icon>mdi-bell</v-icon>
+          </v-btn>
+        </template>
+        <span>通知</span>
+      </v-tooltip>
+      <!--  登陆后 -->
+      <v-btn
+        v-if="this.$store.state.userInfo"
+        icon
+        large
+        @click="goToUserHome"
+      >
+        <v-avatar
+          size="32px"
+          item
+        >
+          <v-img
+            :src="this.$store.state.userInfo.avatarUrl"
+            :alt="this.$store.state.userInfo.username"
+            :title="this.$store.state.userInfo.username"
+          /></v-avatar>
+      </v-btn>
+      <!-- 未登录 -->
+      <v-btn
+        v-if="this.$store.state.userInfo == null"
+        outlined
+        @click="goToLoginPage"
+      >
+        <v-icon left dark>mdi-head</v-icon> 登录
+      </v-btn>
+
+    </v-app-bar>
+
+    <v-main>
+
+      <router-view />
+
+    </v-main>
+  </div>
+</template>
+
+<script>
+export default {
+  // TODO 增加分类页
+  data: () => ({
+    drawer: true,
+    items: [
+      { icon: 'mdi-home', text: '首页', link: '/' },
+      { icon: 'mdi-trending-up', text: '时下流行', link: '/hot' },
+      { icon: 'mdi-youtube-subscription', text: '订阅', link: '/subscribe' },
+      { icon: 'mdi-history', text: '历史记录', link: '/history' },
+      { icon: 'mdi-playlist-play', text: '稍后再看', link: '/playlist' }
+
+    ]
+  }),
+  mounted() {
+
+  },
+  created() {
+    this.$vuetify.theme.dark = this.$store.state.darkThemOpen
+  },
+  methods: {
+    goToLoginPage() {
+      this.$router.push('/login')
+    },
+    goToPublish() {
+      this.$router.push('/studio/upload')
+    },
+    goToHome() {
+      if (this.$route.path === '/') {
+        return
+      }
+      this.$router.push('/')
+    },
+    goToUserHome() {
+      if (this.$route.path === '/user/' + this.$store.state.userInfo.id) {
+        return
+      }
+      this.$router.push('/user/' + this.$store.state.userInfo.id)
+    }
+  }
+}
+</script>
+
+<style scoped>
+a {
+  text-decoration: none;
+}
+</style>
