@@ -18,6 +18,9 @@
         <result property="topImgUrl" column="top_img_url"/>
         <result property="introduction" column="introduction"/>
     </resultMap>
+    <insert id="addSubmitCount">
+         update user set submit_count = submit_count + #{count} where id = #{userId}
+    </insert>
 
 
 </mapper>

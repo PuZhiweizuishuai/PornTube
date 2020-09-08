@@ -1,5 +1,8 @@
 package com.buguagaoshu.porntube.service.impl;
 
+import com.buguagaoshu.porntube.cache.WebSettingCache;
+import com.buguagaoshu.porntube.enums.ReturnCodeEnum;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -18,6 +21,13 @@ import com.buguagaoshu.porntube.service.WebSettingService;
 @Service("webSettingService")
 public class WebSettingServiceImpl extends ServiceImpl<WebSettingDao, WebSettingEntity> implements WebSettingService {
 
+    private WebSettingCache webSettingCache;
+
+    @Autowired
+    public void setWebSettingCache(WebSettingCache webSettingCache) {
+        this.webSettingCache = webSettingCache;
+    }
+
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
         IPage<WebSettingEntity> page = this.page(
@@ -31,6 +41,13 @@ public class WebSettingServiceImpl extends ServiceImpl<WebSettingDao, WebSetting
     @Override
     public WebSettingEntity getNewSetting() {
         return baseMapper.findNewSetting();
+    }
+
+    @Override
+    public ReturnCodeEnum saveSetting(WebSettingEntity webSettingEntity) {
+        this.save(webSettingEntity);
+        webSettingCache.setWebSettingEntity(webSettingEntity);
+        return ReturnCodeEnum.SUCCESS;
     }
 
 }

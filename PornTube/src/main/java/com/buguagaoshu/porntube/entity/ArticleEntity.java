@@ -85,6 +85,11 @@ public class ArticleEntity {
 	private String examineMessage;
 
 	/**
+	 * 审核人
+	 * */
+	private Long examineUser;
+
+	/**
 	 * 分区
 	 */
 	private Integer category;

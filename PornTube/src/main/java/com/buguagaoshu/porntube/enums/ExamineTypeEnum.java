@@ -44,6 +44,15 @@ public enum ExamineTypeEnum {
         this.msg = msg;
     }
 
+    public static int getStatus(String msg) {
+        for (ExamineTypeEnum e : ExamineTypeEnum.values()) {
+            if (SUCCESS.getMsg().equals(msg)) {
+                return e.getCode();
+            }
+        }
+        return 0;
+    }
+
     public int getCode() {
         return code;
     }

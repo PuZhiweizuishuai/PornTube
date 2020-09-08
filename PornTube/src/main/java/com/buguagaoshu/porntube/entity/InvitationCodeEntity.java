@@ -36,7 +36,7 @@ public class InvitationCodeEntity {
 	private Long useUser;
 
 	/**
-	 * 【0 未被使用， 1 已经被使用】
+	 * 【1 未被使用， 0 已经被使用】
 	 */
 	private Integer useStatus;
 

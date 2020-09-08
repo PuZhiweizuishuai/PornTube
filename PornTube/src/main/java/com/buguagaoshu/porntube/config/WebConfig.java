@@ -27,11 +27,16 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Slf4j
 public class WebConfig implements WebMvcConfigurer {
 
+
     private final LoginInterceptor loginInterceptor;
 
+    private final AdminInterceptor adminInterceptor;
+
+
     @Autowired
-    public WebConfig(LoginInterceptor loginInterceptor) {
+    public WebConfig(LoginInterceptor loginInterceptor, AdminInterceptor adminInterceptor) {
         this.loginInterceptor = loginInterceptor;
+        this.adminInterceptor = adminInterceptor;
     }
 
     @Bean
@@ -56,9 +61,18 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
 
+//        registry.addInterceptor(loginInterceptor)
+//                .addPathPatterns("/api/article/video",
+//                        "/api/user/update/**",
+//                        "/api/login/log/list")
+//                .excludePathPatterns("/api/login", "/api/register", "/api/verifyImage");
         registry.addInterceptor(loginInterceptor)
-                .addPathPatterns("/api/article/video")
-                .excludePathPatterns("/api/login", "/api/register");
+                .addPathPatterns("/api/**")
+                .excludePathPatterns("/api/login", "/api/register", "/api/verifyImage", "/api/web/info");
+
+        registry.addInterceptor(adminInterceptor)
+                .addPathPatterns("/api/admin/**");
+
     }
 
     @Bean

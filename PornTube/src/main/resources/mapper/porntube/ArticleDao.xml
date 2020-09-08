@@ -26,6 +26,7 @@
         <result property="scoreCount" column="score_count"/>
         <result property="commentCount" column="comment_count"/>
         <result property="danmakuCount" column="danmaku_count"/>
+        <result property="examineUser" column="examine_user"/>
     </resultMap>
     <update id="addDanmakuCount">
         update article set danmaku_count = danmaku_count + #{count} where id = #{id}

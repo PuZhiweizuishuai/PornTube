@@ -1,10 +1,14 @@
 package com.buguagaoshu.porntube.service.impl;
 
 import com.buguagaoshu.porntube.cache.WebSettingCache;
+import com.buguagaoshu.porntube.enums.ReturnCodeEnum;
 import com.buguagaoshu.porntube.exception.InvitationCodeException;
+import com.buguagaoshu.porntube.utils.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.Map;
+import java.util.UUID;
+
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -14,6 +18,8 @@ import com.buguagaoshu.porntube.utils.Query;
 import com.buguagaoshu.porntube.dao.InvitationCodeDao;
 import com.buguagaoshu.porntube.entity.InvitationCodeEntity;
 import com.buguagaoshu.porntube.service.InvitationCodeService;
+
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Pu Zhiwei
@@ -32,11 +38,20 @@ public class InvitationCodeServiceImpl extends ServiceImpl<InvitationCodeDao, In
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
+        QueryWrapper<InvitationCodeEntity> wrapper = new QueryWrapper<>();
+        Integer type = (Integer) params.get("type");
+        if (type != null) {
+            if (type == 0) {
+                wrapper.eq("use_user", 0);
+            } else  {
+                wrapper.eq("use_user", 1);
+            }
+        }
+        wrapper.orderByDesc("create_time");
         IPage<InvitationCodeEntity> page = this.page(
                 new Query<InvitationCodeEntity>().getPage(params),
-                new QueryWrapper<InvitationCodeEntity>()
+                wrapper
         );
-
         return new PageUtils(page);
     }
 
@@ -46,7 +61,7 @@ public class InvitationCodeServiceImpl extends ServiceImpl<InvitationCodeDao, In
         if (webSettingCache.getWebSettingEntity().getOpenInvitationRegister() == 1) {
             InvitationCodeEntity code
                     = this.getOne(new QueryWrapper<InvitationCodeEntity>().eq("code", invitationCode));
-            if (code == null || code.getUseStatus() == 1) {
+            if (code == null || code.getUseStatus() == 0) {
                 throw new InvitationCodeException("邀请码错误！");
             }
             code.setUseTime(System.currentTimeMillis());
@@ -56,6 +71,18 @@ public class InvitationCodeServiceImpl extends ServiceImpl<InvitationCodeDao, In
         InvitationCodeEntity invitationCodeEntity = new InvitationCodeEntity();
         invitationCodeEntity.setId(-1L);
         return invitationCodeEntity;
+    }
+
+    @Override
+    public ReturnCodeEnum create(HttpServletRequest request) {
+        long userId = Long.parseLong(JwtUtil.getUser(request).getId());
+        InvitationCodeEntity invitationCodeEntity = new InvitationCodeEntity();
+        invitationCodeEntity.setUseStatus(1);
+        invitationCodeEntity.setCreateTime(System.currentTimeMillis());
+        invitationCodeEntity.setCode(UUID.randomUUID().toString().replace("-", ""));
+        invitationCodeEntity.setCreateUser(userId);
+        this.save(invitationCodeEntity);
+        return ReturnCodeEnum.SUCCESS;
     }
 
 }

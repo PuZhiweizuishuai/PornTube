@@ -1,9 +1,12 @@
 package com.buguagaoshu.porntube.controller;
 
 import com.buguagaoshu.porntube.dto.LoginDetails;
+import com.buguagaoshu.porntube.dto.PasswordDto;
 import com.buguagaoshu.porntube.entity.UserEntity;
 import com.buguagaoshu.porntube.service.UserService;
 import com.buguagaoshu.porntube.vo.ResponseDetails;
+import com.buguagaoshu.porntube.vo.User;
+import com.sun.net.httpserver.HttpsServer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -41,5 +44,31 @@ public class UserController {
     @GetMapping("/api/user/info/{id}")
     public ResponseDetails userInfo(@PathVariable("id") Long userId) {
         return ResponseDetails.ok().put("data", userService.userInfo(userId));
+    }
+
+    @PostMapping("/api/user/update/avatar")
+    public ResponseDetails updateUserAvatar(@RequestBody User user,
+                                            HttpServletRequest request) {
+        return ResponseDetails.ok(userService.updateAvatar(user, request));
+    }
+
+    @PostMapping("/api/user/update/top")
+    public ResponseDetails updateTopImage(@RequestBody User user,
+                                          HttpServletRequest request) {
+        return ResponseDetails.ok(userService.updateTopImage(user, request));
+    }
+
+    @PostMapping("/api/user/update/password")
+    public ResponseDetails updatePassword(@RequestBody PasswordDto passwordDto,
+                                          HttpServletRequest request,
+                                          HttpServletResponse response) {
+        return ResponseDetails.ok(userService.updatePassword(passwordDto, request, response));
+    }
+
+
+    @PostMapping("/api/user/update/info")
+    public ResponseDetails updateInfo(@RequestBody User user,
+                                      HttpServletRequest request) {
+        return ResponseDetails.ok(userService.updateInfo(user, request));
     }
 }

@@ -51,6 +51,12 @@ public class User {
      */
     private Long fansCount;
 
+
+    /**
+     * 简介
+     * */
+    private String introduction;
+
     /**
      * 头像
      */

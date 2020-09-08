@@ -23,7 +23,7 @@ public interface FileRepository {
     /**
      * 图片或视频上传接口
      * */
-    List<FileTableEntity> videoAndPhotoSave(MultipartFile[] files, int type, Long userId) throws FileNotFoundException;
+    List<FileTableEntity> videoAndPhotoSave(MultipartFile[] files, Integer type, Long userId) throws FileNotFoundException;
 
 
     /**

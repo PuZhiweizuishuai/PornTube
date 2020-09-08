@@ -3,14 +3,12 @@ package com.buguagaoshu.porntube.service.impl;
 import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.buguagaoshu.porntube.cache.CategoryCache;
 import com.buguagaoshu.porntube.cache.WebSettingCache;
+import com.buguagaoshu.porntube.dto.ExamineDto;
 import com.buguagaoshu.porntube.dto.VideoArticleDto;
 import com.buguagaoshu.porntube.entity.CategoryEntity;
 import com.buguagaoshu.porntube.entity.FileTableEntity;
 import com.buguagaoshu.porntube.entity.UserEntity;
-import com.buguagaoshu.porntube.enums.ArticleStatusEnum;
-import com.buguagaoshu.porntube.enums.ExamineTypeEnum;
-import com.buguagaoshu.porntube.enums.FileTypeEnum;
-import com.buguagaoshu.porntube.enums.ReturnCodeEnum;
+import com.buguagaoshu.porntube.enums.*;
 import com.buguagaoshu.porntube.service.FileTableService;
 import com.buguagaoshu.porntube.service.UserService;
 import com.buguagaoshu.porntube.utils.Constant;
@@ -40,12 +38,14 @@ import com.buguagaoshu.porntube.dao.ArticleDao;
 import com.buguagaoshu.porntube.entity.ArticleEntity;
 import com.buguagaoshu.porntube.service.ArticleService;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Pu Zhiwei
- * */
+ */
 @Slf4j
 @Service("articleService")
 public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> implements ArticleService {
@@ -79,10 +79,14 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
                 new Query<ArticleEntity>().getPage(params),
                 wrapper
         );
+
         Set<Long> userIdList = page.getRecords().stream().map(ArticleEntity::getUserId).collect(Collectors.toSet());
+        if (userIdList.size() == 0) {
+            return null;
+        }
         Map<Long, UserEntity> userEntityMap = userService.userMapList(userIdList);
         List<ArticleViewData> articleViewData = new ArrayList<>();
-        page.getRecords().forEach(a->{
+        page.getRecords().forEach(a -> {
             ArticleViewData viewData = new ArticleViewData();
             UserEntity userEntity = userEntityMap.get(a.getUserId());
             BeanUtils.copyProperties(a, viewData);
@@ -142,10 +146,13 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
 
     @Override
     @Transactional
-    public ReturnCodeEnum saveVideo(VideoArticleDto videoArticleDto, HttpServletRequest request)  {
+    public ReturnCodeEnum saveVideo(VideoArticleDto videoArticleDto, HttpServletRequest request) {
         Claims user = JwtUtil.getUser(request);
         long userId = Long.parseLong(user.getId());
         ArticleEntity articleEntity = new ArticleEntity();
+        if (videoArticleDto.getTitle().length() > 50) {
+            return ReturnCodeEnum.TITLE_TO_LONG;
+        }
         articleEntity.setTitle(videoArticleDto.getTitle());
         ObjectMapper objectMapper = new ObjectMapper();
         try {
@@ -158,6 +165,9 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
             return ReturnCodeEnum.CATEGORY_NOT_FOUND;
         }
         articleEntity.setCategory(videoArticleDto.getCategory());
+        if (!StringUtils.isEmpty(videoArticleDto.getDescribe()) && videoArticleDto.getDescribe().length() > 200) {
+            return ReturnCodeEnum.DESCRIBE_TO_LONG;
+        }
         articleEntity.setDescribes(videoArticleDto.getDescribe());
         // 检查图片所有权
         FileTableEntity imageId = fileTableService.getById(videoArticleDto.getImageId());
@@ -193,12 +203,22 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
     }
 
     @Override
-    public ArticleViewData getVideo(long id) {
+    public ArticleViewData getVideo(long id, HttpServletRequest request) {
+        Claims user = JwtUtil.getUser(request);
         // TODO 播放记录，播放次数限制
         QueryWrapper<ArticleEntity> wrapper = new QueryWrapper<>();
         wrapper.eq("id", id);
         wrapper.eq("status", ArticleStatusEnum.NORMAL.getCode());
-        wrapper.eq("examine_status", ExamineTypeEnum.SUCCESS.getCode());
+        // 非管理员添加审核条件
+        boolean flag = true;
+        if (user != null && RoleTypeEnum.ADMIN.getRole().equals(user.get("authorities"))) {
+            flag = false;
+        }
+        if (flag) {
+            wrapper.eq("examine_status", ExamineTypeEnum.SUCCESS.getCode());
+        }
+
+
         ArticleEntity articleEntity = this.getOne(wrapper);
         if (articleEntity == null) {
             ArticleViewData articleViewData = new ArticleViewData();
@@ -239,6 +259,67 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
     @Override
     public void addDanmakuCount(Long id, long count) {
         this.baseMapper.addDanmakuCount(id, count);
+    }
+
+    @Override
+    public PageUtils userArticleList(Map<String, Object> params, Long id, Integer type) {
+        QueryWrapper<ArticleEntity> wrapper = new QueryWrapper<>();
+        if (type == null || (type < FileTypeEnum.VIDEO.getCode() && type > FileTypeEnum.ARTICLE.getCode())) {
+            type = FileTypeEnum.VIDEO.getCode();
+        }
+        wrapper.eq("user_id", id);
+        wrapper.eq("type", type);
+        wrapper.eq("status", ArticleStatusEnum.NORMAL.getCode());
+        wrapper.eq("examine_status", ExamineTypeEnum.SUCCESS.getCode());
+        wrapper.orderByDesc("create_time");
+        IPage<ArticleEntity> page = this.page(
+                new Query<ArticleEntity>().getPage(params),
+                wrapper
+        );
+        return new PageUtils(page);
+    }
+
+    @Override
+    public PageUtils examineList(@RequestParam Map<String, Object> params, HttpServletRequest request) {
+        Claims user = JwtUtil.getUser(request);
+        // Long userID = Long.parseLong(user.getId());
+        if (!RoleTypeEnum.ADMIN.getRole().equals(user.get("authorities"))) {
+            return null;
+        }
+
+        QueryWrapper<ArticleEntity> wrapper = new QueryWrapper<>();
+        wrapper.eq("examine_status", ExamineTypeEnum.PENDING_REVIEW.getCode());
+        wrapper.orderByDesc("create_time");
+        IPage<ArticleEntity> page = this.page(
+                new Query<ArticleEntity>().getPage(params),
+                wrapper
+        );
+        return new PageUtils(page);
+    }
+
+    @Override
+    public ReturnCodeEnum examine(ExamineDto examineDto, HttpServletRequest request) {
+        ArticleEntity articleEntity = this.getById(examineDto.getVideoId());
+        long userId = Long.parseLong(JwtUtil.getUser(request).getId());
+        if (articleEntity == null) {
+            return ReturnCodeEnum.NOO_FOUND;
+        }
+        if (articleEntity.getExamineStatus() == ExamineTypeEnum.SUCCESS.getCode()) {
+            return ReturnCodeEnum.REVIEWED;
+        }
+        if (examineDto.getResult()) {
+            articleEntity.setExamineStatus(ExamineTypeEnum.SUCCESS.getCode());
+        } else {
+            articleEntity.setExamineStatus(ExamineTypeEnum.getStatus(examineDto.getType()));
+        }
+
+        articleEntity.setExamineUser(userId);
+        articleEntity.setExamineMessage(examineDto.getMessage());
+        this.updateById(articleEntity);
+        // TODO 加入缓存处理
+        userService.addSubmitCount(articleEntity.getUserId(), 1);
+        // TODO 向用户发送处理结果
+        return ReturnCodeEnum.SUCCESS;
     }
 
 }

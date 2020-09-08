@@ -1,6 +1,7 @@
 package com.buguagaoshu.porntube.service.impl;
 
 import com.buguagaoshu.porntube.dto.DanmakuDto;
+import com.buguagaoshu.porntube.entity.ArticleEntity;
 import com.buguagaoshu.porntube.enums.ReturnCodeEnum;
 import com.buguagaoshu.porntube.service.ArticleService;
 import com.buguagaoshu.porntube.utils.DanmakuUtils;
@@ -78,7 +79,7 @@ public class DanmakuServiceImpl extends ServiceImpl<DanmakuDao, DanmakuEntity> i
         if (claims == null) {
             return ReturnCodeEnum.NO_LOGIN;
         }
-        ArticleViewData video = articleService.getVideo(danmakuDto.getId());
+        ArticleEntity video = articleService.getById(danmakuDto.getId());
         if (video == null) {
             return ReturnCodeEnum.NOO_FOUND;
         }

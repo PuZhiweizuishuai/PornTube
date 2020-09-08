@@ -48,6 +48,15 @@ const routes = [
         meta: { title: '播放' }
       },
       {
+        path: '/user/setting',
+        name: 'UserSetting',
+        component: () => import('@/views/user/setting.vue'),
+        meta: {
+          title: '个人设置',
+          requireAuth: true
+        }
+      },
+      {
         path: '/user/:id',
         name: 'User',
         component: () => import('@/views/user/index.vue'),
@@ -78,6 +87,60 @@ const routes = [
           title: '投稿',
           requireAuth: true
         }
+      },
+      {
+        path: '/studio/comment',
+        name: 'Comment',
+        component: () => import('@/views/studio/comment.vue'),
+        meta: {
+          title: '评论',
+          requireAuth: true
+        }
+      },
+      {
+        path: '/studio/admin/invitation',
+        name: 'invitation',
+        component: () => import('@/views/admin/invitation.vue'),
+        meta: {
+          title: '邀请码',
+          requireAuth: true
+        }
+      },
+      {
+        path: '/studio/admin/examine',
+        name: 'Examine',
+        component: () => import('@/views/admin/examine.vue'),
+        meta: {
+          title: '审核视频',
+          requireAuth: true
+        }
+      },
+      {
+        path: '/studio/admin/userlist',
+        name: 'Examine',
+        component: () => import('@/views/admin/user-list.vue'),
+        meta: {
+          title: '用户列表',
+          requireAuth: true
+        }
+      },
+      {
+        path: '/studio/admin/websetting',
+        name: 'Examine',
+        component: () => import('@/views/admin/web-setting.vue'),
+        meta: {
+          title: '网页设置',
+          requireAuth: true
+        }
+      },
+      {
+        path: '/studio/admin/category',
+        name: 'Examine',
+        component: () => import('@/views/admin/category.vue'),
+        meta: {
+          title: '分区设置',
+          requireAuth: true
+        }
       }
     ]
   },
@@ -85,7 +148,9 @@ const routes = [
     path: '/login',
     name: 'Login',
     component: () => import('@/views/login.vue'),
-    meta: { title: '登录' }
+    meta: {
+      title: '登录'
+    }
   }
 
 ]
@@ -123,6 +188,11 @@ router.beforeEach((to, from, next) => {
   if (to.meta.requireAuth) {
     const date = new Date().getTime()
     if (router.app.$options.store.state.userInfo != null && router.app.$options.store.state.userInfo.expireTime > date) {
+      // console.log(to.path)
+      // TODO 登录后不能访问登录界面
+      if (to.path === '/login') {
+        return next({ path: '/' })
+      }
       return next()
     } else {
       return next({

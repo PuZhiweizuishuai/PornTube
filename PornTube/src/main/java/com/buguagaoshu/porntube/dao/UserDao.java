@@ -3,6 +3,7 @@ package com.buguagaoshu.porntube.dao;
 import com.buguagaoshu.porntube.entity.UserEntity;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * 
@@ -13,5 +14,5 @@ import org.apache.ibatis.annotations.Mapper;
  */
 @Mapper
 public interface UserDao extends BaseMapper<UserEntity> {
-	
+	void addSubmitCount(@Param("userId") long userId, @Param("count") int count);
 }

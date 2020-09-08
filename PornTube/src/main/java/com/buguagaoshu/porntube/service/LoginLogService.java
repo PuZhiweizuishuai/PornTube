@@ -18,7 +18,10 @@ import java.util.Map;
  */
 public interface LoginLogService extends IService<LoginLogEntity> {
 
-    PageUtils queryPage(Map<String, Object> params);
+    /**
+     * 查找登录历史
+     * */
+    PageUtils queryPage(HttpServletRequest request, Map<String, Object> params);
 
 
     /**

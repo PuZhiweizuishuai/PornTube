@@ -60,7 +60,7 @@ public class FileTableEntity {
 	private Long uploadUserId;
 
 	/**
-	 * 文件类型 【0 视频， 1 图片， 2 其它附件】
+	 * 文件类型 【0 视频， 1 图片， 2 其它附件 3 头像数据， 4 顶部大图数据】
 	 */
 	private Integer type;
 
@@ -68,5 +68,7 @@ public class FileTableEntity {
 	 * 后缀名
 	 */
 	private String suffixName;
+
+
 
 }

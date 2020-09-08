@@ -30,6 +30,14 @@ public class ArticleController {
         return ResponseDetails.ok().put("data", articleService.queryPage(params));
     }
 
+
+    @GetMapping("/api/article/user/list/{id}")
+    public ResponseDetails userList(@RequestParam Map<String, Object> params,
+                                    @RequestParam(value = "type", required = false) Integer type,
+                                    @PathVariable(value = "id") Long id) {
+        return ResponseDetails.ok().put("data", articleService.userArticleList(params, id, type));
+    }
+
     @PostMapping("/api/article/video")
     public ResponseDetails videoPost(@Valid @RequestBody VideoArticleDto videoArticleDto,
                                      HttpServletRequest request) {
@@ -38,8 +46,22 @@ public class ArticleController {
 
 
     @GetMapping("/api/article/video/{id}")
-    public ResponseDetails getVideo(@PathVariable(value = "id") Long id) {
-        return ResponseDetails.ok().put("data", articleService.getVideo(id));
+    public ResponseDetails getVideo(@PathVariable(value = "id") Long id,
+                                    HttpServletRequest request) {
+        return ResponseDetails.ok().put("data", articleService.getVideo(id, request));
+    }
+
+
+
+
+    /**
+     *
+     * 管理员审核视频
+     * */
+    @GetMapping("/api/admin/article/list")
+    public ResponseDetails examineVideo(@RequestParam Map<String, Object> params,
+                                        HttpServletRequest request) {
+        return ResponseDetails.ok().put("data", articleService.examineList(params, request));
     }
 
 }

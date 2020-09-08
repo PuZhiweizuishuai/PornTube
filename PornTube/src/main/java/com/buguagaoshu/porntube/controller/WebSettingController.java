@@ -1,10 +1,11 @@
 package com.buguagaoshu.porntube.controller;
 
 import com.buguagaoshu.porntube.cache.WebSettingCache;
+import com.buguagaoshu.porntube.entity.WebSettingEntity;
+import com.buguagaoshu.porntube.service.WebSettingService;
 import com.buguagaoshu.porntube.vo.ResponseDetails;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * @author Pu Zhiwei {@literal puzhiweipuzhiwei@foxmail.com}
@@ -14,13 +15,22 @@ import org.springframework.web.bind.annotation.RestController;
 public class WebSettingController {
     private final WebSettingCache webSettingCache;
 
+    private final WebSettingService webSettingService;
+
     @Autowired
-    public WebSettingController(WebSettingCache webSettingCache) {
+    public WebSettingController(WebSettingCache webSettingCache, WebSettingService webSettingService) {
         this.webSettingCache = webSettingCache;
+        this.webSettingService = webSettingService;
     }
 
     @GetMapping("/api/web/info")
     public ResponseDetails webInfo() {
         return ResponseDetails.ok().put("data", webSettingCache.getWebSettingEntity());
+    }
+
+
+    @PostMapping("/api/admin/setting/save")
+    public ResponseDetails updateWebSetting(@RequestBody WebSettingEntity WebSettingEntity) {
+        return ResponseDetails.ok(webSettingService.saveSetting(WebSettingEntity));
     }
 }

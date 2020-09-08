@@ -2,7 +2,7 @@ package com.buguagaoshu.porntube.service.impl;
 
 import com.buguagaoshu.porntube.entity.UserEntity;
 import com.buguagaoshu.porntube.utils.IpUtil;
-import org.apache.tomcat.util.net.IPv6Utils;
+import com.buguagaoshu.porntube.utils.JwtUtil;
 import org.springframework.stereotype.Service;
 import java.util.Map;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -22,12 +22,16 @@ import javax.servlet.http.HttpServletRequest;
 public class LoginLogServiceImpl extends ServiceImpl<LoginLogDao, LoginLogEntity> implements LoginLogService {
 
     @Override
-    public PageUtils queryPage(Map<String, Object> params) {
+    public PageUtils queryPage(HttpServletRequest request, Map<String, Object> params) {
+        long userId = Long.parseLong(JwtUtil.getUser(request).getId());
+
+        QueryWrapper<LoginLogEntity> wrapper = new QueryWrapper<>();
+        wrapper.eq("userId", userId);
+        wrapper.orderByDesc("login_time");
         IPage<LoginLogEntity> page = this.page(
                 new Query<LoginLogEntity>().getPage(params),
-                new QueryWrapper<LoginLogEntity>()
+                wrapper
         );
-
         return new PageUtils(page);
     }
 

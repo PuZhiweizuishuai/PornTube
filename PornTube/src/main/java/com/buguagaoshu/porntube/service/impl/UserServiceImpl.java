@@ -1,6 +1,7 @@
 package com.buguagaoshu.porntube.service.impl;
 
 import com.buguagaoshu.porntube.dto.LoginDetails;
+import com.buguagaoshu.porntube.dto.PasswordDto;
 import com.buguagaoshu.porntube.entity.InvitationCodeEntity;
 import com.buguagaoshu.porntube.entity.UserRoleEntity;
 import com.buguagaoshu.porntube.enums.ReturnCodeEnum;
@@ -23,6 +24,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.buguagaoshu.porntube.dao.UserDao;
 import com.buguagaoshu.porntube.entity.UserEntity;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import org.springframework.web.util.WebUtils;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -100,6 +103,8 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
             if (loginDetails.getRememberMe() != null && loginDetails.getRememberMe()) {
                 expirationTime = COOKIE_EXPIRATION_TIME * 1000 + time;
                 cookExpirationTime = COOKIE_EXPIRATION_TIME;
+            } else {
+                expirationTime += time;
             }
 
             user.setExpireTime(expirationTime);
@@ -186,6 +191,105 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
         UserRoleEntity userRoleEntity = userRoleService.findByUserId(userEntity.getId());
         user.setUserRoleEntity(userRoleEntity);
         return user;
+    }
+
+    @Override
+    public ReturnCodeEnum updateAvatar(User user, HttpServletRequest request) {
+        long userId = Long.parseLong(JwtUtil.getUser(request).getId());
+        if (StringUtils.isEmpty(userId)) {
+            return ReturnCodeEnum.IMAGE_NO_POWER;
+        }
+        UserEntity userEntity = new UserEntity();
+        userEntity.setId(userId);
+        userEntity.setAvatarUrl(user.getAvatarUrl());
+        this.updateById(userEntity);
+        return ReturnCodeEnum.SUCCESS;
+    }
+
+    @Override
+    public ReturnCodeEnum updateTopImage(User user, HttpServletRequest request) {
+        long userId = Long.parseLong(JwtUtil.getUser(request).getId());
+        if (StringUtils.isEmpty(userId)) {
+            return ReturnCodeEnum.IMAGE_NO_POWER;
+        }
+        UserEntity userEntity = new UserEntity();
+        userEntity.setId(userId);
+        userEntity.setTopImgUrl(user.getTopImgUrl());
+        this.updateById(userEntity);
+        return ReturnCodeEnum.SUCCESS;
+    }
+
+    @Override
+    public ReturnCodeEnum updatePassword(PasswordDto passwordDto,
+                                         HttpServletRequest request,
+                                         HttpServletResponse response) {
+        // 验证码校验
+        verifyCodeService.verify(request.getSession().getId(), passwordDto.getVerifyCode());
+        long userId = Long.parseLong(JwtUtil.getUser(request).getId());
+        UserEntity userEntity = this.getById(userId);
+        if (userEntity == null) {
+            return ReturnCodeEnum.USER_NOT_FIND;
+        }
+        if (PasswordUtil.judgePassword(passwordDto.getOldPassword(), userEntity.getPassword())) {
+            if (passwordDto.getNewPassword().length() < 6) {
+                return ReturnCodeEnum.PASSWORD_TO_SHORT;
+            }
+            UserEntity newUser = new UserEntity();
+
+            newUser.setId(userId);
+            newUser.setPassword(PasswordUtil.encode(passwordDto.getNewPassword()));
+
+            this.updateById(newUser);
+            Cookie cookie = WebUtils.getCookie(request, COOKIE_TOKEN);
+            cookie.setValue(null);
+            cookie.setHttpOnly(true);
+            cookie.setPath("/");
+            cookie.setMaxAge(0);
+            response.addCookie(cookie);
+            return ReturnCodeEnum.SUCCESS;
+        } else {
+            throw new UserNotFoundException("原密码错误！");
+        }
+
+    }
+
+    @Override
+    public ReturnCodeEnum updateInfo(User user, HttpServletRequest request) {
+        long userId = Long.parseLong(JwtUtil.getUser(request).getId());
+        if (StringUtils.isEmpty(userId)) {
+            return ReturnCodeEnum.IMAGE_NO_POWER;
+        }
+        UserEntity userEntity = new UserEntity();
+        if (!StringUtils.isEmpty(user.getUsername()) ) {
+            if (user.getUsername().length() > 25) {
+                return ReturnCodeEnum.USER_NAME_TO_LONG;
+            }
+            userEntity.setUsername(user.getUsername());
+        }
+        if (!StringUtils.isEmpty(user.getIntroduction())) {
+            if (user.getIntroduction().length() > 100) {
+                return ReturnCodeEnum.USER_INTRODUCTION_LONG;
+            }
+            userEntity.setIntroduction(user.getIntroduction());
+        }
+        UserEntity sys = this.getById(userId);
+        if (sys == null) {
+            return ReturnCodeEnum.USER_NOT_FIND;
+        }
+        if (sys.getUsername().equals("admin") && !"admin".equals(user.getUsername())) {
+            return ReturnCodeEnum.ADMIN_DONT_RENAME;
+        }
+        if ("admin".equals(user.getUsername()) && !sys.getUsername().equals("admin")) {
+            return  ReturnCodeEnum.DONT_USER_NAME;
+        }
+        userEntity.setId(userId);
+        this.updateById(userEntity);
+        return ReturnCodeEnum.SUCCESS;
+    }
+
+    @Override
+    public void addSubmitCount(Long userId, int count) {
+        this.baseMapper.addSubmitCount(userId, count);
     }
 
 

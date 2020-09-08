@@ -1,6 +1,6 @@
 <template>
   <v-container fill-height fluid style="padding-left: 24px; padding-right: 24px">
-    <div id="share-top" />
+
     <v-row>
       <div
         class="d-flex flex-wrap"
@@ -66,8 +66,8 @@ export default {
     },
     pageChange(value) {
       this.page = value
-      this.videoList()
-      document.querySelector('#share-top').scrollIntoView()
+      this.getVideoList()
+      this.$vuetify.goTo(0)
     }
   }
 }

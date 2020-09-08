@@ -2,6 +2,7 @@ package com.buguagaoshu.porntube.utils;
 
 import com.buguagaoshu.porntube.service.impl.UserServiceImpl;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.web.util.WebUtils;

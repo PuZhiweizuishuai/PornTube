@@ -73,7 +73,7 @@
           <v-col cols="10">
             <v-textarea
               v-model="article.describe"
-              label="简介"
+              label="简介(200字以内)"
               clearable
               placeholder="填写更全面的视频信息，让更多的人找到你！"
             />

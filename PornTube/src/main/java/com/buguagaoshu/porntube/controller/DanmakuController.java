@@ -15,6 +15,7 @@ import javax.servlet.http.HttpServletRequest;
 /**
  * @author Pu Zhiwei {@literal puzhiweipuzhiwei@foxmail.com}
  * create          2020-09-07 16:02
+ * TODO 使用消息队列，拆分弹幕服务，达到读写分离
  */
 @RestController
 public class DanmakuController {

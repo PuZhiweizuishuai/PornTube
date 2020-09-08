@@ -2,6 +2,7 @@ package com.buguagaoshu.porntube.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.buguagaoshu.porntube.enums.ReturnCodeEnum;
 import com.buguagaoshu.porntube.utils.PageUtils;
 import com.buguagaoshu.porntube.entity.WebSettingEntity;
 
@@ -24,5 +25,8 @@ public interface WebSettingService extends IService<WebSettingEntity> {
      * @return 设置
      */
     WebSettingEntity getNewSetting();
+
+
+    ReturnCodeEnum saveSetting(WebSettingEntity webSettingEntity);
 }
 

@@ -34,6 +34,24 @@
 
         </v-list-item>
       </router-link>
+      <v-divider />
+      <div v-if="CheckPower.checkPower(this.$store.state.userInfo) == 'admin'">
+        <router-link v-for="item in adminList" :key="item.text" :to="item.link">
+          <v-list-item
+            link
+          >
+            <v-list-item-action>
+              <v-icon>{{ item.icon }}</v-icon>
+            </v-list-item-action>
+            <v-list-item-content>
+              <v-list-item-title>
+                {{ item.text }}
+              </v-list-item-title>
+            </v-list-item-content>
+
+          </v-list-item>
+        </router-link>
+      </div>
     </v-navigation-drawer>
 
     <v-app-bar
@@ -120,8 +138,10 @@
 </template>
 
 <script>
+import CheckPower from '@/utils/check-power.vue'
 export default {
   data: () => ({
+    CheckPower,
     drawer: true,
     items: [
       { icon: 'mdi-application', text: '信息中心', link: '/studio' },
@@ -129,7 +149,13 @@ export default {
       { icon: 'mdi-comment', text: '评论', link: '/studio/comment' }
       //   { icon: 'mdi-history', text: '历史记录', link: '/history' },
       //   { icon: 'mdi-playlist-play', text: '稍后再看', link: '/playlist' }
-
+    ],
+    adminList: [
+      { icon: 'mdi-application', text: '邀请码', link: '/studio/admin/invitation' },
+      { icon: 'mdi-video', text: '待审核', link: '/studio/admin/examine' },
+      { icon: 'mdi-head', text: '用户列表', link: '/studio/admin/userlist' },
+      { icon: 'mdi-wrench', text: '网页设置', link: '/studio/admin/websetting' },
+      { icon: 'mdi-head', text: '分类管理', link: '/studio/admin/category' }
     ]
   }),
   mounted() {

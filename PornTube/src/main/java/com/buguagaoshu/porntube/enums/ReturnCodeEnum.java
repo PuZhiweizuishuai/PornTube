@@ -29,6 +29,14 @@ public enum ReturnCodeEnum {
     CATEGORY_NOT_FOUND(1009, "分区设置错误！"),
     IMAGE_NO_POWER(1010, "图片设置错误或使用了他人的图片！"),
     VIDEO_NO_POWER(1011, "上传的视频已经有了或者使用了别人的视频！"),
+    USER_NAME_TO_LONG(1012, "用户名过长，超过25个字符！"),
+    USER_INTRODUCTION_LONG(1013, "用户简介过长，超过100个字符！"),
+    ADMIN_DONT_RENAME(1014, "系统默认管理员不能改名！"),
+    DONT_USER_NAME(1015,"不能使用管理员名"),
+    DESCRIBE_TO_LONG(1016, "简介过长"),
+    TITLE_TO_LONG(1017, "标题过长"),
+    REVIEWED(1018, "已被其他人审核"),
+
 
     LACK_ID(4000, "缺少ID"),
     NOT_RUN(4001, "没有在运行"),

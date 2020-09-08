@@ -1,0 +1,1 @@
+(window["webpackJsonp"]=window["webpackJsonp"]||[]).push([["chunk-2d210469"],{b6cb:function(n,e,t){"use strict";t.r(e);var c=function(){var n=this,e=n.$createElement,t=n._self._c||e;return t("div",[n._v(" 评论 ")])},u=[],l={name:"Comment"},a=l,o=t("2877"),r=Object(o["a"])(a,c,u,!1,null,null,null);e["default"]=r.exports}}]);

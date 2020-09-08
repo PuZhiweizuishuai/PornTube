@@ -72,6 +72,28 @@ public class FileController {
     }
 
 
+    @PostMapping("/api/upload/avatar")
+    @ResponseBody
+    public ResponseDetails saveAvatar(@RequestParam(value = "file[]") MultipartFile[] files,
+                                 HttpServletRequest request) throws FileNotFoundException {
+        long userId = Long.parseLong(JwtUtil.getUser(request).getId());
+        return ResponseDetails.ok()
+                .put("data",
+                        fileRepository.videoAndPhotoSave(files, FileTypeEnum.AVATAR.getCode(), userId));
+    }
+
+
+    @PostMapping("/api/upload/top")
+    @ResponseBody
+    public ResponseDetails saveTop(@RequestParam(value = "file[]") MultipartFile[] files,
+                                      HttpServletRequest request) throws FileNotFoundException {
+        long userId = Long.parseLong(JwtUtil.getUser(request).getId());
+        return ResponseDetails.ok()
+                .put("data",
+                        fileRepository.videoAndPhotoSave(files, FileTypeEnum.TOP_IMAGE.getCode(),  userId));
+    }
+
+
     @GetMapping("/api/upload/file/{date}/{filename:.+}")
     public ResponseEntity get(@PathVariable(value = "date") String date,
                                       @PathVariable(value = "filename") String filename,

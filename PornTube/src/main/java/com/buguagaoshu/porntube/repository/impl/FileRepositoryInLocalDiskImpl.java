@@ -60,7 +60,7 @@ public class FileRepositoryInLocalDiskImpl implements FileRepository {
             try {
 
                 Files.copy(file.getInputStream(), Paths.get(path, filename));
-                FileTableEntity fileTableEntity = createFileTableEntity(filename, suffix, path, file.getSize(), file.getOriginalFilename(), userId);
+                FileTableEntity fileTableEntity = createFileTableEntity(filename, suffix, path, file.getSize(), file.getOriginalFilename(), userId, FileTypeEnum.getFileType(suffix).getCode());
                 succMap.put(file.getOriginalFilename(), "/api/upload/" + path + "/" + filename);
                 // TODO 文件夹大小控制
                 fileTableService.save(fileTableEntity);
@@ -79,7 +79,11 @@ public class FileRepositoryInLocalDiskImpl implements FileRepository {
     }
 
     @Override
-    public List<FileTableEntity> videoAndPhotoSave(MultipartFile[] files, int type, Long userId) throws FileNotFoundException {
+    public List<FileTableEntity> videoAndPhotoSave(MultipartFile[] files, Integer type, Long userId) throws FileNotFoundException {
+//        if (!FileTypeEnum.checkPhotoType(type)) {
+//            throw new FileNotFoundException("文件类型设置错误");
+//        }
+        // TODO 格式检查
         List<FileTableEntity> list = new ArrayList<>();
         for (MultipartFile file : files) {
             String path = FileTypeEnum.filePath();
@@ -87,17 +91,16 @@ public class FileRepositoryInLocalDiskImpl implements FileRepository {
             String filename = FileTypeEnum.newFilename(suffix);
             File dest = new File(path);
             // 格式检查
-            if (FileTypeEnum.getFileType(suffix).getCode() != type) {
-                throw new FileNotFoundException("文件格式错误");
-
-            }
+//            if (FileTypeEnum.getFileType(suffix).getCode() != FileTypeEnum.PHOTO.getCode()) {
+//                throw new FileNotFoundException("文件格式错误");
+//            }
 
             if (!dest.exists() && !dest.mkdirs()) {
                 continue;
             }
             try {
                 Files.copy(file.getInputStream(), Paths.get(path, filename));
-                FileTableEntity fileTableEntity = createFileTableEntity(filename, suffix, path, file.getSize(), file.getOriginalFilename(), userId);
+                FileTableEntity fileTableEntity = createFileTableEntity(filename, suffix, path, file.getSize(), file.getOriginalFilename(), userId, type);
                 // TODO 文件夹大小控制
                 fileTableService.save(fileTableEntity);
                 list.add(fileTableEntity);
@@ -122,7 +125,7 @@ public class FileRepositoryInLocalDiskImpl implements FileRepository {
     public FileTableEntity createFileTableEntity(String filename, String suffix,
                                                  String path, long size,
                                                  String originalFilename,
-                                                 long userId) {
+                                                 long userId, int type) {
         FileTableEntity fileTableEntity = new FileTableEntity();
         fileTableEntity.setUploadTime(System.currentTimeMillis());
         fileTableEntity.setFileUrl("/api/upload/" + path + "/" + filename);
@@ -130,7 +133,7 @@ public class FileRepositoryInLocalDiskImpl implements FileRepository {
         fileTableEntity.setSize(size);
         fileTableEntity.setFileOriginalName(originalFilename);
 
-        fileTableEntity.setType(FileTypeEnum.getFileType(suffix).getCode());
+        fileTableEntity.setType(type);
         fileTableEntity.setSuffixName(suffix);
         fileTableEntity.setUploadUserId(userId);
         return fileTableEntity;

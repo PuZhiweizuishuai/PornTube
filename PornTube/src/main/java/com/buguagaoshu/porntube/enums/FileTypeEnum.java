@@ -15,7 +15,10 @@ public enum FileTypeEnum {
      */
     VIDEO(0, "视频投稿"),
     PHOTO(1, "图片投稿"),
-    ARTICLE(2, "文章投稿");
+    ARTICLE(2, "文章投稿"),
+    AVATAR(3, "头像数据"),
+    TOP_IMAGE(4, "个人主页顶部大图")
+    ;
     int code;
     String msg;
 
@@ -68,6 +71,10 @@ public enum FileTypeEnum {
             }
         }
         return FileTypeEnum.ARTICLE;
+    }
+
+    public static boolean checkPhotoType(int code) {
+        return code == FileTypeEnum.PHOTO.getCode() || code == FileTypeEnum.AVATAR.getCode() || code == FileTypeEnum.TOP_IMAGE.getCode();
     }
 
 

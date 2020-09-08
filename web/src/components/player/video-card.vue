@@ -1,5 +1,6 @@
 <template>
-  <div style="padding-left: 10px; padding-right: 10px">
+  <!-- padding-left: 10px; padding-right: 10px; -->
+  <div style="width: 350px">
     <router-link :to="`/video/${videoInfo.id}`">
       <v-img
         :src="videoInfo.imgUrl"
@@ -25,7 +26,7 @@
           {{ videoInfo.danmakuCount }} 条弹幕 <br>
           <router-link :to="`/user/${videoInfo.userId}`"> {{ videoInfo.username }}</router-link>
           <br>
-          <span v-text="TimeUtil.renderTime(videoInfo.createTime)" />
+          <span v-text="TimeUtil.timeToNowStrning(videoInfo.createTime)" />
         </p>
       </v-col>
     </v-row>
