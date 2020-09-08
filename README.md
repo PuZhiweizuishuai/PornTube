@@ -4,6 +4,12 @@
 
 # PornTube
 
+
+## screenshot
+
+<img src="http://p.ananas.chaoxing.com/star3/origin/53580b104b00aebe98ae008ecaee41b6.png" >
+
+
 ## introduction 
 
 A simple video website
