@@ -22,16 +22,7 @@ class PornTubeApplicationTests {
 
     @Test
     void contextLoads() {
-
-        List<ArticleEntity> list = articleService.list();
-        int count  = 0;
-        for (ArticleEntity a : list) {
-            count++;
-            a.setUserId(8L);
-        }
-        articleService.updateBatchById(list);
-        System.out.println(count);
-
+        fileTableService.findFileByFilename("d6e87553df594e25b90b6d583d0828ef.MP4");
 
     }
 }

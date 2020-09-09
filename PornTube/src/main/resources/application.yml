@@ -6,6 +6,7 @@ server:
 spring:
   datasource:
     driverClassName: com.mysql.cj.jdbc.Driver
+    # 192.168.43.128
     url: jdbc:mysql://192.168.1.107:3306/porn_tube?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
     username: root
     password: 123456

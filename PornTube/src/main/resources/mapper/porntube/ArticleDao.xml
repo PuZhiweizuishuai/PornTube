@@ -28,6 +28,9 @@
         <result property="danmakuCount" column="danmaku_count"/>
         <result property="examineUser" column="examine_user"/>
     </resultMap>
+    <update id="addViewCount">
+        update article set view_count = view_count + #{count} where id = #{id}
+    </update>
     <update id="addDanmakuCount">
         update article set danmaku_count = danmaku_count + #{count} where id = #{id}
     </update>

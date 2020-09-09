@@ -17,5 +17,8 @@ TODO 回复消息可见，加密帖子，视频等
 @Mapper
 public interface ArticleDao extends BaseMapper<ArticleEntity> {
     void addDanmakuCount(@Param("id") long articleId, @Param("count") Long count);
+
+
+    void addViewCount(@Param("id") long articleId, @Param("count") Long count);
 	
 }

@@ -8,25 +8,24 @@ import DPlayer from 'dplayer'
 export default {
   name: 'Play',
   props: {
-    videourl: {
-      type: String,
-      default: ''
+    video: {
+      type: Object,
+      default: () => {}
     },
     picurl: {
       type: String,
       default: ''
     },
-    id: {
+    article: {
       type: Number,
       default: 0
     }
   },
   data() {
     return {
-      url: this.videourl,
+      videoData: this.video,
       pic: this.picurl,
-      videoId: this.id,
-      user: this.user
+      id: this.article
     }
   },
   mounted() {
@@ -37,15 +36,16 @@ export default {
       new DPlayer({
         container: document.querySelector('#dplayer'),
         lang: 'zh-cn',
+        screenshot: true,
         video: {
-          url: this.url,
+          url: this.videoData.fileUrl + '?id=' + this.videoData.id,
           pic: this.pic
         },
         logo: '/logo.png',
         danmaku: {
-          id: this.videoId,
+          id: this.videoData.id,
           api: '/api/danmaku/',
-          token: 'tokendemo',
+          token: 'mjmnb',
           maximum: 1000,
           // addition: ['/api/danmaku/post'],
           user: () => {

@@ -23,7 +23,7 @@ public enum FileTypeEnum {
     String msg;
 
     private static String[] videoType = {
-            ".MP4", ".OGM", ".WMV", ".MPG", ".WEBM", ".OGV", ".MOV", ".ASX", ".MPEG", "M4V", ".AVI", ".FLV"
+            ".MP4", ".MKV", ".OGM", ".WMV", ".MPG", ".WEBM", ".OGV", ".MOV", ".ASX", ".MPEG", "M4V", ".AVI", ".FLV"
     };
 
     private static String[] photoType = {

@@ -6,13 +6,14 @@
 	<!-- 可根据自己的需求，是否要使用 -->
     <resultMap type="com.buguagaoshu.porntube.entity.PlayRecordingEntity" id="playRecordingMap">
         <result property="id" column="id"/>
-        <result property="articeId" column="artice_id"/>
+        <result property="articleId" column="article_id"/>
         <result property="fileId" column="file_id"/>
         <result property="videoTime" column="video_time"/>
         <result property="userId" column="user_id"/>
         <result property="createTime" column="create_time"/>
         <result property="updateTime" column="update_time"/>
+        <result property="videoId" column="video_id"/>
+        <result property="ua" column="ua"/>
     </resultMap>
-
 
 </mapper>

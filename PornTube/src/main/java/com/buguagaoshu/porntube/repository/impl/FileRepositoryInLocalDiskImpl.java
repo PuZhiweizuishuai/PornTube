@@ -80,20 +80,25 @@ public class FileRepositoryInLocalDiskImpl implements FileRepository {
 
     @Override
     public List<FileTableEntity> videoAndPhotoSave(MultipartFile[] files, Integer type, Long userId) throws FileNotFoundException {
-//        if (!FileTypeEnum.checkPhotoType(type)) {
-//            throw new FileNotFoundException("文件类型设置错误");
-//        }
         // TODO 格式检查
         List<FileTableEntity> list = new ArrayList<>();
         for (MultipartFile file : files) {
             String path = FileTypeEnum.filePath();
             String suffix = FileTypeEnum.getFileSuffix(file.getOriginalFilename());
             String filename = FileTypeEnum.newFilename(suffix);
+            // 图片类型
+            if (FileTypeEnum.checkPhotoType(type)) {
+                //
+                if (!FileTypeEnum.getFileType(suffix).equals(FileTypeEnum.PHOTO)) {
+                    throw new FileNotFoundException("上传文件格式不正确");
+                }
+            } else {
+                // 视频
+                if (!FileTypeEnum.getFileType(suffix).equals(FileTypeEnum.VIDEO)) {
+                    throw new FileNotFoundException("上传文件格式不正确");
+                }
+            }
             File dest = new File(path);
-            // 格式检查
-//            if (FileTypeEnum.getFileType(suffix).getCode() != FileTypeEnum.PHOTO.getCode()) {
-//                throw new FileNotFoundException("文件格式错误");
-//            }
 
             if (!dest.exists() && !dest.mkdirs()) {
                 continue;

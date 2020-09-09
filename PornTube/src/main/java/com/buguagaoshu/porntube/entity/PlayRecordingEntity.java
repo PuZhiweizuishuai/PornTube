@@ -24,7 +24,7 @@ public class PlayRecordingEntity {
 	/**
 	 * 视频ID
 	 */
-	private Long articeId;
+	private Long articleId;
 
 	/**
 	 * 观看到第几个视频
@@ -34,7 +34,7 @@ public class PlayRecordingEntity {
 	/**
 	 * 时间戳
 	 */
-	private Long videoTime;
+	private Double videoTime;
 
 	/**
 	 * 用户ID
@@ -50,5 +50,10 @@ public class PlayRecordingEntity {
 	 * 更新时间
 	 */
 	private Long updateTime;
+
+
+	private long videoId;
+
+	private String ua;
 
 }

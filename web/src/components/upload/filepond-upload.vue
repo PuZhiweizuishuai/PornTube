@@ -10,7 +10,7 @@
       label-tap-to-retry="尝试重试"
       label-file-processing-complete="视频上传成功！"
       :allow-multiple="false"
-      accepted-file-types="video/*, .flv"
+      accepted-file-types="video/*, .flv, .mkv"
       :server="server"
       :files="myFiles"
       @init="handleFilePondInit"

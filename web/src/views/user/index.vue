@@ -25,7 +25,7 @@
           </h2>
         </v-col>
         <v-col
-          v-if="this.$store.state.userInfo"
+          v-if="this.$store.state.userInfo && this.$store.state.userInfo.id == id"
           cols="6"
           md="4"
           class="hidden-sm-and-down ml-0 pl-4"
@@ -33,7 +33,7 @@
           <v-btn color="primary" @click="goToSetting">自定义频道</v-btn> <v-btn color="primary" @click="goToStudio">创作中心</v-btn>
         </v-col>
         <v-col
-          v-if="this.$store.state.userInfo == null"
+          v-if="this.$store.state.userInfo == null || this.$store.state.userInfo.id != id"
           cols="6"
           md="4"
         >
@@ -93,12 +93,14 @@
           <VideoList :video="item" />
         </v-col>
       </v-row>
-      <v-pagination
-        v-if="type != 4"
-        v-model="page"
-        :length="length"
-        @input="pageChange"
-      />
+      <v-row justify="center">
+        <v-pagination
+
+          v-model="page"
+          :length="length"
+          @input="pageChange"
+        />
+      </v-row>
     </v-container>
   </div>
 </template>
@@ -181,6 +183,7 @@ export default {
     pageChange(page) {
       this.page = page
       this.geVideoList(this.type)
+      this.$vuetify.goTo(0)
     },
     setType(type) {
       this.type = type

@@ -3,6 +3,7 @@ package com.buguagaoshu.porntube.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.buguagaoshu.porntube.dto.ExamineDto;
 import com.buguagaoshu.porntube.dto.VideoArticleDto;
+import com.buguagaoshu.porntube.entity.FileTableEntity;
 import com.buguagaoshu.porntube.enums.ReturnCodeEnum;
 import com.buguagaoshu.porntube.utils.PageUtils;
 import com.buguagaoshu.porntube.entity.ArticleEntity;
@@ -10,6 +11,7 @@ import com.buguagaoshu.porntube.vo.ArticleViewData;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import java.util.Map;
 
@@ -59,5 +61,17 @@ public interface ArticleService extends IService<ArticleEntity> {
      * 处理审核
      * */
     ReturnCodeEnum examine(ExamineDto examineDto, HttpServletRequest request);
+
+
+    /**
+     * 检查视频播放权限
+     * @param file 视频文件
+     * @param request 用户信息和请求信息
+     *                TODO 如果后期开放非登录用户也能播放，需要修改
+     * */
+    Boolean hasThisVideoPlayPower(FileTableEntity file, HttpServletRequest request);
+
+
+    void addViewCount(Long articleId, long count);
 }
 

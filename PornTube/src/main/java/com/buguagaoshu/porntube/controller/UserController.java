@@ -4,12 +4,15 @@ import com.buguagaoshu.porntube.dto.LoginDetails;
 import com.buguagaoshu.porntube.dto.PasswordDto;
 import com.buguagaoshu.porntube.entity.UserEntity;
 import com.buguagaoshu.porntube.service.UserService;
+import com.buguagaoshu.porntube.service.impl.UserServiceImpl;
 import com.buguagaoshu.porntube.vo.ResponseDetails;
 import com.buguagaoshu.porntube.vo.User;
 import com.sun.net.httpserver.HttpsServer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.util.WebUtils;
 
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
@@ -39,6 +42,20 @@ public class UserController {
     @PostMapping("/api/register")
     public ResponseDetails register(@Valid @RequestBody UserEntity userEntity, HttpServletRequest request) {
         return ResponseDetails.ok(userService.register(userEntity, request));
+    }
+
+    @GetMapping("/api/logout")
+    public ResponseDetails logout(HttpServletRequest request, HttpServletResponse response) {
+        Cookie cookie = WebUtils.getCookie(request, UserServiceImpl.COOKIE_TOKEN);
+        if (cookie == null) {
+            return ResponseDetails.ok(0, "没有登录");
+        }
+        cookie.setValue(null);
+        cookie.setHttpOnly(true);
+        cookie.setPath("/");
+        cookie.setMaxAge(0);
+        response.addCookie(cookie);
+        return ResponseDetails.ok(200, "退出成功！");
     }
 
     @GetMapping("/api/user/info/{id}")

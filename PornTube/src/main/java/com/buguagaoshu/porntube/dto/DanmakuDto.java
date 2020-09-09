@@ -19,7 +19,7 @@ public class DanmakuDto {
     private Long color;
 
     /**
-     * 弹幕所属视频 ID
+     * 弹幕所属视频文件的 ID
      * */
     private Long id;
 

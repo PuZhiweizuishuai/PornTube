@@ -44,7 +44,7 @@ public class ExamineController {
     @PostMapping("/api/admin/examine")
     public ResponseDetails examine(@Valid @RequestBody ExamineDto examineDto,
                                    HttpServletRequest request) {
-        System.out.println(examineDto);
+
         return ResponseDetails.ok(articleService.examine(examineDto, request));
     }
 

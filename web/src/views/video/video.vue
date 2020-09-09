@@ -3,13 +3,13 @@
     <v-container fill-height fluid style="padding-bottom: 0px;">
       <v-row>
         <v-col style="padding-bottom: 0px;">
-          <DPlayer :id="parseInt(id)" :videourl="videoData.video[0].fileUrl" :picurl="videoData.imgUrl" />
+          <DPlayer :article="parseInt(id)" :video="videoData.video[0]" :picurl="videoData.imgUrl" />
         </v-col>
       </v-row>
     </v-container>
     <v-container fill-height style="padding-top: 0px;">
-      <v-row>
-        <v-col cols="8">
+      <v-row v-resize="onResize" no-gutters>
+        <v-col :cols="colsWidth">
           <v-row>
             <v-col>
               <h3 v-text="videoData.title" />
@@ -100,7 +100,7 @@
         </v-col>
       </v-row>
       <v-row>
-        <v-col cols="8">
+        <v-col :cols="colsWidth">
           <Comment :count="videoData.commentCount" />
         </v-col>
         <v-col>
@@ -127,15 +127,28 @@ export default {
       score: 0,
       TimeUtil,
       id: 0,
-      videoData: {}
+      videoData: {},
+      windowSize: {
+
+      },
+      colsWidth: 8
     }
   },
   created() {
     this.id = this.$route.params.id
     this.videoInfo()
+    this.windowSize = { x: window.innerWidth, y: window.innerHeight }
   },
   methods: {
-
+    // 控制页面大小
+    onResize() {
+      this.windowSize = { x: window.innerWidth, y: window.innerHeight }
+      if (this.windowSize.x < 900) {
+        this.colsWidth = 12
+      } else {
+        this.colsWidth = 8
+      }
+    },
     videoInfo() {
       fetch(`/api/article/video/${this.id}`, {
         headers: {

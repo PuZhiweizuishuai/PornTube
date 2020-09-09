@@ -1,7 +1,6 @@
 <template>
   <v-container fill-height fluid style="padding-left: 24px; padding-right: 24px">
-
-    <v-row>
+    <!-- <v-row>
       <div
         class="d-flex flex-wrap"
         color="grey lighten-2"
@@ -17,12 +16,23 @@
         >
           <VideoCared :video="item" />
         </div>
-      </div></v-row>
-    <v-pagination
-      v-model="page"
-      :length="length"
-      @input="pageChange"
-    />
+      </div>
+    </v-row> -->
+    <v-row no-gutters>
+      <v-col
+        v-for="item in videoList"
+        :key="item.id"
+      >
+        <VideoCared :video="item" />
+      </v-col>
+    </v-row>
+    <v-row justify="center">
+      <v-pagination
+        v-model="page"
+        :length="length"
+        @input="pageChange"
+      />
+    </v-row>
   </v-container>
 </template>
 

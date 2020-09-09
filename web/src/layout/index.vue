@@ -69,7 +69,7 @@
         <span>通知</span>
       </v-tooltip>
       <!--  登陆后 -->
-      <v-btn
+      <!-- <v-btn
         v-if="this.$store.state.userInfo"
         icon
         large
@@ -84,7 +84,8 @@
             :alt="this.$store.state.userInfo.username"
             :title="this.$store.state.userInfo.username"
           /></v-avatar>
-      </v-btn>
+      </v-btn> -->
+      <Head v-if="this.$store.state.userInfo" />
       <!-- 未登录 -->
       <v-btn
         v-if="this.$store.state.userInfo == null"
@@ -105,9 +106,14 @@
 </template>
 
 <script>
+import Head from '@/layout/components/head.vue'
 export default {
   // TODO 增加分类页
+  components: {
+    Head
+  },
   data: () => ({
+    userInfo: {},
     drawer: true,
     items: [
       { icon: 'mdi-home', text: '首页', link: '/' },
@@ -116,15 +122,55 @@ export default {
       { icon: 'mdi-history', text: '历史记录', link: '/history' },
       { icon: 'mdi-playlist-play', text: '稍后再看', link: '/playlist' }
 
+    ],
+    headItem: [
+      { icon: 'mdi-head', text: '个人主页', link: '/user/', id: 0 },
+      { icon: 'mdi-wrench', text: '创作中心', link: '/studio', id: 1 },
+      { icon: 'mdi-logout', text: '退出', link: '/logout', id: 2 }
     ]
   }),
   mounted() {
 
   },
   created() {
+    this.userInfo = this.$store.state.userInfo
     this.$vuetify.theme.dark = this.$store.state.darkThemOpen
   },
   methods: {
+    headClick(value) {
+      if (value === 0) {
+        this.$router.push('/user/' + this.userInfo.id)
+      } else if (value === 1) {
+        this.$router.push('/studio')
+      } else {
+        this.logout()
+      }
+    },
+    logout() {
+      fetch(`/api/logout`, {
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          'X-XSRF-TOKEN': this.$cookies.get('XSRF-TOKEN')
+        },
+        method: 'GET',
+        credentials: 'include'
+      }).then(response => response.json())
+        .then(json => {
+          if (json.status === 200) {
+            this.$store.commit('setUserInfo', null)
+            if (this.$route.path === '/') {
+              location.reload()
+            } else {
+              this.$router.push('/')
+            }
+          } else {
+            //
+          }
+        })
+        .catch(e => {
+          return null
+        })
+    },
     goToLoginPage() {
       this.$router.push('/login')
     },

@@ -187,13 +187,21 @@ router.beforeEach((to, from, next) => {
   }
   if (to.meta.requireAuth) {
     const date = new Date().getTime()
-    if (router.app.$options.store.state.userInfo != null && router.app.$options.store.state.userInfo.expireTime > date) {
-      // console.log(to.path)
+    if (router.app.$options.store.state.userInfo != null) {
+      if (router.app.$options.store.state.userInfo.expireTime > date) {
+        // console.log(to.path)
       // TODO 登录后不能访问登录界面
-      if (to.path === '/login') {
-        return next({ path: '/' })
+        if (to.path === '/login') {
+          return next({ path: '/' })
+        }
+        return next()
+      } else {
+        router.app.$options.store.commit('setUserInfo', null)
+        return next({
+          path: '/login',
+          query: { redirect: to.fullPath }
+        })
       }
-      return next()
     } else {
       return next({
         path: '/login',

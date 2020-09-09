@@ -102,22 +102,7 @@
         <span>通知</span>
       </v-tooltip>
       <!--  登陆后 -->
-      <v-btn
-        v-if="this.$store.state.userInfo"
-        icon
-        large
-        @click="goToUserHome"
-      >
-        <v-avatar
-          size="32px"
-          item
-        >
-          <v-img
-            :src="this.$store.state.userInfo.avatarUrl"
-            :alt="this.$store.state.userInfo.username"
-            :title="this.$store.state.userInfo.username"
-          /></v-avatar>
-      </v-btn>
+      <Head v-if="this.$store.state.userInfo" />
       <!-- 未登录 -->
       <v-btn
         v-if="this.$store.state.userInfo == null"
@@ -138,8 +123,12 @@
 </template>
 
 <script>
+import Head from '@/layout/components/head.vue'
 import CheckPower from '@/utils/check-power.vue'
 export default {
+  components: {
+    Head
+  },
   data: () => ({
     CheckPower,
     drawer: true,

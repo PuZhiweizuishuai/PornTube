@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.buguagaoshu</groupId>
     <artifactId>porntube</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.1.1-SNAPSHOT</version>
     <name>PornTube</name>
     <description>Demo project for Spring Boot YouTube</description>
 
