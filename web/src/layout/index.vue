@@ -63,7 +63,7 @@
             v-bind="attrs"
             v-on="on"
           >
-            <v-icon>mdi-bell</v-icon>
+            <v-icon>mdi-video-plus</v-icon>
           </v-btn>
         </template>
         <span>通知</span>
@@ -92,7 +92,7 @@
         outlined
         @click="goToLoginPage"
       >
-        <v-icon left dark>mdi-head</v-icon> 登录
+        <v-icon left dark>mdi-account</v-icon> 登录
       </v-btn>
 
     </v-app-bar>

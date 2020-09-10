@@ -1,5 +1,5 @@
 <template>
-  <v-menu v-if="this.$store.state.userInfo" open-on-hover top offset-y>
+  <v-menu v-if="this.$store.state.userInfo" top offset-y>
     <template v-slot:activator="{ on, attrs }">
       <v-btn
         dark
@@ -46,7 +46,8 @@ export default {
     return {
       userInfo: {},
       headItem: [
-        { icon: 'mdi-head', text: '个人主页', link: '/user/', id: 0 },
+        { icon: 'mdi-account', text: '个人主页', link: '/user/', id: 0 },
+        { icon: 'mdi-cash-usd', text: '付费会员', link: '/vip', id: 3 },
         { icon: 'mdi-wrench', text: '创作中心', link: '/studio', id: 1 },
         { icon: 'mdi-logout', text: '退出', link: '/logout', id: 2 }
       ]
@@ -58,10 +59,15 @@ export default {
   methods: {
     headClick(value) {
       if (value === 0) {
-        this.$router.push('/user/' + this.userInfo.id)
-        location.reload()
+        // this.$router.push('/user/' + this.userInfo.id)
+        location.replace('/user/' + this.userInfo.id)
       } else if (value === 1) {
+        if (this.$route.path === '/studio') {
+          return
+        }
         this.$router.push('/studio')
+      } else if (value === 3) {
+        this.$router.push('/vip')
       } else {
         this.logout()
       }

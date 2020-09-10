@@ -84,7 +84,7 @@
             v-on="on"
             @click="goToPublish"
           >
-            <v-icon>mdi-video</v-icon>
+            <v-icon>mdi-video-plus</v-icon>
           </v-btn>
         </template>
         <span>发布</span>
@@ -109,7 +109,7 @@
         outlined
         @click="goToLoginPage"
       >
-        <v-icon left dark>mdi-head</v-icon> 登录
+        <v-icon left dark>mdi-account</v-icon> 登录
       </v-btn>
 
     </v-app-bar>
@@ -134,17 +134,22 @@ export default {
     drawer: true,
     items: [
       { icon: 'mdi-application', text: '信息中心', link: '/studio' },
+      { icon: 'mdi-filmstrip-box-multiple', text: '投稿列表', link: '/studio/list' },
       { icon: 'mdi-upload', text: '投稿', link: '/studio/upload' },
-      { icon: 'mdi-comment', text: '评论', link: '/studio/comment' }
+      { icon: 'mdi-database', text: '数据分析', link: '/studio/data' },
+      { icon: 'mdi-account-multiple', text: '粉丝管理', link: '/studio/fans' }
+
       //   { icon: 'mdi-history', text: '历史记录', link: '/history' },
       //   { icon: 'mdi-playlist-play', text: '稍后再看', link: '/playlist' }
     ],
     adminList: [
       { icon: 'mdi-application', text: '邀请码', link: '/studio/admin/invitation' },
       { icon: 'mdi-video', text: '待审核', link: '/studio/admin/examine' },
-      { icon: 'mdi-head', text: '用户列表', link: '/studio/admin/userlist' },
-      { icon: 'mdi-wrench', text: '网页设置', link: '/studio/admin/websetting' },
-      { icon: 'mdi-head', text: '分类管理', link: '/studio/admin/category' }
+      { icon: 'mdi-filmstrip-box-multiple', text: '投稿列表', link: '/studio/admin/article/list' },
+      { icon: 'mdi-file', text: '文件列表', link: '/studio/admin/file/list' },
+      { icon: 'mdi-account-multiple', text: '用户列表', link: '/studio/admin/userlist' },
+      { icon: 'mdi-square-edit-outline', text: '网页设置', link: '/studio/admin/websetting' },
+      { icon: 'mdi-playlist-edit', text: '分类管理', link: '/studio/admin/category' }
     ]
   }),
   mounted() {
