@@ -43,4 +43,11 @@ public class UserRoleServiceImpl extends ServiceImpl<UserRoleDao, UserRoleEntity
         save(userRoleEntity);
     }
 
+    @Override
+    public void updateRoleByUserId(UserRoleEntity userRoleEntity) {
+        UserRoleEntity sys = findByUserId(userRoleEntity.getUserid());
+        userRoleEntity.setId(sys.getId());
+        this.updateById(userRoleEntity);
+    }
+
 }

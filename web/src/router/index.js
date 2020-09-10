@@ -2,6 +2,7 @@ import Vue from 'vue'
 import VueRouter from 'vue-router'
 import Index from '@/layout/index.vue'
 import Home from '@/views/home/index.vue'
+import checkPower from '@/utils/check-power.vue'
 Vue.use(VueRouter)
 
 const routes = [
@@ -191,8 +192,14 @@ router.beforeEach((to, from, next) => {
       if (router.app.$options.store.state.userInfo.expireTime > date) {
         // console.log(to.path)
       // TODO 登录后不能访问登录界面
-        if (to.path === '/login') {
-          return next({ path: '/' })
+        // if (to.path === '/login') {
+        //   return next({ path: '/' })
+        // }
+        // TODO TEST
+        // 如果VIP到期，更新VIP数据
+        if (checkPower.updateUserRole(router.app.$options.store.state.userInfo)) {
+          router.app.$options.store.state.userInfo.userRoleEntity.role = 'ROLE_USER'
+          router.app.$options.store.commit('setUserInfo', router.app.$options.store.state.userInfo)
         }
         return next()
       } else {

@@ -99,6 +99,13 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
             int cookExpirationTime = -1;
             String jwt = "";
             UserRoleEntity userRoleEntity = userRoleService.findByUserId(userEntity.getId());
+            if (userRoleEntity.getRole().equals(RoleTypeEnum.VIP.getRole())) {
+                if (userRoleEntity.getVipStopTime() < System.currentTimeMillis()) {
+                    userRoleEntity.setRole(RoleTypeEnum.USER.getRole());
+                    userRoleService.updateById(userRoleEntity);
+                }
+            }
+
             user.setUserRoleEntity(userRoleEntity);
             if (loginDetails.getRememberMe() != null && loginDetails.getRememberMe()) {
                 expirationTime = COOKIE_EXPIRATION_TIME * 1000 + time;
@@ -109,7 +116,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
 
             user.setExpireTime(expirationTime);
             user.setPassword("");
-            jwt = JwtUtil.createJwt(userEntity.getMail(), String.valueOf(userEntity.getId()), userRoleEntity.getRole(), expirationTime);
+            jwt = JwtUtil.createJwt(userEntity.getMail(), String.valueOf(userEntity.getId()), userRoleEntity.getRole(), expirationTime, userRoleEntity.getVipStopTime());
             // 传递 token
             Cookie cookie = new Cookie(COOKIE_TOKEN, jwt);
             cookie.setHttpOnly(true);

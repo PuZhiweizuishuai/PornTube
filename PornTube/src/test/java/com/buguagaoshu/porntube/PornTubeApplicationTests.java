@@ -1,13 +1,16 @@
 package com.buguagaoshu.porntube;
 
-import com.buguagaoshu.porntube.entity.ArticleEntity;
-import com.buguagaoshu.porntube.entity.FileTableEntity;
+
+import com.buguagaoshu.porntube.entity.UserEntity;
+import com.buguagaoshu.porntube.entity.UserRoleEntity;
+import com.buguagaoshu.porntube.enums.RoleTypeEnum;
 import com.buguagaoshu.porntube.service.*;
+import com.buguagaoshu.porntube.utils.PasswordUtil;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.util.List;
+
 
 @SpringBootTest
 class PornTubeApplicationTests {
@@ -20,9 +23,31 @@ class PornTubeApplicationTests {
     @Autowired
     private ArticleService articleService;
 
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private UserRoleService userRoleService;
+
     @Test
     void contextLoads() {
-        fileTableService.findFileByFilename("d6e87553df594e25b90b6d583d0828ef.MP4");
-
+//        UserEntity userEntity = new UserEntity();
+//        userEntity.setUsername("看片");
+//        userEntity.setMail("123456@qq.com");
+//        userEntity.setPassword(PasswordUtil.encode("123456"));
+//        userEntity.setTopImgUrl("/images/top.png");
+//        userEntity.setAvatarUrl("/images/head.png");
+//        userEntity.setCreateTime(System.currentTimeMillis());
+//
+//        userService.save(userEntity);
+//        UserRoleEntity userRoleEntity = new UserRoleEntity();
+//        userRoleEntity.setUserid(userEntity.getId());
+//        userRoleEntity.setCreateTime(System.currentTimeMillis());
+//        userRoleEntity.setModified(0L);
+//        userRoleEntity.setUpdateTime(System.currentTimeMillis());
+//        userRoleEntity.setRole(RoleTypeEnum.VIP.getRole());
+//        userRoleEntity.setVipStartTime(System.currentTimeMillis());
+//        userRoleEntity.setVipStopTime(System.currentTimeMillis() + 300000);
+//        userRoleService.save(userRoleEntity);
     }
 }

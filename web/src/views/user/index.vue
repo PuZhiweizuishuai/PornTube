@@ -137,11 +137,11 @@ export default {
   methods: {
     getUserInfo() {
       // console.log(this.$store.state.userInfo)
-      if (this.$store.state.userInfo !== null && this.$store.state.userInfo.id === this.id) {
-        this.userInfo = this.$store.state.userInfo
-        document.title = this.userInfo.username
-        return
-      }
+      // if (this.$store.state.userInfo !== null && this.$store.state.userInfo.id === this.id) {
+      //   this.userInfo = this.$store.state.userInfo
+      //   document.title = this.userInfo.username
+      //   return
+      // }
       fetch(`/api/user/info/${this.id}`, {
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',

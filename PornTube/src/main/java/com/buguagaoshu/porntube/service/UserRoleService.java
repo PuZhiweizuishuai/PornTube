@@ -29,5 +29,11 @@ public interface UserRoleService extends IService<UserRoleEntity> {
      * 写入角色
      * */
     void saveUserRole(UserEntity userEntity, String role, long modified);
+
+
+    /**
+     * 通过用户ID更新用户权限
+     * */
+    void updateRoleByUserId(UserRoleEntity userRoleEntity);
 }
 
