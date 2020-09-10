@@ -19,7 +19,24 @@
           /></v-avatar>
       </v-btn>
     </template>
-
+    <router-link :to="`/user/${userInfo.id}`">
+      <v-list>
+        <v-list-item
+          v-for="(item, index) in headItem"
+          :key="index"
+          link
+        >
+          <v-list-item-action>
+            <v-icon>mdi-head</v-icon>
+          </v-list-item-action>
+          <v-list-item-content>
+            <v-list-item-title>
+              个人主页
+            </v-list-item-title>
+          </v-list-item-content>
+        </v-list-item>
+      </v-list>
+    </router-link>
     <v-list>
       <v-list-item
         v-for="(item, index) in headItem"
