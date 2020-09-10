@@ -2,82 +2,78 @@
     <img src="http://p.ananas.chaoxing.com/star3/origin/5e008a6cd46ea6ed07252f656acb5d2b.png" alt="logo" title="logo" width="50%" style="text-align:center;">
 </div>
 
-# PornTube
+# PornTube 一个能发弹幕的简单的视频网站
 
 
-## screenshot
+## 截图
 
-### Home 
+### 主页 
 
 <img src="http://p.ananas.chaoxing.com/star3/origin/a093b1ef4a410eea6bd616a2e985ac97.png" title="首页" alt="首页">
 
-### history
+### 播放历史
 
 <img src="http://p.ananas.chaoxing.com/star3/origin/496e8f398667a6238ffd2fa734e01a5e.png" title="历史记录" alt="历史记录">
 
-## User Home
+## 用户主页
 
 <img src="http://p.ananas.chaoxing.com/star3/origin/53580b104b00aebe98ae008ecaee41b6.png" title="个人主页" alt="个人主页">
 
-### publish
+### 投稿
 
 <img src="http://p.ananas.chaoxing.com/star3/origin/1a0f4668b74041c843d16f71c842152e.png" title="投稿" alt="投稿">
 
 
-## introduction 
+## 简介 
 
-A simple video website
+一个简单的视频网站
 
-Interface design reference Youtube
+主要界面参考了Youtube，部分功能借鉴了B站
 
-Adopted Spring Boot， Vue， vuetifyjs
+后端 Spring Boot， Mysql，前端 Vue， Vuetifyjs
 
-Still in development. But most of the gong'n has been done.
+正在不断更新开发中，已经完成部分功能
 
-for example, Video upload, danmaku, historical records, etc.
+比如视频投稿，发送弹幕，视频播放，播放历史等
 
 
-## Quick start
+## 快速运行
 
-**Run Environment: Java11, Node 14, Maven3**
+**运行环境: Java11, Node 14, Maven3**
 
-Creating a database, Configuring Database Addresses
+使用 porn_tube.sql 创建数据库，配置数据库地址
 
-**Run back end server**
+**运行后端服务**
 
 ```bash
 cd PornTube
 mvn clean package
 ```
 
-**Then**
+**之后**
 
 ```bash
 java -jar target/porntube-0.1.2-SNAPSHOT
 ```
 
-**Run front end server**
+**运行前端服务**
 
 ```bash
 cd web
 npm install
 ```
 
-**Then**
+**之后**
 
 ```bash
 npm run serve
 ```
 
-**Final**
+**最后打开**
 
-Open
 
 ```
 http://127.0.0.1:8000
 ```
 
-**Tips:** The first user registered with the name admin will automatically become an administrator.
-
-
-
+**提示：** 第一个以admin为用户名注册的用户将自动成为管理员！
