@@ -2,6 +2,14 @@
     <img src="http://p.ananas.chaoxing.com/star3/origin/5e008a6cd46ea6ed07252f656acb5d2b.png" alt="logo" title="logo" width="50%" style="text-align:center;">
 </div>
 
+<br/>
+
+<div align="center">
+    <a href="https://github.com/PuZhiweizuishuai/PornTube/blob/master/README_zh_CN.md">简体中文</a>
+</div>
+
+<br/>
+
 # PornTube
 
 
