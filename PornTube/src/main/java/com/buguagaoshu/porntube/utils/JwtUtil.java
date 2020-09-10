@@ -5,6 +5,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.util.WebUtils;
 
 import javax.servlet.http.Cookie;
@@ -15,6 +16,7 @@ import java.util.Date;
  * @author Pu Zhiwei {@literal puzhiweipuzhiwei@foxmail.com}
  * create          2020-09-05 15:38
  */
+@Slf4j
 public class JwtUtil {
     public final static String SECRET_KEY = "adfads@44$q232343#";
 
@@ -39,10 +41,16 @@ public class JwtUtil {
         String token = cookie != null ? cookie.getValue() : null;
 
         if (token != null) {
-            return Jwts.parser()
-                    .setSigningKey(SECRET_KEY)
-                    .parseClaimsJws(token)
-                    .getBody();
+            try {
+                return Jwts.parser()
+                        .setSigningKey(SECRET_KEY)
+                        .parseClaimsJws(token)
+                        .getBody();
+            } catch (Exception e) {
+                log.warn("来自 IP： {} 的用户 JWT TOKEN解析失败！", IpUtil.getIpAddr(request));
+                return null;
+            }
+
         }
         return null;
     }

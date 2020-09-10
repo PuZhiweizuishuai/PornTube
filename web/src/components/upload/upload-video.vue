@@ -267,6 +267,7 @@ export default {
         .then(json => {
           for (let i = 0; i < json.data.length; i++) {
             const name = json.data[i].name
+
             this.category.push(name)
             this.categoryMap.Set(name, json.data[i])
           }
