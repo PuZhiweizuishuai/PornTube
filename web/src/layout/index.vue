@@ -114,7 +114,7 @@ export default {
   },
   data: () => ({
     userInfo: {},
-    drawer: true,
+    drawer: false,
     items: [
       { icon: 'mdi-home', text: '首页', link: '/' },
       { icon: 'mdi-trending-up', text: '时下流行', link: '/hot' },

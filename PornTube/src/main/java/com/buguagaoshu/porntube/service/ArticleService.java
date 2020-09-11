@@ -66,10 +66,11 @@ public interface ArticleService extends IService<ArticleEntity> {
     /**
      * 检查视频播放权限
      * @param file 视频文件
-     * @param request 用户信息和请求信息
+     * @param userId 用户信息和请求信息
+     * @param request 获取浏览器 UA
      *                TODO 如果后期开放非登录用户也能播放，需要修改
      * */
-    Boolean hasThisVideoPlayPower(FileTableEntity file, HttpServletRequest request);
+    Boolean hasThisVideoPlayPower(FileTableEntity file, Long userId, HttpServletRequest request);
 
 
     void addViewCount(Long articleId, long count);

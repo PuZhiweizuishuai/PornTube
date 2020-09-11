@@ -1,6 +1,7 @@
 package com.buguagaoshu.porntube.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
@@ -70,5 +71,10 @@ public class FileTableEntity {
 	private String suffixName;
 
 
+	/**
+	 * 加载视频所需要的Key
+	 * */
+	@TableField(exist = false)
+	private String key;
 
 }

@@ -34,7 +34,7 @@ public interface PlayRecordingService extends IService<PlayRecordingEntity> {
     /**
      * 保存播放记录
      * */
-    void saveHistory(FileTableEntity file, Claims user, String ua);
+    void saveHistory(FileTableEntity file, Long userId, String ua);
 
     /**
      * 今日播放历史记录列表

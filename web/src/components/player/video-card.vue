@@ -1,7 +1,7 @@
 <template>
   <!-- padding-left: 10px; padding-right: 10px; -->
   <div style="width: 350px">
-    <router-link target="_blank" :to="`/video/${videoInfo.id}`">
+    <router-link :to="`/video/${videoInfo.id}`">
       <v-img
         :src="videoInfo.imgUrl"
         outlined
@@ -10,7 +10,7 @@
     </router-link>
     <v-row>
       <v-col cols="2">
-        <router-link target="_blank" :to="`/user/${videoInfo.userId}`">
+        <router-link :to="`/user/${videoInfo.userId}`">
           <v-avatar size="48">
             <v-img :src="videoInfo.avatarUrl" />
           </v-avatar>
@@ -18,7 +18,7 @@
       </v-col>
       <v-col cols="10">
         <p style="font-size: 20px; margin-bottom: 0px;color: black;">
-          <router-link target="_blank" :to="`/video/${videoInfo.id}`" style="color: black;"> {{ videoInfo.title }} </router-link>
+          <router-link :to="`/video/${videoInfo.id}`" style="color: black;"> {{ videoInfo.title }} </router-link>
         </p>
         <p style="font-size: 10px; color: #606060;">
           {{ videoInfo.viewCount }} 观看 <span v-html="`&nbsp;&nbsp;`" />

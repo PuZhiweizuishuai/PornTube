@@ -1,6 +1,5 @@
 package com.buguagaoshu.porntube.service.impl;
 
-import com.buguagaoshu.porntube.cache.CategoryCache;
 import org.springframework.stereotype.Service;
 
 import java.util.Comparator;

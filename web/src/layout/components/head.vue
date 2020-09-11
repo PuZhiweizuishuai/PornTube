@@ -80,6 +80,7 @@ export default {
       }
     },
     logout() {
+      this.$store.commit('setUserInfo', null)
       fetch(`/api/logout`, {
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',

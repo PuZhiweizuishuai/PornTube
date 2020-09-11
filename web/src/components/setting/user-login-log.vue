@@ -12,7 +12,7 @@
         </v-row>
         <v-row justify="center">
           <div id="top" />
-          <v-col cols="10">
+          <v-col cols="12">
             <v-data-table
               :headers="headers"
               :items="logList"

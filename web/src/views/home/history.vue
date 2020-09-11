@@ -1,37 +1,39 @@
 <template>
   <v-container fill-height>
     <NoLoginShow v-if="this.$store.state.userInfo == null" />
-    <v-row>
-      <v-col>
-        <h3>播放历史</h3>
-      </v-col>
+    <div v-else>
+      <v-row>
+        <v-col>
+          <h3>播放历史</h3>
+        </v-col>
 
-    </v-row>
-    <v-row>
-      <v-col>
-        <v-divider />
-      </v-col>
+      </v-row>
+      <v-row>
+        <v-col>
+          <v-divider />
+        </v-col>
 
-    </v-row>
+      </v-row>
 
-    <v-row>
-      <v-col
-        v-for="item in videoList"
-        :key="item.id"
-        cols="12"
-      >
+      <v-row>
+        <v-col
+          v-for="item in videoList"
+          :key="item.id"
+          cols="12"
+        >
 
-        <HistoryCard :video="item" />
-      </v-col>
-    </v-row>
-    <v-row justify="center">
-      <v-pagination
+          <HistoryCard :video="item" />
+        </v-col>
+      </v-row>
+      <v-row justify="center">
+        <v-pagination
 
-        v-model="page"
-        :length="length"
-        @input="pageChange"
-      />
-    </v-row>
+          v-model="page"
+          :length="length"
+          @input="pageChange"
+        />
+      </v-row>
+    </div>
   </v-container>
 </template>
 

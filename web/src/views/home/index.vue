@@ -53,6 +53,13 @@ export default {
     }
   },
   created() {
+    console.log(this.$route.query.page)
+    if (this.$route.query.page === undefined) {
+      this.page = 1
+    } else {
+      this.page = this.$route.query.page
+    }
+
     this.getVideoList()
   },
   methods: {
@@ -76,6 +83,7 @@ export default {
     },
     pageChange(value) {
       this.page = value
+      this.$router.push({ query: { page: this.page }})
       this.getVideoList()
       this.$vuetify.goTo(0)
     }

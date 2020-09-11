@@ -3,13 +3,13 @@ package com.buguagaoshu.porntube.service.impl;
 import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.buguagaoshu.porntube.cache.CategoryCache;
 import com.buguagaoshu.porntube.cache.WebSettingCache;
+import com.buguagaoshu.porntube.config.WebConstant;
 import com.buguagaoshu.porntube.dto.ExamineDto;
 import com.buguagaoshu.porntube.dto.VideoArticleDto;
 import com.buguagaoshu.porntube.entity.*;
 import com.buguagaoshu.porntube.enums.*;
-import com.buguagaoshu.porntube.service.FileTableService;
-import com.buguagaoshu.porntube.service.PlayRecordingService;
-import com.buguagaoshu.porntube.service.UserService;
+import com.buguagaoshu.porntube.service.*;
+import com.buguagaoshu.porntube.utils.AesUtil;
 import com.buguagaoshu.porntube.utils.JwtUtil;
 import com.buguagaoshu.porntube.vo.ArticleViewData;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -33,7 +33,6 @@ import com.buguagaoshu.porntube.utils.PageUtils;
 import com.buguagaoshu.porntube.utils.Query;
 
 import com.buguagaoshu.porntube.dao.ArticleDao;
-import com.buguagaoshu.porntube.service.ArticleService;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -55,6 +54,8 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
 
     private final UserService userService;
 
+    private final UserRoleService userRoleService;
+
     private PlayRecordingService playRecordingService;
 
     @Autowired
@@ -63,11 +64,12 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
     }
 
     @Autowired
-    public ArticleServiceImpl(CategoryCache categoryCache, WebSettingCache webSettingCache, FileTableService fileTableService, UserService userService) {
+    public ArticleServiceImpl(CategoryCache categoryCache, WebSettingCache webSettingCache, FileTableService fileTableService, UserService userService, UserRoleService userRoleService) {
         this.categoryCache = categoryCache;
         this.webSettingCache = webSettingCache;
         this.fileTableService = fileTableService;
         this.userService = userService;
+        this.userRoleService = userRoleService;
     }
 
     @Override
@@ -208,7 +210,6 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
     @Override
     public ArticleViewData getVideo(long id, HttpServletRequest request) {
         Claims user = JwtUtil.getUser(request);
-        // TODO 播放记录，播放次数限制
         QueryWrapper<ArticleEntity> wrapper = new QueryWrapper<>();
         wrapper.eq("id", id);
         wrapper.eq("status", ArticleStatusEnum.NORMAL.getCode());
@@ -217,6 +218,11 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         if (user != null && RoleTypeEnum.ADMIN.getRole().equals(user.get("authorities"))) {
             flag = false;
         }
+        long userId = -1;
+        if (user != null) {
+            userId = Long.parseLong(user.getId());
+        }
+
         if (flag) {
             wrapper.eq("examine_status", ExamineTypeEnum.SUCCESS.getCode());
         }
@@ -239,6 +245,10 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         articleViewData.setDanmakuCount(articleEntity.getDanmakuCount());
 
         List<FileTableEntity> video = fileTableService.findArticleVideo(id);
+        long time = System.currentTimeMillis();
+        for (FileTableEntity f : video) {
+            f.setKey(AesUtil.encrypt(userId + "#" + f.getId() + "#" + (time + WebConstant.KEY_EXPIRY_DATE), WebConstant.AES_KEY));
+        }
         articleViewData.setVideo(video);
 
         ObjectMapper mapper = new ObjectMapper();
@@ -326,29 +336,27 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
     }
 
     @Override
-    public Boolean hasThisVideoPlayPower(FileTableEntity file, HttpServletRequest request) {
-        Claims user = JwtUtil.getUser(request);
-
+    public Boolean hasThisVideoPlayPower(FileTableEntity file, Long userId, HttpServletRequest request) {
         // TODO 暂时设计为不登陆无法观看
-        if (user == null) {
+        if (userId == -1) {
             return false;
         }
-        long userId = Long.parseLong(user.getId());
-        String role = (String) user.get("authorities");
+        UserRoleEntity userRoleEntity = userRoleService.findByUserId(userId);
+        String role = userRoleEntity.getRole();
         // 如果是管理员或VIP，则只记录播放信息，不记录播放次数
         if (RoleTypeEnum.ADMIN.getRole().equals(role) || RoleTypeEnum.VIP.getRole().equals(role)) {
-            playRecordingService.saveHistory(file, user, request.getHeader("user-agent"));
+            playRecordingService.saveHistory(file, userId, request.getHeader("user-agent"));
             return true;
         }
         // TODO 修改为非会员可以重复观看这几个视频
         if (webSettingCache.getWebSettingEntity().getOpenNoVipLimit() == 1) {
             if (playRecordingService.todayPlayCount(userId) <= webSettingCache.getWebSettingEntity().getNoVipViewCount()) {
-                playRecordingService.saveHistory(file, user, request.getHeader("user-agent"));
+                playRecordingService.saveHistory(file, userId, request.getHeader("user-agent"));
                 return true;
             }
             return false;
         } else {
-            playRecordingService.saveHistory(file, user, request.getHeader("user-agent"));
+            playRecordingService.saveHistory(file, userId, request.getHeader("user-agent"));
             return true;
         }
     }

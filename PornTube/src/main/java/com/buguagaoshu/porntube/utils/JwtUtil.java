@@ -1,6 +1,7 @@
 package com.buguagaoshu.porntube.utils;
 
 
+import com.buguagaoshu.porntube.config.WebConstant;
 import com.buguagaoshu.porntube.service.impl.UserServiceImpl;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -18,12 +19,6 @@ import java.util.Date;
  */
 @Slf4j
 public class JwtUtil {
-    public final static String SECRET_KEY = "adfads@44$q232343#";
-
-    public final static String ROLE_KEY = "authorities";
-
-    public final static String VIP_STOP_TIME_KEY = "vipStopTime";
-
 
     public static String createJwt(String email, String userId, String role, long expirationTime, Long stopTime) {
         if (stopTime == null) {
@@ -34,12 +29,12 @@ public class JwtUtil {
                 .setSubject(email)
                 .setId(userId)
                 // 设置用户权限
-                .claim(ROLE_KEY, role)
-                .claim(VIP_STOP_TIME_KEY, stopTime)
+                .claim(WebConstant.ROLE_KEY, role)
+                .claim(WebConstant.VIP_STOP_TIME_KEY, stopTime)
                 // 过期时间
                 .setExpiration(new Date(expirationTime))
                 // 签名算法
-                .signWith(SignatureAlgorithm.HS512, SECRET_KEY)
+                .signWith(SignatureAlgorithm.HS512, WebConstant.SECRET_KEY)
                 .compact();
         return jwt;
     }
@@ -48,13 +43,13 @@ public class JwtUtil {
 
 
     public static Claims getUser(HttpServletRequest request) {
-        Cookie cookie = WebUtils.getCookie(request, UserServiceImpl.COOKIE_TOKEN);
+        Cookie cookie = WebUtils.getCookie(request, WebConstant.COOKIE_TOKEN);
         String token = cookie != null ? cookie.getValue() : null;
 
         if (token != null) {
             try {
                 return Jwts.parser()
-                        .setSigningKey(SECRET_KEY)
+                        .setSigningKey(WebConstant.SECRET_KEY)
                         .parseClaimsJws(token)
                         .getBody();
             } catch (Exception e) {
@@ -70,8 +65,8 @@ public class JwtUtil {
     public static void main(String[] args) {
         String jwt = "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiIxMjM0NTZAcXEuY29tIiwianRpIjoiOCIsImF1dGhvcml0aWVzIjoiUk9MRV9VU0VSIiwidmlwU3RvcFRpbWUiOi0xLCJleHAiOjE1OTk3NjAyNzR9.z8V_8vFGwmRfM4JolaSKfahpqbIlq4RxXwpjEnWVa2Cq5WBpm4tEmMnXB14uNz-COwGymAPnqAYH-U3nLV1q-g";
         System.out.println(Jwts.parser()
-                .setSigningKey(SECRET_KEY)
+                .setSigningKey(WebConstant.SECRET_KEY)
                 .parseClaimsJws(jwt)
-                .getBody().get(ROLE_KEY));
+                .getBody().get(WebConstant.ROLE_KEY));
     }
 }

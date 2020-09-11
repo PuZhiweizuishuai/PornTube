@@ -1,14 +1,17 @@
 package com.buguagaoshu.porntube.file;
 
+import com.buguagaoshu.porntube.config.WebConstant;
 import com.buguagaoshu.porntube.entity.FileTableEntity;
 import com.buguagaoshu.porntube.enums.FileTypeEnum;
 import com.buguagaoshu.porntube.repository.FileRepository;
 import com.buguagaoshu.porntube.service.ArticleService;
 import com.buguagaoshu.porntube.service.FileTableService;
+import com.buguagaoshu.porntube.utils.AesUtil;
 import com.buguagaoshu.porntube.utils.JwtUtil;
 import com.buguagaoshu.porntube.vo.ResponseDetails;
 import com.buguagaoshu.porntube.vo.VditorFiles;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
@@ -21,6 +24,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import java.io.FileNotFoundException;
 import java.nio.file.Path;
@@ -35,6 +39,7 @@ import java.nio.file.Path;
  * 异常， 目前还没有找到解决方案
  * 只能先把这个 FileController 从 controller 包中拿出来了。
  */
+@Slf4j
 @Controller
 public class FileController {
 
@@ -45,6 +50,7 @@ public class FileController {
     private final FileTableService fileTableService;
 
     private final ResourceLoader resourceLoader;
+
 
     @Autowired
     public FileController(FileRepository fileRepository, ArticleService articleService, FileTableService fileTableService, ResourceLoader resourceLoader) {
@@ -108,7 +114,7 @@ public class FileController {
     @GetMapping("/api/upload/file/{date}/{filename:.+}")
     public ResponseEntity get(@PathVariable(value = "date") String date,
                                       @PathVariable(value = "filename") String filename,
-                                      @RequestParam(value = "id", required = false) Long id,
+                                      @RequestParam(value = "key", required = false) String key,
                                       HttpServletRequest request) {
         try {
             Path path = fileRepository.load(date + "/" + filename);
@@ -116,36 +122,61 @@ public class FileController {
             String contentType = request.getServletContext().getMimeType(resource.getFile().getAbsolutePath());
             HttpHeaders httpHeaders = new HttpHeaders();
             httpHeaders.add(HttpHeaders.CONTENT_TYPE, contentType);
-            // TODO 写入播放次数，限制非会员播放
+            // TODO 优化在使用安卓版 Edge 在播放视频时，多次循环请求接口，导致多次查询数据库的的问题
+            // TODO 优化判断逻辑
+            // TODO 拆分函数
             // 判断是否是视频
             if (FileTypeEnum.getFileType(FileTypeEnum.getFileSuffix(filename)).equals(FileTypeEnum.VIDEO)) {
-
-                FileTableEntity tableEntity = fileTableService.findFileByFilename(filename);
-                if (tableEntity == null) {
+                FileTableEntity fileTableEntity = fileTableService.findFileByFilename(filename);
+                if (fileTableEntity == null) {
                     return null;
                 }
-                if (tableEntity.getArticleId() == null) {
+                // 非视频区投稿视频直接放行
+                if (fileTableEntity.getArticleId() == null) {
                     return ResponseEntity
                             .status(HttpStatus.OK)
                             .headers(httpHeaders)
                             .body(resource);
                 }
-                if (id == null) {
+                // 视频文件 key 错误直接返回 null
+                if (key == null) {
                     return null;
                 }
-                if (articleService.hasThisVideoPlayPower(tableEntity, request) && id.equals(tableEntity.getId())) {
+                String originalText = AesUtil.decrypt(key, WebConstant.AES_KEY);
+                if (originalText == null) {
+                    return null;
+                }
+                // 第一个值是用户ID，如果访问时没有登录，则这个值是 -1
+                // 第二个值是文件ID，进行文件查找
+                // 第三个值是过期时间
+                String[] msg = originalText.split("#");
+                Long userId = Long.parseLong(msg[0]);
+                Long fileId = Long.parseLong(msg[1]);
+                Long expire = Long.parseLong(msg[2]);
+                // 先进行过期时间的判断
+                if (System.currentTimeMillis() > Long.parseLong(msg[2])) {
+                    log.warn("用户 {} 访问文件id为 {} 的的文件时，使用的 key {} 已过期!", msg[0], msg[1], key);
+                    return null;
+                }
+                // 解析出的文件ID不同，则返回null
+                if (!fileTableEntity.getId().equals(fileId)) {
+                    return null;
+                }
+                if (articleService.hasThisVideoPlayPower(fileTableEntity, userId, request)) {
                     return ResponseEntity
                             .status(HttpStatus.OK)
                             .headers(httpHeaders)
                             .body(resource);
+                } else {
+                    return null;
                 }
-                return null;
             }
             return ResponseEntity
                     .status(HttpStatus.OK)
                     .headers(httpHeaders)
                     .body(resource);
         } catch (Exception e) {
+            System.out.println(e.getMessage());
             return ResponseEntity
                     .status(HttpStatus.NOT_FOUND)
                     .body(e.getMessage());

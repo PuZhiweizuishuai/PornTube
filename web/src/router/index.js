@@ -168,6 +168,14 @@ const routes = [
     meta: {
       title: '登录'
     }
+  },
+  {
+    path: '*',
+    name: '404',
+    component: () => import('@/views/404.vue'),
+    meta: {
+      title: '404'
+    }
   }
 
 ]
@@ -206,34 +214,31 @@ router.beforeEach((to, from, next) => {
     router.app.$options.store.state.userInfo.userRoleEntity.role = 'ROLE_USER'
     router.app.$options.store.commit('setUserInfo', router.app.$options.store.state.userInfo)
   }
-  if (to.meta.requireAuth) {
-    const date = new Date().getTime()
-    if (router.app.$options.store.state.userInfo != null) {
-      if (router.app.$options.store.state.userInfo.expireTime > date) {
-        // console.log(to.path)
-      // TODO 登录后不能访问登录界面
-        // if (to.path === '/login') {
-        //   return next({ path: '/' })
-        // }
-        // TODO TEST
-        // 如果VIP到期，更新VIP数据
 
-        return next()
-      } else {
-        router.app.$options.store.commit('setUserInfo', null)
-        return next({
-          path: '/login',
-          query: { redirect: to.fullPath }
-        })
+  const date = new Date().getTime()
+  if (router.app.$options.store.state.userInfo != null) {
+    // console.log(router.app.$options.store.state.userInfo.expireTime > date, router.app.$options.store.state.userInfo.expireTime, date)
+    if (router.app.$options.store.state.userInfo.expireTime > date) {
+      if (to.path === '/login') {
+        return next({ path: '/' })
       }
+      return next()
     } else {
+      router.app.$options.store.commit('setUserInfo', null)
       return next({
         path: '/login',
         query: { redirect: to.fullPath }
       })
     }
   } else {
-    return next()
+    if (to.meta.requireAuth) {
+      return next({
+        path: '/login',
+        query: { redirect: to.fullPath }
+      })
+    } else {
+      return next()
+    }
   }
 })
 

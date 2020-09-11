@@ -1,5 +1,6 @@
 package com.buguagaoshu.porntube.service.impl;
 
+import com.buguagaoshu.porntube.config.WebConstant;
 import com.buguagaoshu.porntube.dto.LoginDetails;
 import com.buguagaoshu.porntube.dto.PasswordDto;
 import com.buguagaoshu.porntube.entity.InvitationCodeEntity;
@@ -34,7 +35,7 @@ import javax.servlet.http.HttpServletResponse;
 
 @Service("userService")
 public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements UserService {
-    public static final String COOKIE_TOKEN = "COOKIE-TOKEN";
+
     /**
      * 未设置记住我时 token 过期时间
      */
@@ -118,7 +119,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
             user.setPassword("");
             jwt = JwtUtil.createJwt(userEntity.getMail(), String.valueOf(userEntity.getId()), userRoleEntity.getRole(), expirationTime, userRoleEntity.getVipStopTime());
             // 传递 token
-            Cookie cookie = new Cookie(COOKIE_TOKEN, jwt);
+            Cookie cookie = new Cookie(WebConstant.COOKIE_TOKEN, jwt);
             cookie.setHttpOnly(true);
             cookie.setPath("/");
             cookie.setMaxAge(cookExpirationTime);
@@ -247,7 +248,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
             newUser.setPassword(PasswordUtil.encode(passwordDto.getNewPassword()));
 
             this.updateById(newUser);
-            Cookie cookie = WebUtils.getCookie(request, COOKIE_TOKEN);
+            Cookie cookie = WebUtils.getCookie(request, WebConstant.COOKIE_TOKEN);
             cookie.setValue(null);
             cookie.setHttpOnly(true);
             cookie.setPath("/");

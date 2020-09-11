@@ -21,7 +21,11 @@ mybatis-plus:
 
 
 logging:
+  file.max-history: 7
+  file.max-size: 1MB
   level:
     com:
       buguagaoshu:
-        porntub: debug
+        porntube: debug
+  file:
+    name: log/spring.log

@@ -1,5 +1,6 @@
 package com.buguagaoshu.porntube.controller;
 
+import com.buguagaoshu.porntube.config.WebConstant;
 import com.buguagaoshu.porntube.dto.LoginDetails;
 import com.buguagaoshu.porntube.dto.PasswordDto;
 import com.buguagaoshu.porntube.entity.UserEntity;
@@ -46,7 +47,7 @@ public class UserController {
 
     @GetMapping("/api/logout")
     public ResponseDetails logout(HttpServletRequest request, HttpServletResponse response) {
-        Cookie cookie = WebUtils.getCookie(request, UserServiceImpl.COOKIE_TOKEN);
+        Cookie cookie = WebUtils.getCookie(request, WebConstant.COOKIE_TOKEN);
         if (cookie == null) {
             return ResponseDetails.ok(0, "没有登录");
         }

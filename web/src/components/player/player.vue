@@ -38,7 +38,7 @@ export default {
         lang: 'zh-cn',
         screenshot: true,
         video: {
-          url: this.videoData.fileUrl + '?id=' + this.videoData.id,
+          url: this.videoData.fileUrl + '?key=' + encodeURIComponent(this.videoData.key), // 'https://api.dogecloud.com/player/get.mp4?vcode=5ac682e6f8231991&userId=17&ext=.mp4',
           pic: this.pic
         },
         logo: '/logo.png',

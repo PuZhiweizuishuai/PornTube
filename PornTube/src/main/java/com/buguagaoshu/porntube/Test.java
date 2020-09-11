@@ -1,6 +1,7 @@
 package com.buguagaoshu.porntube;
 
 import com.buguagaoshu.porntube.enums.FileTypeEnum;
+import com.buguagaoshu.porntube.utils.PasswordUtil;
 
 /**
  * @author Pu Zhiwei {@literal puzhiweipuzhiwei@foxmail.com}
@@ -8,6 +9,6 @@ import com.buguagaoshu.porntube.enums.FileTypeEnum;
  */
 public class Test {
     public static void main(String[] args) {
-        System.out.println(Long.toHexString(15024726));
+        System.out.println(PasswordUtil.encode("1"));
     }
 }

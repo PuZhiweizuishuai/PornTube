@@ -68,11 +68,10 @@ public class WebConfig implements WebMvcConfigurer {
 //                .excludePathPatterns("/api/login", "/api/register", "/api/verifyImage");
         registry.addInterceptor(loginInterceptor)
                 .addPathPatterns("/api/**")
-                .excludePathPatterns("/api/login", "/api/register", "/api/verifyImage", "/api/web/info");
+                .excludePathPatterns("/api/login", "/api/register", "/api/verifyImage", "/api/web/info", "/api/upload/file/**");
 
         registry.addInterceptor(adminInterceptor)
                 .addPathPatterns("/api/admin/**");
-
     }
 
     @Bean

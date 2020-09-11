@@ -17,7 +17,7 @@ public enum ReturnCodeEnum {
     SYSTEM_ERROR(500, "系统异常，请重试"),
 
     USER_ALREADY_EXISTS(1000, "用户已经存在！"),
-    USER_NOT_FIND(1001, "用户不存在！"),
+    USER_NOT_FIND(1001, "请检查用户名或密码！"),
     USER_EMAIL_ALREADY_EXISTS(1002, "邮箱已被使用"),
     USER_ROLE_BAD(1003, "权限设置错误！"),
     USER_LOCK_TYPE_BAD(1004, "账号锁定或禁言类型错误"),

@@ -136,8 +136,7 @@ public class PlayRecordingServiceImpl extends ServiceImpl<PlayRecordingDao, Play
     }
 
     @Override
-    public void saveHistory(FileTableEntity file, Claims user, String ua) {
-        long userId = Long.parseLong(user.getId());
+    public void saveHistory(FileTableEntity file, Long userId, String ua) {
         long time = System.currentTimeMillis();
         PlayRecordingEntity playRecordingEntity = findPlayRecordingEntityByArticleIdAndVideoId(file.getArticleId(), file.getId(), userId);
         if (playRecordingEntity != null) {
