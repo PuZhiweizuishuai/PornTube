@@ -215,7 +215,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         wrapper.eq("status", ArticleStatusEnum.NORMAL.getCode());
         // 非管理员添加审核条件
         boolean flag = true;
-        if (user != null && RoleTypeEnum.ADMIN.getRole().equals(user.get("authorities"))) {
+        if (user != null && RoleTypeEnum.ADMIN.getRole().equals(user.get(WebConstant.ROLE_KEY))) {
             flag = false;
         }
         long userId = -1;
@@ -262,7 +262,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         CategoryEntity categoryEntity = categoryCache.getCategoryEntityMap().get(articleEntity.getCategory());
         articleViewData.setChildrenCategory(categoryEntity);
         if (categoryEntity.getFatherId() != 0) {
-            CategoryEntity f = categoryCache.getCategoryEntities().get(categoryEntity.getFatherId());
+            CategoryEntity f = categoryCache.getCategoryEntityMap().get(categoryEntity.getFatherId());
             articleViewData.setFatherCategory(f);
         }
         articleViewData.setIsShow(true);
