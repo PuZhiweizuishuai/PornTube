@@ -51,7 +51,7 @@
             v-on="on"
             @click="goToPublish"
           >
-            <v-icon>mdi-video</v-icon>
+            <v-icon>mdi-video-plus</v-icon>
           </v-btn>
         </template>
         <span>发布</span>
@@ -63,7 +63,7 @@
             v-bind="attrs"
             v-on="on"
           >
-            <v-icon>mdi-video-plus</v-icon>
+            <v-icon>mdi-bell</v-icon>
           </v-btn>
         </template>
         <span>通知</span>

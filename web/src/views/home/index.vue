@@ -48,7 +48,7 @@ export default {
     return {
       videoList: [],
       page: 1,
-      size: 20,
+      size: 24,
       length: 0
     }
   },

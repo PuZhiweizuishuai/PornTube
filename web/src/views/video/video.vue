@@ -137,7 +137,7 @@ export default {
   created() {
     this.id = this.$route.params.id
     this.videoInfo()
-    this.windowSize = { x: window.innerWidth, y: window.innerHeight }
+    this.onResize()
   },
   methods: {
     // 控制页面大小

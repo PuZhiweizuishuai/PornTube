@@ -19,6 +19,11 @@
 
 <img src="http://p.ananas.chaoxing.com/star3/origin/a093b1ef4a410eea6bd616a2e985ac97.png" title="首页" alt="首页">
 
+## Video Page
+
+<img src="http://p.ananas.chaoxing.com/star3/origin/9d4efd81781cc3a8cf78c788b0cfc8f4.png" title="播放页" alt="播放页">
+
+
 ### history
 
 <img src="http://p.ananas.chaoxing.com/star3/origin/496e8f398667a6238ffd2fa734e01a5e.png" title="历史记录" alt="历史记录">

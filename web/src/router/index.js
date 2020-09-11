@@ -58,6 +58,22 @@ const routes = [
         }
       },
       {
+        path: '/vip',
+        name: 'VIP',
+        component: () => import('@/views/vip/index.vue'),
+        meta: {
+          title: 'VIP'
+        }
+      },
+      {
+        path: '/vip/pay',
+        name: 'VipPay',
+        component: () => import('@/views/vip/pay.vue'),
+        meta: {
+          title: 'VIP'
+        }
+      },
+      {
         path: '/user/:id',
         name: 'User',
         component: () => import('@/views/user/index.vue'),
@@ -186,6 +202,10 @@ router.beforeEach((to, from, next) => {
   if (to.meta.title) {
     document.title = to.meta.title
   }
+  if (checkPower.updateUserRole(router.app.$options.store.state.userInfo)) {
+    router.app.$options.store.state.userInfo.userRoleEntity.role = 'ROLE_USER'
+    router.app.$options.store.commit('setUserInfo', router.app.$options.store.state.userInfo)
+  }
   if (to.meta.requireAuth) {
     const date = new Date().getTime()
     if (router.app.$options.store.state.userInfo != null) {
@@ -197,10 +217,7 @@ router.beforeEach((to, from, next) => {
         // }
         // TODO TEST
         // 如果VIP到期，更新VIP数据
-        if (checkPower.updateUserRole(router.app.$options.store.state.userInfo)) {
-          router.app.$options.store.state.userInfo.userRoleEntity.role = 'ROLE_USER'
-          router.app.$options.store.commit('setUserInfo', router.app.$options.store.state.userInfo)
-        }
+
         return next()
       } else {
         router.app.$options.store.commit('setUserInfo', null)

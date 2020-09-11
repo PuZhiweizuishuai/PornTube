@@ -48,7 +48,8 @@ export default {
       headItem: [
         { icon: 'mdi-account', text: '个人主页', link: '/user/', id: 0 },
         { icon: 'mdi-cash-usd', text: '付费会员', link: '/vip', id: 3 },
-        { icon: 'mdi-wrench', text: '创作中心', link: '/studio', id: 1 },
+        { icon: 'mdi-application', text: '创作中心', link: '/studio', id: 1 },
+        { icon: 'mdi-wrench', text: '自定义频道', link: '/user/setting', id: 4 },
         { icon: 'mdi-logout', text: '退出', link: '/logout', id: 2 }
       ]
     }
@@ -68,6 +69,12 @@ export default {
         this.$router.push('/studio')
       } else if (value === 3) {
         this.$router.push('/vip')
+      } else if (value === 4) {
+        if (this.$route.path === '/user/setting') {
+          return
+        }
+        this.$router.push('/user/setting')
+        // location.replace('/user/setting')
       } else {
         this.logout()
       }

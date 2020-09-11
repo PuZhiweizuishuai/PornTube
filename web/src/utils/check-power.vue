@@ -6,7 +6,7 @@ function checkPower(userInfo) {
   }
   if (userInfo.userRoleEntity.role === 'ROLE_VIP') {
     if (userInfo.userRoleEntity.vipStopTime < new Date().getTime()) {
-      return 'vip_stop'
+      return 'user'
     }
     return 'vip'
   }
@@ -15,7 +15,23 @@ function checkPower(userInfo) {
   }
 }
 
+function checkVip(userInfo) {
+  if (userInfo.userRoleEntity.role === 'ROLE_VIP') {
+    if (userInfo.userRoleEntity.vipStopTime < new Date().getTime()) {
+      return false
+    }
+    return true
+  }
+  if (userInfo.userRoleEntity.role === 'ROLE_ADMIN') {
+    return true
+  }
+  return false
+}
+
 function updateUserRole(userInfo) {
+  if (userInfo === null) {
+    return false
+  }
   if (userInfo.userRoleEntity.role === 'ROLE_VIP' && userInfo.userRoleEntity.vipStopTime < new Date().getTime()) {
     return true
   }
@@ -24,6 +40,7 @@ function updateUserRole(userInfo) {
 
 export default {
   checkPower,
-  updateUserRole
+  updateUserRole,
+  checkVip
 }
 </script>
