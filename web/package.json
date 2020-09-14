@@ -16,6 +16,7 @@
     "filepond-plugin-image-edit": "^1.6.1",
     "filepond-plugin-image-exif-orientation": "^1.0.9",
     "filepond-plugin-image-preview": "^4.6.4",
+    "hls.js": "^0.14.12",
     "vue": "^2.6.12",
     "vue-cookies": "^1.7.4",
     "vue-filepond": "^6.0.2",

@@ -149,6 +149,7 @@ public class FileController {
                 // 第一个值是用户ID，如果访问时没有登录，则这个值是 -1
                 // 第二个值是文件ID，进行文件查找
                 // 第三个值是过期时间
+                // 第四个是文件名
                 String[] msg = originalText.split("#");
                 Long userId = Long.parseLong(msg[0]);
                 Long fileId = Long.parseLong(msg[1]);

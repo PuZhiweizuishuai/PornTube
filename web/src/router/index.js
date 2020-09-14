@@ -78,7 +78,14 @@ const routes = [
         name: 'User',
         component: () => import('@/views/user/index.vue'),
         meta: { title: '个人主页' }
+      },
+      {
+        path: '/live',
+        name: 'live',
+        component: () => import('@/views/live/index.vue'),
+        meta: { title: '直播' }
       }
+
     ]
   },
   {

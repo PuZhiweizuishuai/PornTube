@@ -4,7 +4,7 @@
 
 <script>
 import DPlayer from 'dplayer'
-
+const Hls = require('hls.js')
 export default {
   name: 'Play',
   props: {
@@ -23,12 +23,14 @@ export default {
   },
   data() {
     return {
+      Hls,
       videoData: this.video,
       pic: this.picurl,
       id: this.article
     }
   },
   mounted() {
+    console.log(this.videoData.sub)
     this.init()
   },
   methods: {

@@ -247,7 +247,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         List<FileTableEntity> video = fileTableService.findArticleVideo(id);
         long time = System.currentTimeMillis();
         for (FileTableEntity f : video) {
-            f.setKey(AesUtil.encrypt(userId + "#" + f.getId() + "#" + (time + WebConstant.KEY_EXPIRY_DATE), WebConstant.AES_KEY));
+            f.setKey(AesUtil.encrypt(userId + "#" + f.getId() + "#" + (time + WebConstant.KEY_EXPIRY_DATE) + "#" + f.getFileNewName(), WebConstant.AES_KEY));
         }
         articleViewData.setVideo(video);
 
