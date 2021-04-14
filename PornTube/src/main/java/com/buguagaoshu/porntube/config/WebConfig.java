@@ -68,7 +68,16 @@ public class WebConfig implements WebMvcConfigurer {
 //                .excludePathPatterns("/api/login", "/api/register", "/api/verifyImage");
         registry.addInterceptor(loginInterceptor)
                 .addPathPatterns("/api/**")
-                .excludePathPatterns("/api/login", "/api/register", "/api/verifyImage", "/api/web/info", "/api/upload/file/**");
+                .excludePathPatterns(
+                    "/api/login", 
+                    "/api/register", 
+                    "/api/verifyImage", 
+                    "/api/web/info",
+                    "/api/article/**", 
+                    "/api/category/list",
+                    "/api/danmaku/v3",
+                    "/api/upload/file/**"
+                );
 
         registry.addInterceptor(adminInterceptor)
                 .addPathPatterns("/api/admin/**");
