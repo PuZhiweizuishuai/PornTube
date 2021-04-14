@@ -9,8 +9,7 @@ import com.buguagaoshu.porntube.dto.VideoArticleDto;
 import com.buguagaoshu.porntube.entity.*;
 import com.buguagaoshu.porntube.enums.*;
 import com.buguagaoshu.porntube.service.*;
-import com.buguagaoshu.porntube.utils.AesUtil;
-import com.buguagaoshu.porntube.utils.JwtUtil;
+import com.buguagaoshu.porntube.utils.*;
 import com.buguagaoshu.porntube.vo.ArticleViewData;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,8 +28,6 @@ import java.util.stream.Collectors;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.buguagaoshu.porntube.utils.PageUtils;
-import com.buguagaoshu.porntube.utils.Query;
 
 import com.buguagaoshu.porntube.dao.ArticleDao;
 import org.springframework.transaction.annotation.Transactional;
@@ -345,18 +342,18 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         String role = userRoleEntity.getRole();
         // 如果是管理员或VIP，则只记录播放信息，不记录播放次数
         if (RoleTypeEnum.ADMIN.getRole().equals(role) || RoleTypeEnum.VIP.getRole().equals(role)) {
-            playRecordingService.saveHistory(file, userId, request.getHeader("user-agent"));
+            playRecordingService.saveHistory(file, userId, IpUtil.getUa(request));
             return true;
         }
         // TODO 修改为非会员可以重复观看这几个视频
         if (webSettingCache.getWebSettingEntity().getOpenNoVipLimit() == 1) {
             if (playRecordingService.todayPlayCount(userId) <= webSettingCache.getWebSettingEntity().getNoVipViewCount()) {
-                playRecordingService.saveHistory(file, userId, request.getHeader("user-agent"));
+                playRecordingService.saveHistory(file, userId, IpUtil.getUa(request));
                 return true;
             }
             return false;
         } else {
-            playRecordingService.saveHistory(file, userId, request.getHeader("user-agent"));
+            playRecordingService.saveHistory(file, userId, IpUtil.getUa(request));
             return true;
         }
     }

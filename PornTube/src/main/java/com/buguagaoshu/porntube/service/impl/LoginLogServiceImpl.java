@@ -41,7 +41,7 @@ public class LoginLogServiceImpl extends ServiceImpl<LoginLogDao, LoginLogEntity
         loginLogEntity.setUserid(userEntity.getId());
         loginLogEntity.setIp(IpUtil.getIpAddr(request));
         loginLogEntity.setLoginTime(System.currentTimeMillis());
-        loginLogEntity.setUa(request.getHeader("user-agent"));
+        loginLogEntity.setUa(IpUtil.getUa(request));
         save(loginLogEntity);
     }
 
