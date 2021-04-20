@@ -50,7 +50,7 @@ CREATE TABLE `article`  (
   INDEX `find_video_by_user`(`user_id`) USING BTREE,
   INDEX `find_video_by_type`(`type`) USING BTREE,
   INDEX `find_video_by_tag`(`tag`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 199 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '视频，图片，文章 发帖表\r\n\r\nTODO 回复消息可见，加密帖子，视频等' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '视频，图片，文章 发帖表\r\n\r\nTODO 回复消息可见，加密帖子，视频等' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for category
@@ -67,7 +67,7 @@ CREATE TABLE `category`  (
   `create_time` bigint NOT NULL,
   `update_time` bigint NOT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 13 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for comment
@@ -110,7 +110,7 @@ CREATE TABLE `danmaku`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `find_danmaku_by_vido_id`(`video_id`) USING BTREE,
   INDEX `find_danmaku_by_userID`(`video_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 55 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '弹幕表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '弹幕表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for dislike_table
@@ -161,7 +161,7 @@ CREATE TABLE `file_table`  (
   INDEX `find_file_by_userid`(`upload_user_id`) USING BTREE,
   INDEX `find_file_by_type`(`type`) USING BTREE,
   INDEX `find_file_suffix`(`suffix_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 838 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '文件表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '文件表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for invitation_code
@@ -177,7 +177,7 @@ CREATE TABLE `invitation_code`  (
   `use_time` bigint NULL DEFAULT NULL COMMENT '使用时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `find_code_by_code`(`code`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for like_table
@@ -207,7 +207,7 @@ CREATE TABLE `login_log`  (
   `userId` bigint NOT NULL COMMENT '登录用户ID',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `find_user_log_by_id_index`(`userId`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 27 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for notification
@@ -246,7 +246,7 @@ CREATE TABLE `play_recording`  (
   INDEX `find_play_by_user_id`(`user_id`) USING BTREE,
   INDEX `find_play_by_artice`(`article_id`) USING BTREE,
   INDEX `find_play_by_vido`(`user_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '播放记录' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '播放记录' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for temp_file
@@ -283,7 +283,7 @@ CREATE TABLE `user`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `find_user_by_mail_index`(`mail`) USING BTREE COMMENT '使用邮箱查找用户',
   INDEX `find_user_by_phone_index`(`phone`) USING BTREE COMMENT '使用手机号查找用户'
-) ENGINE = InnoDB AUTO_INCREMENT = 11 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for user_role
@@ -299,7 +299,7 @@ CREATE TABLE `user_role`  (
   `vip_stop_time` bigint NULL DEFAULT NULL,
   `modified` bigint NOT NULL COMMENT '修改人',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for web_setting
@@ -318,7 +318,7 @@ CREATE TABLE `web_setting`  (
   `create_time` bigint NOT NULL COMMENT '创建时间',
   `home_max_video_count` int NOT NULL DEFAULT 50 COMMENT '首页最大显示数',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
