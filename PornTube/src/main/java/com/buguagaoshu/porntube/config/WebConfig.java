@@ -76,6 +76,7 @@ public class WebConfig implements WebMvcConfigurer {
                     "/api/article/**", 
                     "/api/category/list",
                     "/api/danmaku/v3",
+                    "/api/danmaku/v3/**",
                     "/api/upload/file/**"
                 );
 
