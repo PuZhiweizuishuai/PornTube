@@ -334,28 +334,36 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
 
     @Override
     public Boolean hasThisVideoPlayPower(FileTableEntity file, Long userId, HttpServletRequest request) {
-        // TODO 暂时设计为不登陆无法观看
+        // TODO 取消不登录无法观看
         if (userId == -1) {
-            return false;
-        }
-        UserRoleEntity userRoleEntity = userRoleService.findByUserId(userId);
-        String role = userRoleEntity.getRole();
-        // 如果是管理员或VIP，则只记录播放信息，不记录播放次数
-        if (RoleTypeEnum.ADMIN.getRole().equals(role) || RoleTypeEnum.VIP.getRole().equals(role)) {
-            playRecordingService.saveHistory(file, userId, IpUtil.getUa(request));
             return true;
         }
-        // TODO 修改为非会员可以重复观看这几个视频
-        if (webSettingCache.getWebSettingEntity().getOpenNoVipLimit() == 1) {
-            if (playRecordingService.todayPlayCount(userId) <= webSettingCache.getWebSettingEntity().getNoVipViewCount()) {
-                playRecordingService.saveHistory(file, userId, IpUtil.getUa(request));
-                return true;
-            }
-            return false;
-        } else {
-            playRecordingService.saveHistory(file, userId, IpUtil.getUa(request));
-            return true;
+        long result = playRecordingService.saveHistory(file, userId, IpUtil.getUa(request));
+        if (result != 0) {
+            this.addViewCount(result, 1L);
         }
+        return true;
+//        if (userId == -1) {
+//            return false;
+//        }
+//        UserRoleEntity userRoleEntity = userRoleService.findByUserId(userId);
+//        String role = userRoleEntity.getRole();
+//        // 如果是管理员或VIP，则只记录播放信息，不记录播放次数
+//        if (RoleTypeEnum.ADMIN.getRole().equals(role) || RoleTypeEnum.VIP.getRole().equals(role)) {
+//            playRecordingService.saveHistory(file, userId, IpUtil.getUa(request));
+//            return true;
+//        }
+//        // TODO 修改为非会员可以重复观看这几个视频
+//        if (webSettingCache.getWebSettingEntity().getOpenNoVipLimit() == 1) {
+//            if (playRecordingService.todayPlayCount(userId) <= webSettingCache.getWebSettingEntity().getNoVipViewCount()) {
+//                playRecordingService.saveHistory(file, userId, IpUtil.getUa(request));
+//                return true;
+//            }
+//            return false;
+//        } else {
+//            playRecordingService.saveHistory(file, userId, IpUtil.getUa(request));
+//            return true;
+//        }
     }
 
     @Override

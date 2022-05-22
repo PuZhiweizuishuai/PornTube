@@ -7,7 +7,7 @@ spring:
   datasource:
     driverClassName: com.mysql.cj.jdbc.Driver
     # 192.168.43.128
-    url: jdbc:mysql://192.168.43.128:3306/porn_tube?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://192.168.47.129:3306/porn_tube?useUnicode=true&characterEncoding=UTF-8
     username: root
     password: 123456
   servlet:
@@ -21,11 +21,12 @@ mybatis-plus:
 
 
 logging:
-  file.max-history: 7
-  file.max-size: 1MB
   level:
     com:
       buguagaoshu:
         porntube: debug
   file:
     name: log/spring.log
+  logback:
+    rollingpolicy:
+      max-history: 7

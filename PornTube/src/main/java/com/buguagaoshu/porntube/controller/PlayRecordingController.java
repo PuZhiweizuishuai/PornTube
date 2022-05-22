@@ -1,6 +1,7 @@
 package com.buguagaoshu.porntube.controller;
 
 import com.buguagaoshu.porntube.service.PlayRecordingService;
+import com.buguagaoshu.porntube.service.PlayRecordingWithArticleService;
 import com.buguagaoshu.porntube.vo.ResponseDetails;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,16 +17,16 @@ import java.util.Map;
  */
 @RestController
 public class PlayRecordingController {
-    private final PlayRecordingService playRecordingService;
+    private final PlayRecordingWithArticleService playRecordingWithArticleService;
 
     @Autowired
-    public PlayRecordingController(PlayRecordingService playRecordingService) {
-        this.playRecordingService = playRecordingService;
+    public PlayRecordingController(PlayRecordingWithArticleService playRecordingWithArticleService) {
+        this.playRecordingWithArticleService = playRecordingWithArticleService;
     }
 
     @GetMapping("/api/user/playrecording/list")
     public ResponseDetails list(@RequestParam Map<String, Object> params,
                                 HttpServletRequest request) {
-        return ResponseDetails.ok().put("data", playRecordingService.queryPage(params, request));
+        return ResponseDetails.ok().put("data", playRecordingWithArticleService.playRecordingList(params, request));
     }
 }

@@ -1,5 +1,6 @@
 package com.buguagaoshu.porntube.service;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.buguagaoshu.porntube.entity.FileTableEntity;
 import com.buguagaoshu.porntube.utils.PageUtils;
@@ -21,9 +22,9 @@ import java.util.Set;
 public interface PlayRecordingService extends IService<PlayRecordingEntity> {
 
     /**
-     * 获取历史记录分页查询
+     * 获取历史记录
      * */
-    PageUtils queryPage(Map<String, Object> params, HttpServletRequest request);
+    IPage<PlayRecordingEntity> queryPage(Map<String, Object> params, HttpServletRequest request);
 
 
     /**
@@ -33,8 +34,10 @@ public interface PlayRecordingService extends IService<PlayRecordingEntity> {
 
     /**
      * 保存播放记录
+     * @return ArticleId 需要增加播放量
+     *         0 不需要增加
      * */
-    void saveHistory(FileTableEntity file, Long userId, String ua);
+    long saveHistory(FileTableEntity file, Long userId, String ua);
 
     /**
      * 今日播放历史记录列表

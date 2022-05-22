@@ -55,6 +55,10 @@ public class IpUtil {
         if (StringUtils.isEmpty(ua)) {
             return "未知设备";
         }
+        // 避免 UA 过长插入失败
+        if(ua.length() > 255) {
+            return ua.substring(0, 254);
+        }
         return ua;
     }
 }

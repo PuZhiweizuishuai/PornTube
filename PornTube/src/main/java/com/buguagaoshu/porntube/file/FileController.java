@@ -156,7 +156,7 @@ public class FileController {
                 Long fileId = Long.parseLong(msg[1]);
                 Long expire = Long.parseLong(msg[2]);
                 // 先进行过期时间的判断
-                if (System.currentTimeMillis() > Long.parseLong(msg[2])) {
+                if (System.currentTimeMillis() >expire) {
                     log.warn("用户 {} 访问文件id为 {} 的的文件时，使用的 key {} 已过期!", msg[0], msg[1], key);
                     return null;
                 }
