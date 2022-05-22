@@ -26,16 +26,20 @@ export default {
       Hls,
       videoData: this.video,
       pic: this.picurl,
-      id: this.article
+      id: this.article,
+      dp: null
     }
   },
   mounted() {
     console.log(this.videoData.sub)
     this.init()
+    // setInterval(() => {
+    //   console.log(this.dp.video.currentTime)
+    // }, 3000)
   },
   methods: {
     init() {
-      new DPlayer({
+      this.dp = new DPlayer({
         container: document.querySelector('#dplayer'),
         lang: 'zh-cn',
         screenshot: true,

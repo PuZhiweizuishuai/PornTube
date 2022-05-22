@@ -7,6 +7,7 @@
         </v-col>
       </v-row>
     </v-container>
+    <v-col />
     <v-container fill-height style="padding-top: 0px;">
       <v-row v-resize="onResize" no-gutters>
         <v-col :cols="colsWidth">
@@ -54,6 +55,7 @@
               <span v-text="videoData.describes" />
             </v-col>
           </v-row>
+          <v-col />
           <v-divider />
           <v-row>
             <v-col>
@@ -99,6 +101,7 @@
 
         </v-col>
       </v-row>
+      <v-col />
       <v-row>
         <v-col :cols="colsWidth">
           <Comment :count="videoData.commentCount" />
