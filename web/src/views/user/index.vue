@@ -9,7 +9,9 @@
 
     </v-container>
     <v-container fill-height>
-      <v-row align="center">
+
+      <v-row align="center" style="padding-top: 12px; padding-bottom: 12px">
+
         <v-col
           cols="12"
           md="8"

@@ -60,8 +60,8 @@ public class FileController {
         this.resourceLoader = resourceLoader;
     }
 
-    @PostMapping("/api/upload/article")
-    @ResponseBody
+    //@PostMapping("/api/upload/article")
+    //@ResponseBody
     public VditorFiles save(@RequestParam(value = "file[]") MultipartFile[] files,
                             HttpServletRequest request) {
         long userId = Long.parseLong(JwtUtil.getUser(request).getId());

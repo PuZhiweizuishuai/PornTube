@@ -1,15 +1,14 @@
 <template>
   <div>
     <v-container fill-height fluid style="padding-bottom: 0px;">
-      <v-row>
+      <v-row style="padding-top: 12px; padding-bottom: 12px">
         <v-col style="padding-bottom: 0px;">
           <DPlayer :article="parseInt(id)" :video="videoData.video[0]" :picurl="videoData.imgUrl" />
         </v-col>
       </v-row>
     </v-container>
-    <v-col />
     <v-container fill-height style="padding-top: 0px;">
-      <v-row v-resize="onResize" no-gutters>
+      <v-row v-resize="onResize" no-gutters style="padding-top: 12px; padding-bottom: 12px">
         <v-col :cols="colsWidth">
           <v-row>
             <v-col>
@@ -33,7 +32,7 @@
             </v-col>
           </v-row>
           <v-divider />
-          <v-row>
+          <v-row style="padding-top: 5px; padding-bottom: 5px">
             <v-col cols="2" align-self="end">
               <router-link :to="`/user/${videoData.userId}`">
                 <v-avatar size="62">
@@ -66,7 +65,8 @@
             </v-col>
           </v-row>
         </v-col>
-        <v-col cols="4">
+        <v-col cols="1" />
+        <v-col cols="3">
           <v-rating v-model="score" color="orange" background-color="orange lighten-3" />
           <v-tooltip bottom>
 
@@ -102,7 +102,7 @@
         </v-col>
       </v-row>
       <v-col />
-      <v-row>
+      <v-row style="padding-top: 12px; padding-bottom: 12px">
         <v-col :cols="colsWidth">
           <Comment :count="videoData.commentCount" />
         </v-col>

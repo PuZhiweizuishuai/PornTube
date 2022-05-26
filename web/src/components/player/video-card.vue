@@ -8,7 +8,7 @@
         aspect-ratio="1.77"
       />
     </router-link>
-    <v-row>
+    <v-row style="padding-top: 12px; padding-bottom: 12px">
       <v-col cols="2">
         <router-link :to="`/user/${videoInfo.userId}`">
           <v-avatar size="48">

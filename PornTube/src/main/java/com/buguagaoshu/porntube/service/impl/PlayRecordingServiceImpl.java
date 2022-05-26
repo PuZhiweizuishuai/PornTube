@@ -6,6 +6,8 @@ import io.jsonwebtoken.Claims;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -20,6 +22,12 @@ import javax.servlet.http.HttpServletRequest;
 
 @Service("playRecordingService")
 public class PlayRecordingServiceImpl extends ServiceImpl<PlayRecordingDao, PlayRecordingEntity> implements PlayRecordingService {
+
+    /**
+     * 为写入播放记录方法加锁
+     * */
+    private final Lock lock = new ReentrantLock();
+
 
     @Override
     public IPage<PlayRecordingEntity> queryPage(Map<String, Object> params, HttpServletRequest request) {
@@ -56,25 +64,30 @@ public class PlayRecordingServiceImpl extends ServiceImpl<PlayRecordingDao, Play
         long time = System.currentTimeMillis();
         // TODO 此处有并发bug，请求时间相近的情况下会写入两条相同的播放记录
         // 尤其是使用qq浏览器的时候
-        PlayRecordingEntity playRecordingEntity = findPlayRecordingEntityByArticleIdAndVideoId(file.getArticleId(), file.getId(), userId);
-        if (playRecordingEntity != null) {
-            playRecordingEntity.setUpdateTime(time);
-            playRecordingEntity.setUa(ua);
-            this.updateById(playRecordingEntity);
-            return 0;
-        } else {
-            playRecordingEntity = new PlayRecordingEntity();
-            playRecordingEntity.setArticleId(file.getArticleId());
-            playRecordingEntity.setCreateTime(time);
-            playRecordingEntity.setUpdateTime(time);
-            playRecordingEntity.setUserId(userId);
-            playRecordingEntity.setVideoId(file.getId());
-            playRecordingEntity.setUa(ua);
-            // TODO 采用缓存
-            // articleService.addViewCount(file.getArticleId(), 1L);
-            // TODO 播放时间戳，视频个数
-            this.save(playRecordingEntity);
-            return file.getArticleId();
+        lock.lock();
+        try {
+            PlayRecordingEntity playRecordingEntity = findPlayRecordingEntityByArticleIdAndVideoId(file.getArticleId(), file.getId(), userId);
+            if (playRecordingEntity != null) {
+                playRecordingEntity.setUpdateTime(time);
+                playRecordingEntity.setUa(ua);
+                this.updateById(playRecordingEntity);
+                return 0;
+            } else {
+                playRecordingEntity = new PlayRecordingEntity();
+                playRecordingEntity.setArticleId(file.getArticleId());
+                playRecordingEntity.setCreateTime(time);
+                playRecordingEntity.setUpdateTime(time);
+                playRecordingEntity.setUserId(userId);
+                playRecordingEntity.setVideoId(file.getId());
+                playRecordingEntity.setUa(ua);
+                // TODO 采用缓存
+                // articleService.addViewCount(file.getArticleId(), 1L);
+                // TODO 播放时间戳，视频个数
+                this.save(playRecordingEntity);
+                return file.getArticleId();
+            }
+        } finally {
+            lock.unlock();
         }
     }
 

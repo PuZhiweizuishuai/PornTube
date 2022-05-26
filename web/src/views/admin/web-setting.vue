@@ -38,6 +38,11 @@
           </v-row>
           <v-row justify="center">
             <v-col cols="10">
+              <v-switch v-model="setting.openInvitationRegister" label="是否开启邀请码注册" />
+            </v-col>
+          </v-row>
+          <v-row justify="center">
+            <v-col cols="10">
               <v-switch v-model="setting.openNoVipLimit" label="非vip观看次数限制" />
             </v-col>
           </v-row>

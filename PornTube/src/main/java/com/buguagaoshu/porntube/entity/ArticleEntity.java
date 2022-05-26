@@ -129,4 +129,9 @@ public class ArticleEntity {
 
 	private Long scoreCount;
 
+	/**
+	 * 视频长度
+	 * */
+	private Long length;
+
 }

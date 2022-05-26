@@ -74,6 +74,14 @@
     <v-row justify="center">
       <v-btn color="primary" @click="submitRegister">注册</v-btn>
     </v-row>
+    <v-snackbar
+      v-model="snackbar"
+      :color="color"
+      :timeout="3000"
+      :top="true"
+    >
+      {{ message }}
+    </v-snackbar>
   </div>
 </template>
 
@@ -90,30 +98,45 @@ export default {
         invitationCode: '',
         verifyCode: '',
         username: ''
-      }
+      },
+      snackbar: false,
+      color: 'success',
+      message: '分享成功'
     }
   },
   methods: {
     submitRegister() {
       var re = /^(([^()[\]\\.,;:\s@\"]+(\.[^()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
       if (!re.test(this.registerUser.mail)) {
+        this.message = '邮箱格式错误'
+        this.color = 'error'
+        this.snackbar = true
         return
       }
-      console.log(123456)
+
       if (this.registerUser.password === '' || this.registerUser.password.length < 6 || this.registerUser.verifyCode === '' || this.registerUser.username === '') {
+        this.message = '密码不能为空且不能小于6个字符'
+        this.color = 'error'
+        this.snackbar = true
         return
       }
       if (this.$store.state.webInfo.openInvitationRegister === 1 && this.registerUser.invitationCode === '' && this.registerUser.username !== 'admin') {
+        this.message = '邀请码不能为空'
+        this.color = 'error'
+        this.snackbar = true
         return
       }
 
       if (this.registerUser.phone !== '') {
         var myreg = /^[1][3,4,5,7,8][0-9]{9}$/
         if (!myreg.test((this.registerUser.phone))) {
+          this.message = '手机号码格式错误'
+          this.color = 'error'
+          this.snackbar = true
           return
         }
       }
-      console.log(this.registerUser)
+      // sconsole.log(this.registerUser)
       this.$emit('register', this.registerUser)
     },
     getVerifyImage() {

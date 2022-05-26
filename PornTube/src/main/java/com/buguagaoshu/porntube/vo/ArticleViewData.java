@@ -105,6 +105,12 @@ public class ArticleViewData {
 
     private Long scoreCount;
 
+    /**
+     * 视频长度
+     * */
+    private Long length;
+
+
 
     private List<FileTableEntity> video;
 }

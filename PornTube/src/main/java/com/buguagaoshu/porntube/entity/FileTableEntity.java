@@ -70,6 +70,11 @@ public class FileTableEntity {
 	 */
 	private String suffixName;
 
+	/**
+	 * 视频长度
+	 * */
+	private Long length;
+
 
 	/**
 	 * 加载视频所需要的Key

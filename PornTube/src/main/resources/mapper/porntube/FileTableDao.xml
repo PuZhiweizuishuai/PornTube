@@ -15,6 +15,7 @@
         <result property="uploadUserId" column="upload_user_id"/>
         <result property="type" column="type"/>
         <result property="suffixName" column="suffix_name"/>
+        <result property="length" column="length"/>
     </resultMap>
 
 

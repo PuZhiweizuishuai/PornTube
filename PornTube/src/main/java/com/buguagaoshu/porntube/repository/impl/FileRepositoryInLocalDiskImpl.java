@@ -63,6 +63,7 @@ public class FileRepositoryInLocalDiskImpl implements FileRepository {
                 FileTableEntity fileTableEntity = createFileTableEntity(filename, suffix, path, file.getSize(), file.getOriginalFilename(), userId, FileTypeEnum.getFileType(suffix).getCode());
                 succMap.put(file.getOriginalFilename(), "/api/upload/" + path + "/" + filename);
                 // TODO 文件夹大小控制
+                // TODO 写入视频长度信息
                 fileTableService.save(fileTableEntity);
             } catch (Exception e) {
                 errFiles.add(file.getOriginalFilename());
@@ -107,6 +108,7 @@ public class FileRepositoryInLocalDiskImpl implements FileRepository {
                 Files.copy(file.getInputStream(), Paths.get(path, filename));
                 FileTableEntity fileTableEntity = createFileTableEntity(filename, suffix, path, file.getSize(), file.getOriginalFilename(), userId, type);
                 // TODO 文件夹大小控制
+                // TODO 写入视频长度信息
                 fileTableService.save(fileTableEntity);
                 list.add(fileTableEntity);
             } catch (Exception e) {

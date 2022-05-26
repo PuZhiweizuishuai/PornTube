@@ -27,6 +27,7 @@
         <result property="commentCount" column="comment_count"/>
         <result property="danmakuCount" column="danmaku_count"/>
         <result property="examineUser" column="examine_user"/>
+        <result property="length" column="length"/>
     </resultMap>
     <update id="addViewCount">
         update article set view_count = view_count + #{count} where id = #{id}

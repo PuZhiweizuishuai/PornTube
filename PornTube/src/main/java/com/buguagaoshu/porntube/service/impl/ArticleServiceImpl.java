@@ -89,6 +89,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         Map<Long, UserEntity> userEntityMap = userService.userMapList(userIdList);
         List<ArticleViewData> articleViewData = new ArrayList<>();
         page.getRecords().forEach(a -> {
+            // TODO 写入分区信息
             ArticleViewData viewData = new ArticleViewData();
             UserEntity userEntity = userEntityMap.get(a.getUserId());
             BeanUtils.copyProperties(a, viewData);
@@ -187,13 +188,14 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
             return ReturnCodeEnum.VIDEO_NO_POWER;
         }
         // TODO 在审核时将投稿量加 1
-        // TODO 并且记得看是否提高普通用户每日观看量
+        // TODO 并且记得看是否提高普通用户每日观看
         if (webSettingCache.getWebSettingEntity().getOpenExamine() == 1) {
             articleEntity.setExamineStatus(ExamineTypeEnum.PENDING_REVIEW.getCode());
         } else {
             articleEntity.setExamineStatus(ExamineTypeEnum.SUCCESS.getCode());
         }
         articleEntity.setType(FileTypeEnum.VIDEO.getCode());
+        // TODO 写入视频长度
         this.save(articleEntity);
         List<FileTableEntity> list = new ArrayList<>();
         videoId.setArticleId(articleEntity.getId());

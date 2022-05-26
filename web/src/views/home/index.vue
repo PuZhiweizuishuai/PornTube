@@ -18,7 +18,7 @@
         </div>
       </div>
     </v-row> -->
-    <v-row no-gutters>
+    <v-row no-gutters style="padding-top: 12px; padding-bottom: 12px">
       <v-col
         v-for="item in videoList"
         :key="item.id"
