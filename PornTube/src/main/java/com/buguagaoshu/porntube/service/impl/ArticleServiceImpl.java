@@ -8,6 +8,7 @@ import com.buguagaoshu.porntube.dto.ExamineDto;
 import com.buguagaoshu.porntube.dto.VideoArticleDto;
 import com.buguagaoshu.porntube.entity.*;
 import com.buguagaoshu.porntube.enums.*;
+import com.buguagaoshu.porntube.exception.UserNotLoginException;
 import com.buguagaoshu.porntube.service.*;
 import com.buguagaoshu.porntube.utils.*;
 import com.buguagaoshu.porntube.vo.ArticleViewData;
@@ -89,69 +90,26 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         Map<Long, UserEntity> userEntityMap = userService.userMapList(userIdList);
         List<ArticleViewData> articleViewData = new ArrayList<>();
         page.getRecords().forEach(a -> {
-            // TODO 写入分区信息
             ArticleViewData viewData = new ArticleViewData();
             UserEntity userEntity = userEntityMap.get(a.getUserId());
             BeanUtils.copyProperties(a, viewData);
             viewData.setUsername(userEntity.getUsername());
             viewData.setAvatarUrl(userEntity.getAvatarUrl());
+            CategoryEntity categoryEntity = categoryCache.getCategoryEntityMap().get(a.getCategory());
+            viewData.setChildrenCategory(categoryEntity);
+            if (categoryEntity.getFatherId() != 0) {
+                CategoryEntity f = categoryCache.getCategoryEntityMap().get(categoryEntity.getFatherId());
+                viewData.setFatherCategory(f);
+            }
             articleViewData.add(viewData);
         });
-
-        IPage<ArticleViewData> viewDataIPage = new IPage<ArticleViewData>() {
-            @Override
-            public List<OrderItem> orders() {
-                return null;
-            }
-
-            @Override
-            public List<ArticleViewData> getRecords() {
-                return articleViewData;
-            }
-
-            @Override
-            public IPage<ArticleViewData> setRecords(List<ArticleViewData> records) {
-                return null;
-            }
-
-            @Override
-            public long getTotal() {
-                return page.getTotal();
-            }
-
-            @Override
-            public IPage<ArticleViewData> setTotal(long total) {
-                return null;
-            }
-
-            @Override
-            public long getSize() {
-                return page.getSize();
-            }
-
-            @Override
-            public IPage<ArticleViewData> setSize(long size) {
-                return null;
-            }
-
-            @Override
-            public long getCurrent() {
-                return page.getCurrent();
-            }
-
-            @Override
-            public IPage<ArticleViewData> setCurrent(long current) {
-                return null;
-            }
-        };
-        return new PageUtils(viewDataIPage);
+        return new PageUtils(createArticleViewData(articleViewData, page));
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public ReturnCodeEnum saveVideo(VideoArticleDto videoArticleDto, HttpServletRequest request) {
-        Claims user = JwtUtil.getUser(request);
-        long userId = Long.parseLong(user.getId());
+        long userId = JwtUtil.getUserId(request);
         ArticleEntity articleEntity = new ArticleEntity();
         if (videoArticleDto.getTitle().length() > 50) {
             return ReturnCodeEnum.TITLE_TO_LONG;
@@ -161,14 +119,14 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         try {
             articleEntity.setTag(objectMapper.writeValueAsString(videoArticleDto.getTag()));
         } catch (JsonProcessingException e) {
-            log.warn("用户 {} 添加的视频标签序列化失败", user.getId());
+            log.warn("用户 {} 添加的视频标签序列化失败", userId);
         }
         CategoryEntity categoryEntity = categoryCache.getCategoryEntityMap().get(videoArticleDto.getCategory());
         if (categoryEntity == null) {
             return ReturnCodeEnum.CATEGORY_NOT_FOUND;
         }
         articleEntity.setCategory(videoArticleDto.getCategory());
-        if (!StringUtils.isEmpty(videoArticleDto.getDescribe()) && videoArticleDto.getDescribe().length() > 200) {
+        if (!StringUtils.hasText(videoArticleDto.getDescribe()) && videoArticleDto.getDescribe().length() > 200) {
             return ReturnCodeEnum.DESCRIBE_TO_LONG;
         }
         articleEntity.setDescribes(videoArticleDto.getDescribe());
@@ -208,19 +166,16 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
 
     @Override
     public ArticleViewData getVideo(long id, HttpServletRequest request) {
-        Claims user = JwtUtil.getUser(request);
+        long userId = -1;
+        try {
+            userId = JwtUtil.getUserId(request);
+        } catch (UserNotLoginException ignored) {}
+
         QueryWrapper<ArticleEntity> wrapper = new QueryWrapper<>();
         wrapper.eq("id", id);
         wrapper.eq("status", ArticleStatusEnum.NORMAL.getCode());
         // 非管理员添加审核条件
-        boolean flag = true;
-        if (user != null && RoleTypeEnum.ADMIN.getRole().equals(user.get(WebConstant.ROLE_KEY))) {
-            flag = false;
-        }
-        long userId = -1;
-        if (user != null) {
-            userId = Long.parseLong(user.getId());
-        }
+        boolean flag = !RoleTypeEnum.ADMIN.getRole().equals(JwtUtil.getRole(request));
 
         if (flag) {
             wrapper.eq("examine_status", ExamineTypeEnum.SUCCESS.getCode());
@@ -293,9 +248,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
 
     @Override
     public PageUtils examineList(@RequestParam Map<String, Object> params, HttpServletRequest request) {
-        Claims user = JwtUtil.getUser(request);
-        // Long userID = Long.parseLong(user.getId());
-        if (!RoleTypeEnum.ADMIN.getRole().equals(user.get("authorities"))) {
+        if (!RoleTypeEnum.ADMIN.getRole().equals(JwtUtil.getRole(request))) {
             return null;
         }
 
@@ -306,13 +259,27 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
                 new Query<ArticleEntity>().getPage(params),
                 wrapper
         );
-        return new PageUtils(page);
+
+        // TODO 添加标签信息
+        List<ArticleViewData> articleViewData = new ArrayList<>();
+        page.getRecords().forEach(a -> {
+            ArticleViewData viewData = new ArticleViewData();
+            BeanUtils.copyProperties(a, viewData);
+            CategoryEntity categoryEntity = categoryCache.getCategoryEntityMap().get(a.getCategory());
+            viewData.setChildrenCategory(categoryEntity);
+            if (categoryEntity.getFatherId() != 0) {
+                CategoryEntity f = categoryCache.getCategoryEntityMap().get(categoryEntity.getFatherId());
+                viewData.setFatherCategory(f);
+            }
+            articleViewData.add(viewData);
+        });
+        return new PageUtils(createArticleViewData(articleViewData, page));
     }
 
     @Override
     public ReturnCodeEnum examine(ExamineDto examineDto, HttpServletRequest request) {
         ArticleEntity articleEntity = this.getById(examineDto.getVideoId());
-        long userId = Long.parseLong(JwtUtil.getUser(request).getId());
+        long userId = JwtUtil.getUserId(request);
         if (articleEntity == null) {
             return ReturnCodeEnum.NOO_FOUND;
         }
@@ -371,6 +338,57 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
     @Override
     public void addViewCount(Long articleId, long count) {
         this.baseMapper.addViewCount(articleId, count);
+    }
+
+
+    public IPage<ArticleViewData> createArticleViewData(List<ArticleViewData> articleViewData,
+                                                        IPage<ArticleEntity> page) {
+        return new IPage<ArticleViewData>() {
+            @Override
+            public List<OrderItem> orders() {
+                return null;
+            }
+
+            @Override
+            public List<ArticleViewData> getRecords() {
+                return articleViewData;
+            }
+
+            @Override
+            public IPage<ArticleViewData> setRecords(List<ArticleViewData> records) {
+                return null;
+            }
+
+            @Override
+            public long getTotal() {
+                return page.getTotal();
+            }
+
+            @Override
+            public IPage<ArticleViewData> setTotal(long total) {
+                return null;
+            }
+
+            @Override
+            public long getSize() {
+                return page.getSize();
+            }
+
+            @Override
+            public IPage<ArticleViewData> setSize(long size) {
+                return null;
+            }
+
+            @Override
+            public long getCurrent() {
+                return page.getCurrent();
+            }
+
+            @Override
+            public IPage<ArticleViewData> setCurrent(long current) {
+                return null;
+            }
+        };
     }
 
 }

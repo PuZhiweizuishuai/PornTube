@@ -263,18 +263,16 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
 
     @Override
     public ReturnCodeEnum updateInfo(User user, HttpServletRequest request) {
-        long userId = Long.parseLong(JwtUtil.getUser(request).getId());
-        if (StringUtils.isEmpty(userId)) {
-            return ReturnCodeEnum.IMAGE_NO_POWER;
-        }
+        long userId = JwtUtil.getUserId(request);
+
         UserEntity userEntity = new UserEntity();
-        if (!StringUtils.isEmpty(user.getUsername()) ) {
+        if (StringUtils.hasText(user.getUsername()) ) {
             if (user.getUsername().length() > 25) {
                 return ReturnCodeEnum.USER_NAME_TO_LONG;
             }
             userEntity.setUsername(user.getUsername());
         }
-        if (!StringUtils.isEmpty(user.getIntroduction())) {
+        if (StringUtils.hasText(user.getIntroduction())) {
             if (user.getIntroduction().length() > 100) {
                 return ReturnCodeEnum.USER_INTRODUCTION_LONG;
             }

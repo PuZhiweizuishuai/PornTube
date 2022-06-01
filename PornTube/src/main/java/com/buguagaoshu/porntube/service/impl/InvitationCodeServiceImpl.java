@@ -75,7 +75,7 @@ public class InvitationCodeServiceImpl extends ServiceImpl<InvitationCodeDao, In
 
     @Override
     public ReturnCodeEnum create(HttpServletRequest request) {
-        long userId = Long.parseLong(JwtUtil.getUser(request).getId());
+        long userId = JwtUtil.getUserId(request);
         InvitationCodeEntity invitationCodeEntity = new InvitationCodeEntity();
         invitationCodeEntity.setUseStatus(1);
         invitationCodeEntity.setCreateTime(System.currentTimeMillis());

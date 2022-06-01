@@ -5,7 +5,7 @@
         class="mx-auto"
         outlined
       >
-        <v-row justify="center">
+        <v-row justify="center" style="padding-top: 12px;">
           <v-col cols="10">
             <h2>上传视频</h2>
           </v-col>
@@ -90,7 +90,7 @@
             />
           </v-col>
         </v-row>
-        <v-row justify="center">
+        <v-row justify="center" style=" padding-bottom: 12px">
           <v-col cols="10">
             <v-btn large color="primary" @click="publis">立即投稿</v-btn>
           </v-col>

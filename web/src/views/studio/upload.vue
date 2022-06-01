@@ -6,10 +6,12 @@
       <v-tab @click="setShow(3)">音乐</v-tab>
       <v-tab @click="setShow(2)">文章</v-tab>
     </v-tabs>
+
     <VideoUpload v-if="show == 0" />
     <VideoPhoto v-if="show == 1" />
     <VideoArticle v-if="show == 2" />
     <VideoMusic v-if="show == 3" />
+
   </v-container>
 </template>
 

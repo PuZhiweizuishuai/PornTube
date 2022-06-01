@@ -29,6 +29,15 @@
                 <template v-slot:item.imgUrl="{ item }">
                   <v-img :src="item.imgUrl" max-height="200px" aspect-ratio="1.77" />
                 </template>
+                <template v-slot:item.category="{ item }">
+                  <router-link v-if="item.childrenCategory.fatherId !== 0" :to="`/v/${item.fatherCategory.id}`" class="category-link">
+                    <span v-text="item.fatherCategory.name" />
+                  </router-link>
+                  /
+                  <router-link :to="`/v/${item.childrenCategory.id}`" class="category-link">
+                    <span v-text="item.childrenCategory.name" />
+                  </router-link>
+                </template>
                 <template v-slot:item.actions="{ item }">
                   <a :href="`/video/${item.id}`" target="_blank">
                     <v-icon
@@ -61,7 +70,7 @@
             </v-col>
           </v-row>
 
-          <v-row justify="center">
+          <v-row justify="center" style="padding-top: 12px; padding-bottom: 24px">
             <v-pagination
               v-model="page"
               :length="length"

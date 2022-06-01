@@ -4,6 +4,7 @@ import com.buguagaoshu.porntube.dto.DanmakuDto;
 import com.buguagaoshu.porntube.entity.ArticleEntity;
 import com.buguagaoshu.porntube.entity.FileTableEntity;
 import com.buguagaoshu.porntube.enums.ReturnCodeEnum;
+import com.buguagaoshu.porntube.exception.UserNotLoginException;
 import com.buguagaoshu.porntube.service.ArticleService;
 import com.buguagaoshu.porntube.service.FileTableService;
 import com.buguagaoshu.porntube.utils.DanmakuUtils;
@@ -79,16 +80,19 @@ public class DanmakuServiceImpl extends ServiceImpl<DanmakuDao, DanmakuEntity> i
 
     @Override
     public ReturnCodeEnum saveDanmaku(DanmakuDto danmakuDto, HttpServletRequest request) {
-        Claims claims = JwtUtil.getUser(request);
-        if (claims == null) {
+        long userId = -1;
+        try {
+            userId = JwtUtil.getUserId(request);
+        }catch (UserNotLoginException e) {
             return ReturnCodeEnum.NO_LOGIN;
         }
+
         // ArticleEntity video = articleService.getById(danmakuDto.getId());
         FileTableEntity fileTableEntity = fileTableService.getById(danmakuDto.getId());
         if (fileTableEntity == null && fileTableEntity.getArticleId() != null) {
             return ReturnCodeEnum.NOO_FOUND;
         }
-        Long userId = Long.parseLong(claims.getId());
+
         DanmakuEntity danmakuEntity = new DanmakuEntity();
         danmakuEntity.setAuthor(userId);
 

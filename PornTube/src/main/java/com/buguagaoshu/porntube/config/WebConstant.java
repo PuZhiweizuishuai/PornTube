@@ -38,6 +38,11 @@ public class WebConstant {
      * */
     public final static String VIP_STOP_TIME_KEY = "vipStopTime";
 
+    /**
+     * 用户ID
+     * */
+    public final static String USER_ID = "userId";
+
 
     public final static String FILE_CACHE = "file";
 }

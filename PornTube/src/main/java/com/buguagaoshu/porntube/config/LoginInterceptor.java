@@ -32,6 +32,7 @@ public class LoginInterceptor implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         Claims claims = JwtUtil.getUser(request);
         if (claims != null) {
+            long userId = Long.parseLong(claims.getId());
             String role = (String) claims.get(WebConstant.ROLE_KEY);
             if (role.equals(RoleTypeEnum.VIP.getRole())) {
                 long stopTime = (Long) claims.get(WebConstant.VIP_STOP_TIME_KEY);
@@ -58,6 +59,10 @@ public class LoginInterceptor implements HandlerInterceptor {
                     return true;
                 }
             }
+            request.getSession().setAttribute(WebConstant.USER_ID, userId);
+            request.getSession().setAttribute(WebConstant.ROLE_KEY, role);
+            //request.setAttribute(WebConstant.USER_ID, userId);
+            //request.setAttribute(WebConstant.ROLE_KEY, role);
             return true;
         }
         return false;

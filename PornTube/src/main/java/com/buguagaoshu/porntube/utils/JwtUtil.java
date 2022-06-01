@@ -2,6 +2,7 @@ package com.buguagaoshu.porntube.utils;
 
 
 import com.buguagaoshu.porntube.config.WebConstant;
+import com.buguagaoshu.porntube.exception.UserNotLoginException;
 import com.buguagaoshu.porntube.service.impl.UserServiceImpl;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -62,11 +63,27 @@ public class JwtUtil {
     }
 
 
-    public static void main(String[] args) {
-        String jwt = "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiIxMjM0NTZAcXEuY29tIiwianRpIjoiOCIsImF1dGhvcml0aWVzIjoiUk9MRV9VU0VSIiwidmlwU3RvcFRpbWUiOi0xLCJleHAiOjE1OTk3NjAyNzR9.z8V_8vFGwmRfM4JolaSKfahpqbIlq4RxXwpjEnWVa2Cq5WBpm4tEmMnXB14uNz-COwGymAPnqAYH-U3nLV1q-g";
-        System.out.println(Jwts.parser()
-                .setSigningKey(WebConstant.SECRET_KEY)
-                .parseClaimsJws(jwt)
-                .getBody().get(WebConstant.ROLE_KEY));
+    public static long getUserId(HttpServletRequest request) {
+        Object userId = request.getSession().getAttribute(WebConstant.USER_ID);
+        if (userId == null) {
+            Claims user = JwtUtil.getUser(request);
+            if (user != null) {
+                return Long.parseLong(user.getId());
+            }
+            throw new UserNotLoginException("当前用户未登录！");
+        }
+        return (long) userId;
+    }
+
+    public static String getRole(HttpServletRequest request) {
+        String userRole = (String) request.getSession().getAttribute(WebConstant.ROLE_KEY);
+        if (userRole == null) {
+            Claims user = JwtUtil.getUser(request);
+            if (user != null) {
+                return (String)  user.get(WebConstant.ROLE_KEY);
+            }
+            throw new UserNotLoginException("当前用户未登录！");
+        }
+        return userRole;
     }
 }

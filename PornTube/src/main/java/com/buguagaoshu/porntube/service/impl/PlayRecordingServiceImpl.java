@@ -31,8 +31,8 @@ public class PlayRecordingServiceImpl extends ServiceImpl<PlayRecordingDao, Play
 
     @Override
     public IPage<PlayRecordingEntity> queryPage(Map<String, Object> params, HttpServletRequest request) {
-        Claims user = JwtUtil.getUser(request);
-        Long userId = Long.parseLong(user.getId());
+
+        Long userId = JwtUtil.getUserId(request);
         QueryWrapper<PlayRecordingEntity> wrapper = new QueryWrapper<>();
         wrapper.eq("user_id", userId);
         wrapper.orderByDesc("update_time");

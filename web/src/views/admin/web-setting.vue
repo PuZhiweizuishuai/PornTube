@@ -6,7 +6,7 @@
           class="mx-auto"
           outlined
         >
-          <v-row justify="center">
+          <v-row justify="center" style="padding-top: 12px; padding-bottom: 12px">
             <v-col cols="10">
               <h3> 网页设置</h3>
             </v-col>
@@ -78,7 +78,7 @@
           <v-row justify="center">
             <v-col cols="10" />
           </v-row>
-          <v-row justify="center">
+          <v-row justify="center" style="padding-top: 12px; padding-bottom: 24px">
             <v-col cols="10">
               <v-btn color="primary" block @click="save">保存</v-btn>
             </v-col>

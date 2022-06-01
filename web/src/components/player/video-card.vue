@@ -22,7 +22,17 @@
         </p>
         <p style="font-size: 10px; color: #606060;">
           {{ videoInfo.viewCount }} 观看 <span v-html="`&nbsp;&nbsp;`" />
-          {{ videoInfo.danmakuCount }} 条弹幕 <br>
+          {{ videoInfo.danmakuCount }} 条弹幕 <span v-html="`&nbsp;&nbsp;`" />
+
+          <!-- 分区信息 -->
+          <router-link v-if="videoInfo.childrenCategory.fatherId !== 0" :to="`/v/${videoInfo.fatherCategory.id}`" class="category-link">
+            <span v-text="videoInfo.fatherCategory.name" />
+          </router-link>
+          /
+          <router-link :to="`/v/${videoInfo.childrenCategory.id}`" class="category-link">
+            <span v-text="videoInfo.childrenCategory.name" />
+          </router-link><br>
+          <!-- 发布人 -->
           <router-link :to="`/user/${videoInfo.userId}`"> {{ videoInfo.username }}</router-link>
           <br>
           <span v-text="TimeUtil.timeToNowStrning(videoInfo.createTime)" />

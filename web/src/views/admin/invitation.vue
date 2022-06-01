@@ -45,7 +45,7 @@
             </v-col>
           </v-row>
 
-          <v-row justify="center">
+          <v-row justify="center" style="padding-top: 12px; padding-bottom: 24px">
             <v-pagination
               v-model="page"
               :length="length"

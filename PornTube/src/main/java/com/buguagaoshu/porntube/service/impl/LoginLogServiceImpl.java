@@ -23,7 +23,7 @@ public class LoginLogServiceImpl extends ServiceImpl<LoginLogDao, LoginLogEntity
 
     @Override
     public PageUtils queryPage(HttpServletRequest request, Map<String, Object> params) {
-        long userId = Long.parseLong(JwtUtil.getUser(request).getId());
+        long userId = JwtUtil.getUserId(request);
 
         QueryWrapper<LoginLogEntity> wrapper = new QueryWrapper<>();
         wrapper.eq("userId", userId);
