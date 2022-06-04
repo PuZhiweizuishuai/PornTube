@@ -5,7 +5,7 @@
         class="mx-auto"
         outlined
       >
-        <v-row justify="center">
+        <v-row justify="center" style="padding-top: 12px; padding-bottom: 12px">
           <v-col cols="10">
             <span><h2>登录历史</h2>如果发现不熟悉设备，请及时修改密码</span>
           </v-col>
@@ -30,7 +30,7 @@
             </v-data-table>
           </v-col>
         </v-row>
-        <v-row justify="center">
+        <v-row justify="center" style="padding-top: 12px; padding-bottom: 12px">
           <v-pagination
             v-model="page"
             :length="length"

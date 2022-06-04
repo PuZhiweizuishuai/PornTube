@@ -5,7 +5,7 @@
         class="mx-auto"
         outlined
       >
-        <v-row justify="center">
+        <v-row justify="center" style="padding-top: 12px; padding-bottom: 12px">
           <v-col cols="10">
             <h2>头像修改</h2>
           </v-col>
@@ -32,7 +32,7 @@
             </v-btn>
           </v-col>
         </v-row>
-        <v-row justify="center">
+        <v-row justify="center" style="padding-top: 12px; padding-bottom: 12px">
           <v-col cols="10">
             <v-btn color="primary" @click="save">
               保存
@@ -109,6 +109,7 @@ export default {
           if (json.status === 200) {
             //
             this.userInfo.avatarUrl = json.data[0].fileUrl
+            this.userInfo.fileId = json.data[0].id
             this.message = '上传成功，请点击保存，保存头像设置！'
             this.showMessage = true
           } else {

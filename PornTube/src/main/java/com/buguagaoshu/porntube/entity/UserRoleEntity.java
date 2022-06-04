@@ -8,8 +8,8 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 /**
- * 
- * 
+ *
+ *
  * @author Pu Zhiwei
  * @email puzhiweipuzhiwei@foxmail.com
  * @date 2020-09-05 15:03:54
@@ -18,44 +18,44 @@ import lombok.Data;
 @TableName("user_role")
 public class UserRoleEntity {
 
-	@TableId(type = IdType.AUTO)
-	private Long id;
+    @TableId(type = IdType.AUTO)
+    private Long id;
 
-	/**
-	 * 
-	 */
-	private Long userid;
+    /**
+     *
+     */
+    private Long userid;
 
-	/**
-	 * 角色
-	 */
-	private String role;
+    /**
+     * 角色
+     */
+    private String role;
 
-	/**
-	 * 
-	 */
-	private Long createTime;
+    /**
+     *
+     */
+    private Long createTime;
 
-	/**
-	 * 
-	 */
-	private Long updateTime;
+    /**
+     *
+     */
+    private Long updateTime;
 
-	/**
-	 * 
-	 */
-	private Long vipStartTime;
+    /**
+     *
+     */
+    private Long vipStartTime;
 
-	/**
-	 * 
-	 */
-	private Long vipStopTime;
+    /**
+     *
+     */
+    private Long vipStopTime;
 
 
-	/**
-	 * 修改人
-	 * 初始情况为 0，代表系统
-	 * */
-	private Long modified;
+    /**
+     * 修改人
+     * 初始情况为 0，代表系统
+     * */
+    private Long modified;
 
 }

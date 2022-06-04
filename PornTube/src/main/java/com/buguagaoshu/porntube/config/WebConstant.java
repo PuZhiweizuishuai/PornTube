@@ -45,4 +45,10 @@ public class WebConstant {
 
 
     public final static String FILE_CACHE = "file";
+
+    /**
+     * 临时文件弃用时间,单位毫秒
+     * 默认一周 604800000L
+     * */
+    public final static long DEPRECATED_FILE_TIME = 604800000L;
 }

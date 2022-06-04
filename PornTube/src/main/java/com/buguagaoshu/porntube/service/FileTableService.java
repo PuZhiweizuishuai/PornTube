@@ -27,5 +27,25 @@ public interface FileTableService extends IService<FileTableEntity> {
 
 
     FileTableEntity findFileByFilename(String fileName);
+
+
+    /**
+     * 更新文件状态
+     * @param userId 文件所属用户
+     * @param fileId 文件ID
+     * @param fileType 文件类型
+     * @param fileUrl 文件路径
+     * @return 更新结果
+     * */
+    boolean updateFileStatus(long userId, long fileId, int fileType, String fileUrl);
+
+
+    /**
+     * @param endTime 结束时间
+     * @param count 返回数量
+     * 已弃用文件列表
+     * */
+    List<FileTableEntity> deprecatedFileList(long endTime, int count);
+
 }
 

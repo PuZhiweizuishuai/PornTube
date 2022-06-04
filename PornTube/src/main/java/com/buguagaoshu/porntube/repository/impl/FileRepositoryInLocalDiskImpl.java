@@ -1,6 +1,7 @@
 package com.buguagaoshu.porntube.repository.impl;
 
 import com.buguagaoshu.porntube.entity.FileTableEntity;
+import com.buguagaoshu.porntube.enums.FileStatusEnum;
 import com.buguagaoshu.porntube.enums.FileTypeEnum;
 import com.buguagaoshu.porntube.repository.FileRepository;
 import com.buguagaoshu.porntube.service.FileTableService;
@@ -109,6 +110,7 @@ public class FileRepositoryInLocalDiskImpl implements FileRepository {
                 FileTableEntity fileTableEntity = createFileTableEntity(filename, suffix, path, file.getSize(), file.getOriginalFilename(), userId, type);
                 // TODO 文件夹大小控制
                 // TODO 写入视频长度信息
+                fileTableEntity.setStatus(FileStatusEnum.NOT_USE_FILE.getCode());
                 fileTableService.save(fileTableEntity);
                 list.add(fileTableEntity);
             } catch (Exception e) {
@@ -126,6 +128,20 @@ public class FileRepositoryInLocalDiskImpl implements FileRepository {
             throw new FileNotFoundException("Cannot load file! File " + filePath + " not exists!");
         }
         return path;
+    }
+
+    @Override
+    public boolean deleteFile(FileTableEntity fileTableEntity) {
+        String pathStr = fileTableEntity.getFileUrl().replace("/api/upload/" + FileTypeEnum.ROOT + "/", "");
+        try {
+            Path path = load(pathStr);
+            // 删除本地文件
+            Files.delete(path);
+            return true;
+        } catch (Exception e) {
+            log.warn(e.getMessage());
+            return false;
+        }
     }
 
 

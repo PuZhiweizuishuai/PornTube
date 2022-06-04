@@ -135,6 +135,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         if (imageId == null || imageId.getUploadUserId() != userId) {
             return ReturnCodeEnum.IMAGE_NO_POWER;
         }
+
         articleEntity.setImgUrl(imageId.getFileUrl());
         articleEntity.setUserId(userId);
         long time = System.currentTimeMillis();
@@ -145,6 +146,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         if (videoId == null || videoId.getUploadUserId() != userId) {
             return ReturnCodeEnum.VIDEO_NO_POWER;
         }
+
         // TODO 在审核时将投稿量加 1
         // TODO 并且记得看是否提高普通用户每日观看
         if (webSettingCache.getWebSettingEntity().getOpenExamine() == 1) {
@@ -158,6 +160,9 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         List<FileTableEntity> list = new ArrayList<>();
         videoId.setArticleId(articleEntity.getId());
         imageId.setArticleId(articleEntity.getId());
+        // 改写文件状态
+        videoId.setStatus(FileStatusEnum.USED.getCode());
+        imageId.setStatus(FileStatusEnum.USED.getCode());
         list.add(videoId);
         list.add(imageId);
         fileTableService.updateBatchById(list);
@@ -243,7 +248,8 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
                 new Query<ArticleEntity>().getPage(params),
                 wrapper
         );
-        return new PageUtils(page);
+
+        return new PageUtils(createArticleViewData(addArticleCategory(page), page));
     }
 
     @Override
@@ -259,21 +265,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
                 new Query<ArticleEntity>().getPage(params),
                 wrapper
         );
-
-        // TODO 添加标签信息
-        List<ArticleViewData> articleViewData = new ArrayList<>();
-        page.getRecords().forEach(a -> {
-            ArticleViewData viewData = new ArticleViewData();
-            BeanUtils.copyProperties(a, viewData);
-            CategoryEntity categoryEntity = categoryCache.getCategoryEntityMap().get(a.getCategory());
-            viewData.setChildrenCategory(categoryEntity);
-            if (categoryEntity.getFatherId() != 0) {
-                CategoryEntity f = categoryCache.getCategoryEntityMap().get(categoryEntity.getFatherId());
-                viewData.setFatherCategory(f);
-            }
-            articleViewData.add(viewData);
-        });
-        return new PageUtils(createArticleViewData(articleViewData, page));
+        return new PageUtils(createArticleViewData(addArticleCategory(page), page));
     }
 
     @Override
@@ -389,6 +381,22 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
                 return null;
             }
         };
+    }
+
+    public List<ArticleViewData> addArticleCategory(IPage<ArticleEntity> page) {
+        List<ArticleViewData> articleViewData = new ArrayList<>();
+        page.getRecords().forEach(a -> {
+            ArticleViewData viewData = new ArticleViewData();
+            BeanUtils.copyProperties(a, viewData);
+            CategoryEntity categoryEntity = categoryCache.getCategoryEntityMap().get(a.getCategory());
+            viewData.setChildrenCategory(categoryEntity);
+            if (categoryEntity.getFatherId() != 0) {
+                CategoryEntity f = categoryCache.getCategoryEntityMap().get(categoryEntity.getFatherId());
+                viewData.setFatherCategory(f);
+            }
+            articleViewData.add(viewData);
+        });
+        return articleViewData;
     }
 
 }

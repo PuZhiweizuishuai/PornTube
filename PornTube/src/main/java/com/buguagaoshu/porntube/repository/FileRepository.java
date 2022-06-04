@@ -30,4 +30,9 @@ public interface FileRepository {
      * 加载文件
      * */
     Path load(String filePath) throws FileNotFoundException;
+
+    /**
+     * 删除文件
+     * */
+    boolean deleteFile(FileTableEntity fileTableEntity);
 }

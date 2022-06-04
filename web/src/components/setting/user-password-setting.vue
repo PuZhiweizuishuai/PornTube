@@ -5,7 +5,7 @@
         class="mx-auto"
         outlined
       >
-        <v-row justify="center">
+        <v-row justify="center" style="padding-top: 12px; padding-bottom: 12px">
           <v-col cols="10">
             <h2>密码修改</h2>
           </v-col>
@@ -60,7 +60,7 @@
             />
           </v-col>
         </v-row>
-        <v-row justify="center">
+        <v-row justify="center" style="padding-top: 12px; padding-bottom: 12px">
           <v-col cols="2">
             <v-btn color="primary" @click="save">保存</v-btn>
           </v-col>

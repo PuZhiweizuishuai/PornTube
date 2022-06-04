@@ -158,6 +158,7 @@ CREATE TABLE `file_table`  (
   `type` int NOT NULL COMMENT '文件类型 【0 视频， 1 图片， 2 其它附件, 3 头像数据， 4 顶部大图数据】',
   `suffix_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '后缀名',
   `length` bigint NULL DEFAULT NULL COMMENT '视频长度',
+  `status` int NOT NULL DEFAULT 0 COMMENT '文件存储状态',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `find_file_by_artice_id`(`article_id`) USING BTREE,
   INDEX `find_file_by_userid`(`upload_user_id`) USING BTREE,

@@ -82,7 +82,7 @@ public class FileController {
     @ResponseBody
     public ResponseDetails savePhoto(@RequestParam(value = "file[]") MultipartFile[] files,
                                      HttpServletRequest request) throws FileNotFoundException {
-        long userId = Long.parseLong(JwtUtil.getUser(request).getId());
+        long userId = JwtUtil.getUserId(request);
         return ResponseDetails.ok()
                 .put("data",
                         fileRepository.videoAndPhotoSave(files, FileTypeEnum.PHOTO.getCode(), userId));
@@ -93,7 +93,8 @@ public class FileController {
     @ResponseBody
     public ResponseDetails saveAvatar(@RequestParam(value = "file[]") MultipartFile[] files,
                                  HttpServletRequest request) throws FileNotFoundException {
-        long userId = Long.parseLong(JwtUtil.getUser(request).getId());
+        long userId = JwtUtil.getUserId(request);
+        System.out.println(userId);
         return ResponseDetails.ok()
                 .put("data",
                         fileRepository.videoAndPhotoSave(files, FileTypeEnum.AVATAR.getCode(), userId));

@@ -5,6 +5,7 @@ import com.buguagaoshu.porntube.dto.LoginDetails;
 import com.buguagaoshu.porntube.dto.PasswordDto;
 import com.buguagaoshu.porntube.entity.InvitationCodeEntity;
 import com.buguagaoshu.porntube.entity.UserRoleEntity;
+import com.buguagaoshu.porntube.enums.FileTypeEnum;
 import com.buguagaoshu.porntube.enums.ReturnCodeEnum;
 import com.buguagaoshu.porntube.enums.RoleTypeEnum;
 import com.buguagaoshu.porntube.exception.UserNotFoundException;
@@ -57,12 +58,15 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
 
     private final InvitationCodeService invitationCodeService;
 
+    private final FileTableService fileTableService;
+
     @Autowired
-    public UserServiceImpl(UserRoleService userRoleService, VerifyCodeService verifyCodeService, LoginLogService loginLogService, InvitationCodeService invitationCodeService) {
+    public UserServiceImpl(UserRoleService userRoleService, VerifyCodeService verifyCodeService, LoginLogService loginLogService, InvitationCodeService invitationCodeService, FileTableService fileTableService) {
         this.userRoleService = userRoleService;
         this.verifyCodeService = verifyCodeService;
         this.loginLogService = loginLogService;
         this.invitationCodeService = invitationCodeService;
+        this.fileTableService = fileTableService;
     }
 
 
@@ -202,26 +206,33 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public ReturnCodeEnum updateAvatar(User user, HttpServletRequest request) {
-        long userId = Long.parseLong(JwtUtil.getUser(request).getId());
-        if (StringUtils.isEmpty(userId)) {
-            return ReturnCodeEnum.IMAGE_NO_POWER;
-        }
+        long userId = JwtUtil.getUserId(request);
+
         UserEntity userEntity = new UserEntity();
         userEntity.setId(userId);
+
+        // 检查头像数据是否需要修改
+        if (user.getFileId() != null) {
+            fileTableService.updateFileStatus(userId, user.getFileId(), FileTypeEnum.AVATAR.getCode(), user.getAvatarUrl());
+        }
         userEntity.setAvatarUrl(user.getAvatarUrl());
         this.updateById(userEntity);
         return ReturnCodeEnum.SUCCESS;
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public ReturnCodeEnum updateTopImage(User user, HttpServletRequest request) {
-        long userId = Long.parseLong(JwtUtil.getUser(request).getId());
-        if (StringUtils.isEmpty(userId)) {
-            return ReturnCodeEnum.IMAGE_NO_POWER;
-        }
+        long userId = JwtUtil.getUserId(request);
+
         UserEntity userEntity = new UserEntity();
         userEntity.setId(userId);
+        // 检查首页大图数据是否需要修改
+        if (user.getFileId() != null) {
+            fileTableService.updateFileStatus(userId, user.getFileId(), FileTypeEnum.TOP_IMAGE.getCode(), user.getTopImgUrl());
+        }
         userEntity.setTopImgUrl(user.getTopImgUrl());
         this.updateById(userEntity);
         return ReturnCodeEnum.SUCCESS;

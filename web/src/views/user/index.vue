@@ -95,7 +95,7 @@
           <VideoList :video="item" />
         </v-col>
       </v-row>
-      <v-row justify="center">
+      <v-row justify="center" style="padding-top: 12px; padding-bottom: 12px">
         <v-pagination
 
           v-model="page"

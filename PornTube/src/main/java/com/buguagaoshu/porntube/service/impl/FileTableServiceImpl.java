@@ -1,5 +1,6 @@
 package com.buguagaoshu.porntube.service.impl;
 
+import com.buguagaoshu.porntube.enums.FileStatusEnum;
 import com.buguagaoshu.porntube.enums.FileTypeEnum;
 import org.springframework.stereotype.Service;
 
@@ -44,6 +45,41 @@ public class FileTableServiceImpl extends ServiceImpl<FileTableDao, FileTableEnt
         return this.getOne(wrapper);
     }
 
+    @Override
+    public boolean updateFileStatus(long userId, long fileId, int fileType, String fileUrl) {
+        FileTableEntity file = getById(fileId);
+        if (file == null) {
+            return  false;
+        }
+        if (file.getUploadUserId() != userId) {
+            return false;
+        }
+        if (file.getType() != fileType) {
+            return false;
+        }
+        if (!file.getFileUrl().equals(fileUrl)) {
+            return false;
+        }
+        if (file.getStatus() == FileStatusEnum.USED.getCode()) {
+            return true;
+        }
+        file.setStatus(FileStatusEnum.USED.getCode());
+        updateById(file);
+        return true;
+    }
+
+    @Override
+    public List<FileTableEntity> deprecatedFileList(long endTime, int count) {
+        QueryWrapper<FileTableEntity> wrapper = new QueryWrapper<>();
+        // 是临时文件
+        wrapper.eq("status", FileStatusEnum.NOT_USE_FILE.getCode());
+        // 结束时间
+        wrapper.le("upload_time", endTime);
+        // 暂时排除文章类型里的文件
+        wrapper.ne("type", FileTypeEnum.ARTICLE.getCode());
+        wrapper.last("limit " + count);
+        return list(wrapper);
+    }
 
 
 }

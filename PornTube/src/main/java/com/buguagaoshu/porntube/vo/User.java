@@ -1,5 +1,6 @@
 package com.buguagaoshu.porntube.vo;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.buguagaoshu.porntube.entity.UserRoleEntity;
 import lombok.Data;
 
@@ -72,4 +73,10 @@ public class User {
 
 
     private UserRoleEntity userRoleEntity;
+
+
+    /**
+     * 负责携带头像文件或者首页图文件的ID
+     * */
+    private Long fileId;
 }
