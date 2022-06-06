@@ -44,14 +44,16 @@ CREATE TABLE `article`  (
   `comment_count` bigint NOT NULL DEFAULT 0 COMMENT '评论人数',
   `danmaku_count` bigint NOT NULL DEFAULT 0 COMMENT '弹幕数',
   `examine_user` bigint NULL DEFAULT NULL COMMENT '审核人id',
-  `length` bigint NULL DEFAULT NULL COMMENT '视频长度',
+  `duration` double NULL DEFAULT NULL COMMENT '视频长度',
+  `pixels_number` bigint NULL DEFAULT NULL COMMENT '像素数，超过1080*1920即为高清',
+  `frame_rate` double NULL DEFAULT NULL COMMENT '帧率',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `find_video_by_category`(`category`) USING BTREE,
   INDEX `find_video_by_title`(`title`) USING BTREE,
   INDEX `find_video_by_user`(`user_id`) USING BTREE,
   INDEX `find_video_by_type`(`type`) USING BTREE,
   INDEX `find_video_by_tag`(`tag`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '视频，图片，文章 发帖表\r\n\r\nTODO 回复消息可见，加密帖子，视频等' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '视频，图片，文章 发帖表\r\n\r\nTODO 回复消息可见，加密帖子，视频等' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for category
@@ -157,14 +159,19 @@ CREATE TABLE `file_table`  (
   `upload_user_id` bigint NOT NULL COMMENT '上传人',
   `type` int NOT NULL COMMENT '文件类型 【0 视频， 1 图片， 2 其它附件, 3 头像数据， 4 顶部大图数据】',
   `suffix_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '后缀名',
-  `length` bigint NULL DEFAULT NULL COMMENT '视频长度',
-  `status` int NOT NULL DEFAULT 0 COMMENT '文件存储状态',
+  `duration` double NULL DEFAULT NULL COMMENT '视频长度',
+  `status` int NOT NULL DEFAULT 0 COMMENT '文件存储状态   0  未保存的临时文件，后期删除   1  保存成功并发布的文件',
+  `height` int NULL DEFAULT NULL COMMENT '视频高度',
+  `width` int NULL DEFAULT NULL COMMENT '视频宽度',
+  `pixels_number` bigint NULL DEFAULT NULL COMMENT '像素数',
+  `frame_rate` double NULL DEFAULT NULL COMMENT '帧率',
+  `info` varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '其他信息',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `find_file_by_artice_id`(`article_id`) USING BTREE,
   INDEX `find_file_by_userid`(`upload_user_id`) USING BTREE,
   INDEX `find_file_by_type`(`type`) USING BTREE,
   INDEX `find_file_suffix`(`suffix_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '文件表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 14 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '文件表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for invitation_code

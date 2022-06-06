@@ -15,7 +15,12 @@
         <result property="uploadUserId" column="upload_user_id"/>
         <result property="type" column="type"/>
         <result property="suffixName" column="suffix_name"/>
-        <result property="length" column="length"/>
+        <result property="duration" column="duration"/>
+        <result property="height" column="height"/>
+        <result property="width" column="width"/>
+        <result property="pixelsNumber" column="pixels_number"/>
+        <result property="frameRate" column="frame_rate"/>
+        <result property="info" column="info"/>
         <result property="status" column="status"/>
     </resultMap>
 

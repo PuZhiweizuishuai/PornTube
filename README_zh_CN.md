@@ -9,7 +9,7 @@
 
 ### 主页 
 
-<img src="https://ae04.alicdn.com/kf/U0b4883e1bcff49b4b01b663d594838bbv.jpg" title="首页" alt="首页">
+<img src="/img/home.png" title="首页" alt="首页">
 
 ## 播放页
 

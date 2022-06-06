@@ -13,7 +13,7 @@
         <v-row justify="center">
           <v-col cols="10">
             <!-- <v-file-input prepend-icon="mdi-video" show-size counter accept="video/*,.flv" chips label="请选择视频文件" @change="setFile" /> -->
-            <FilePondUpdate @video="videoUploadSuccess" />
+            <FilePondUpdate ref="videoUploadTool" @video="videoUploadSuccess" />
           </v-col>
         </v-row>
         <v-row justify="center">
@@ -212,8 +212,9 @@ export default {
         this.message = '上传视频成功'
         this.showMessage = true
       } else {
-        this.message = '上传出现异常，请重试！' + value.message
+        this.message = '上传出现异常，请重试！' + value.message + ' ' + value.data
         this.showMessage = true
+        this.$refs.videoUploadTool.handleFilePondInit()
       }
     },
     setTitle(title) {

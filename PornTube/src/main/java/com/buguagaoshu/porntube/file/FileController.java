@@ -3,6 +3,7 @@ package com.buguagaoshu.porntube.file;
 import com.buguagaoshu.porntube.config.WebConstant;
 import com.buguagaoshu.porntube.entity.FileTableEntity;
 import com.buguagaoshu.porntube.enums.FileTypeEnum;
+import com.buguagaoshu.porntube.enums.ReturnCodeEnum;
 import com.buguagaoshu.porntube.repository.FileRepository;
 import com.buguagaoshu.porntube.service.ArticleService;
 import com.buguagaoshu.porntube.service.FileTableService;
@@ -28,6 +29,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import java.io.FileNotFoundException;
 import java.nio.file.Path;
+import java.util.List;
 
 /**
  * @author Pu Zhiwei {@literal puzhiweipuzhiwei@foxmail.com}
@@ -71,11 +73,14 @@ public class FileController {
     @PostMapping("/api/upload/video")
     @ResponseBody
     public ResponseDetails saveVideo(@RequestParam(value = "file[]") MultipartFile[] files,
-                                HttpServletRequest request) throws FileNotFoundException {
-        long userId = Long.parseLong(JwtUtil.getUser(request).getId());
-        return ResponseDetails.ok()
-                .put("data",
-                        fileRepository.videoAndPhotoSave(files, FileTypeEnum.VIDEO.getCode(), userId));
+                                HttpServletRequest request) {
+        long userId = JwtUtil.getUserId(request);
+        try {
+            List<FileTableEntity> list = fileRepository.videoAndPhotoSave(files, FileTypeEnum.VIDEO.getCode(), userId);
+            return ResponseDetails.ok().put("data", list);
+        } catch (FileNotFoundException e) {
+            return ResponseDetails.ok(ReturnCodeEnum.DATA_VALID_EXCEPTION).put("data", e.getMessage());
+        }
     }
 
     @PostMapping("/api/upload/photo")

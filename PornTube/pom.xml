@@ -18,14 +18,10 @@
         <java.version>11</java.version>
         <mybatis-plus.version>3.5.1</mybatis-plus.version>
         <jjwt.version>0.9.1</jjwt.version>
+        <javacv.version>1.5.7</javacv.version>
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>org.mitre.dsmiley.httpproxy</groupId>
-            <artifactId>smiley-http-proxy-servlet</artifactId>
-            <version>1.11</version>
-        </dependency>
 <!--        <dependency>-->
 <!--            <groupId>org.springframework.boot</groupId>-->
 <!--            <artifactId>spring-boot-starter-security</artifactId>-->
@@ -64,6 +60,11 @@
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt</artifactId>
             <version>${jjwt.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>javacv-platform</artifactId>
+            <version>${javacv.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

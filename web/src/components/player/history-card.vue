@@ -2,7 +2,12 @@
   <v-row>
     <v-col cols="3">
       <router-link :to="`/video/${video.articleEntity.id}`">
-        <v-img :src="video.articleEntity.imgUrl" aspect-ratio="1.77" max-width="400" />
+        <v-img :src="video.articleEntity.imgUrl" aspect-ratio="1.77" max-width="400" class="white--text align-end">
+          <span style="background-color: rgba(0,0,0,0.4);border-radius: 5px;">
+
+            {{ TimeUtil.timeCover(videoInfo.articleEntity.duration) }}
+          </span>
+        </v-img>
       </router-link>
     </v-col>
     <v-col>

@@ -108,7 +108,17 @@ public class ArticleViewData {
     /**
      * 视频长度
      * */
-    private Long length;
+    private Double duration;
+
+    /**
+     * 像素数
+     * */
+    private Long pixelsNumber;
+
+    /**
+     * 帧率
+     * */
+    private Double frameRate;
 
 
 

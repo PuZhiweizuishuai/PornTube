@@ -5,7 +5,9 @@ import com.buguagaoshu.porntube.enums.FileStatusEnum;
 import com.buguagaoshu.porntube.enums.FileTypeEnum;
 import com.buguagaoshu.porntube.repository.FileRepository;
 import com.buguagaoshu.porntube.service.FileTableService;
+import com.buguagaoshu.porntube.utils.FFmpegUtils;
 import com.buguagaoshu.porntube.vo.VditorFiles;
+import com.buguagaoshu.porntube.vo.VideoInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
@@ -107,15 +109,34 @@ public class FileRepositoryInLocalDiskImpl implements FileRepository {
             }
             try {
                 Files.copy(file.getInputStream(), Paths.get(path, filename));
-                FileTableEntity fileTableEntity = createFileTableEntity(filename, suffix, path, file.getSize(), file.getOriginalFilename(), userId, type);
-                // TODO 文件夹大小控制
-                // TODO 写入视频长度信息
-                fileTableEntity.setStatus(FileStatusEnum.NOT_USE_FILE.getCode());
-                fileTableService.save(fileTableEntity);
-                list.add(fileTableEntity);
             } catch (Exception e) {
                 log.info("文件上传失败，上传文件的用户ID：{}， 上传的文件名： {}", userId, file.getOriginalFilename());
             }
+            FileTableEntity fileTableEntity = createFileTableEntity(filename, suffix, path, file.getSize(), file.getOriginalFilename(), userId, type);
+            // TODO 文件夹大小控制
+
+            // 分析视频数据并保存
+            if (FileTypeEnum.VIDEO.getCode() == type) {
+                VideoInfo videoInfo = FFmpegUtils.getVideoInfo(Paths.get(path, filename).toFile());
+                if (videoInfo == null) {
+                    // 删除已上传文件
+                    try {
+                        Files.delete(Paths.get(path, filename));
+                    } catch (Exception ignored) {
+                    }
+                    throw new FileNotFoundException("上传的视频文件数据错误无法解析，请检查后重新上传！");
+                }
+                fileTableEntity.setDuration(videoInfo.getDuration());
+                fileTableEntity.setHeight(videoInfo.getHeight());
+                fileTableEntity.setWidth(videoInfo.getWidth());
+                fileTableEntity.setPixelsNumber((long) videoInfo.getWidth() * videoInfo.getHeight());
+                fileTableEntity.setFrameRate(videoInfo.getFrameRate());
+                fileTableEntity.setInfo(videoInfo.toJson());
+            }
+
+            fileTableEntity.setStatus(FileStatusEnum.NOT_USE_FILE.getCode());
+            fileTableService.save(fileTableEntity);
+            list.add(fileTableEntity);
         }
         return list;
     }

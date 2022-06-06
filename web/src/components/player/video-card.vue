@@ -6,7 +6,13 @@
         :src="videoInfo.imgUrl"
         outlined
         aspect-ratio="1.77"
-      />
+        class="white--text align-end"
+      >
+        <span style="background-color: rgba(0,0,0,0.4);border-radius: 5px;">
+          {{ TimeUtil.timeCover(videoInfo.duration) }}
+        </span>
+      </v-img>
+      <!-- <span> {{ TimeUtil.timeCover(videoInfo.duration) }} </span> -->
     </router-link>
     <v-row style="padding-top: 12px; padding-bottom: 12px">
       <v-col cols="2">
@@ -18,7 +24,18 @@
       </v-col>
       <v-col cols="10">
         <p style="font-size: 20px; margin-bottom: 0px;color: black;">
-          <router-link :to="`/video/${videoInfo.id}`" style="color: black;"> {{ videoInfo.title }} </router-link>
+          <router-link :to="`/video/${videoInfo.id}`" style="color: black;">
+            {{ videoInfo.title }}
+            <v-chip
+              v-if="videoInfo.pixelsNumber >= 2073600"
+              class="ma-2"
+              color="orange"
+              x-small
+              text-color="white"
+            >
+              {{ StringUtils.clarityDisplay(videoInfo.pixelsNumber) }}
+            </v-chip>
+          </router-link>
         </p>
         <p style="font-size: 10px; color: #606060;">
           {{ videoInfo.viewCount }} 观看 <span v-html="`&nbsp;&nbsp;`" />
@@ -44,6 +61,7 @@
 
 <script>
 import TimeUtil from '@/utils/time-util.vue'
+import StringUtils from '@/utils/string-utils.vue'
 export default {
   name: 'VideoCard',
   props: {
@@ -55,6 +73,7 @@ export default {
   data() {
     return {
       TimeUtil,
+      StringUtils,
       videoInfo: this.video
     }
   },

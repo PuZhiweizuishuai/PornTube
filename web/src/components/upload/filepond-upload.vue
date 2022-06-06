@@ -70,6 +70,7 @@ export default {
   },
   methods: {
     handleFilePondInit() {
+      this.myFiles = []
       // console.log('FilePond has initialized')
       // FilePond instance methods are available on `this.$refs.pond`
     },

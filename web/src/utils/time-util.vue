@@ -44,10 +44,26 @@ function timeToNowStrning(date) {
   return renderTime(date)
 }
 
+function timeCover(data) {
+  if (data == null || data === '') {
+    return ''
+  }
+  //
+  let minute = Math.floor(data / 60)
+  if (minute >= 60) {
+    const hour = Math.floor(minute / 60)
+    minute = minute % 60
+    return hour + ':' + minute + ':' + parseInt(data % 60)
+  } else {
+    return minute + ':' + parseInt(data % 60)
+  }
+}
+
 export default {
   timeToNowStrning,
   renderTime,
   formateTimeToChinese,
-  formateTime
+  formateTime,
+  timeCover
 }
 </script>

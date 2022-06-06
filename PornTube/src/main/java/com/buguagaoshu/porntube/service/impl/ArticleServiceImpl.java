@@ -155,7 +155,10 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
             articleEntity.setExamineStatus(ExamineTypeEnum.SUCCESS.getCode());
         }
         articleEntity.setType(FileTypeEnum.VIDEO.getCode());
-        // TODO 写入视频长度
+        // TODO 增加视频列表上传功能
+        articleEntity.setDuration(videoId.getDuration());
+        articleEntity.setPixelsNumber(videoId.getPixelsNumber());
+        articleEntity.setFrameRate(videoId.getFrameRate());
         this.save(articleEntity);
         List<FileTableEntity> list = new ArrayList<>();
         videoId.setArticleId(articleEntity.getId());
