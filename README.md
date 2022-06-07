@@ -34,7 +34,7 @@
 
 ### publish
 
-<img src="https://ae04.alicdn.com/kf/U3e6186ea90704e1381da8494434aaf1cN.jpg" title="投稿" alt="投稿">
+<img src="/img/publish01.png" title="投稿" alt="投稿">
 
 
 ## introduction 
@@ -47,7 +47,7 @@ Adopted Spring Boot， Vue， vuetifyjs
 
 Still in development. But most of the gong'n has been done.
 
-for example, Video upload, danmaku, historical records, etc.
+for example, Video upload, danmaku, historical records, Auto generate cover image, etc.
 
 
 ## Quick start

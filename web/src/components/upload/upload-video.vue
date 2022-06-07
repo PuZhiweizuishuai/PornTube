@@ -16,6 +16,38 @@
             <FilePondUpdate ref="videoUploadTool" @video="videoUploadSuccess" />
           </v-col>
         </v-row>
+        <!-- 显示系统自动生成的截图 -->
+        <!-- <v-row justify="center">
+          <v-col cols="10">
+            <h2>显示系统生成的封面图</h2>
+          </v-col>
+        </v-row> -->
+        <v-col />
+        <v-row no-gutters justify="center">
+          <v-col
+            v-for="item in videPhotoList"
+            :key="item.id"
+          >
+            <div style="width: 350px;padding-top: 12px;">
+              <v-row>
+                <v-col>
+                  <v-img :src="item.fileUrl" aspect-ratio="1.77" contain max-height="150" alt="封面图，推荐16：9" />
+                </v-col>
+              </v-row>
+              <v-col />
+              <v-row justify="center">
+                <v-btn text color="success" @click="setAutoFaceImage(item)">选择</v-btn>
+              </v-row>
+            </div>
+          </v-col>
+        </v-row>
+        <v-col />
+        <v-row justify="center">
+          <v-col cols="10">
+            <v-btn v-if="isShowUploadFaceButton" color="success" @click="isShowUploadFaceImage = true">没有想要的封面图，我要上传</v-btn>
+          </v-col>
+        </v-row>
+
         <v-row justify="center">
           <v-col cols="10">
             <h2>基本信息</h2>
@@ -24,11 +56,13 @@
         <v-row justify="center">
           <v-col cols="5">
             <v-card outlined>
-              <v-img :src="article.imgUrl" aspect-ratio="1.77" contain max-height="150" alt="封面图，推荐16：9" />
+              <v-img class="white--text align-end" :src="article.imgUrl" aspect-ratio="1.77" contain max-height="150" alt="封面图，推荐16：9">
+                封面图
+              </v-img>
             </v-card>
           </v-col>
 
-          <v-col cols="5">
+          <v-col v-if="isShowUploadFaceImage" cols="5">
             <v-file-input
               :rules="rules"
               accept="image/png, image/jpeg, image/bmp"
@@ -139,6 +173,7 @@ export default {
         video: {},
         imageId: ''
       },
+      videPhotoList: [],
       categoryMap: {
         Set: function(key, value) { this[key] = value },
         Get: function(key) { return this[key] },
@@ -150,13 +185,20 @@ export default {
       nowCategory: {},
       files: [],
       showMessage: false,
-      message: ''
+      message: '',
+      isShowUploadFaceImage: false,
+      isShowUploadFaceButton: false
     }
   },
   created() {
     this.getCategory()
   },
   methods: {
+    setAutoFaceImage(item) {
+      this.article.imgUrl = item.fileUrl
+      this.article.imageId = item.id
+    },
+
     publis() {
       if (!this.article.video.id) {
         this.message = '你还没有上传视频'
@@ -206,9 +248,18 @@ export default {
     videoUploadSuccess(value) {
       // console.log(value)
       if (value.status === 200) {
-        //
-        this.article.video = value.data[0]
-        this.setTitle(value.data[0].fileOriginalName)
+        // 设置封面图和视频
+        for (let i = 0; i < value.data.length; i++) {
+          if (value.data[i].type === 5) {
+            this.videPhotoList.push(value.data[i])
+            continue
+          }
+          if (value.data[i].type === 0) {
+            this.article.video = value.data[i]
+            this.setTitle(value.data[i].fileOriginalName)
+          }
+        }
+        this.isShowUploadFaceButton = true
         this.message = '上传视频成功'
         this.showMessage = true
       } else {

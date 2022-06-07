@@ -17,7 +17,8 @@ public enum FileTypeEnum {
     PHOTO(1, "图片投稿"),
     ARTICLE(2, "文章投稿"),
     AVATAR(3, "头像数据"),
-    TOP_IMAGE(4, "个人主页顶部大图")
+    TOP_IMAGE(4, "个人主页顶部大图"),
+    VIDEO_PHOTO(5, "系统生成视频封面")
     ;
     int code;
     String msg;

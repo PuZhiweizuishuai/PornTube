@@ -6,6 +6,7 @@ import com.buguagaoshu.porntube.enums.FileTypeEnum;
 import com.buguagaoshu.porntube.repository.FileRepository;
 import com.buguagaoshu.porntube.service.FileTableService;
 import com.buguagaoshu.porntube.utils.FFmpegUtils;
+import com.buguagaoshu.porntube.utils.FileUtils;
 import com.buguagaoshu.porntube.vo.VditorFiles;
 import com.buguagaoshu.porntube.vo.VideoInfo;
 import lombok.extern.slf4j.Slf4j;
@@ -63,7 +64,7 @@ public class FileRepositoryInLocalDiskImpl implements FileRepository {
             try {
 
                 Files.copy(file.getInputStream(), Paths.get(path, filename));
-                FileTableEntity fileTableEntity = createFileTableEntity(filename, suffix, path, file.getSize(), file.getOriginalFilename(), userId, FileTypeEnum.getFileType(suffix).getCode());
+                FileTableEntity fileTableEntity = FileUtils.createFileTableEntity(filename, suffix, path, file.getSize(), file.getOriginalFilename(), userId, FileTypeEnum.getFileType(suffix).getCode());
                 succMap.put(file.getOriginalFilename(), "/api/upload/" + path + "/" + filename);
                 // TODO 文件夹大小控制
                 // TODO 写入视频长度信息
@@ -112,7 +113,7 @@ public class FileRepositoryInLocalDiskImpl implements FileRepository {
             } catch (Exception e) {
                 log.info("文件上传失败，上传文件的用户ID：{}， 上传的文件名： {}", userId, file.getOriginalFilename());
             }
-            FileTableEntity fileTableEntity = createFileTableEntity(filename, suffix, path, file.getSize(), file.getOriginalFilename(), userId, type);
+            FileTableEntity fileTableEntity = FileUtils.createFileTableEntity(filename, suffix, path, file.getSize(), file.getOriginalFilename(), userId, type);
             // TODO 文件夹大小控制
 
             // 分析视频数据并保存
@@ -132,6 +133,13 @@ public class FileRepositoryInLocalDiskImpl implements FileRepository {
                 fileTableEntity.setPixelsNumber((long) videoInfo.getWidth() * videoInfo.getHeight());
                 fileTableEntity.setFrameRate(videoInfo.getFrameRate());
                 fileTableEntity.setInfo(videoInfo.toJson());
+                // 自动截图
+                List<FileTableEntity> fileTableEntities = FFmpegUtils.randomGrabberFFmpegImage(Paths.get(path, filename).toFile(), 6, userId);
+                if (fileTableEntities != null) {
+                    // 保存截图
+                    fileTableService.saveBatch(fileTableEntities);
+                    list.addAll(fileTableEntities);
+                }
             }
 
             fileTableEntity.setStatus(FileStatusEnum.NOT_USE_FILE.getCode());
@@ -163,23 +171,5 @@ public class FileRepositoryInLocalDiskImpl implements FileRepository {
             log.warn(e.getMessage());
             return false;
         }
-    }
-
-
-    public FileTableEntity createFileTableEntity(String filename, String suffix,
-                                                 String path, long size,
-                                                 String originalFilename,
-                                                 long userId, int type) {
-        FileTableEntity fileTableEntity = new FileTableEntity();
-        fileTableEntity.setUploadTime(System.currentTimeMillis());
-        fileTableEntity.setFileUrl("/api/upload/" + path + "/" + filename);
-        fileTableEntity.setFileNewName(filename);
-        fileTableEntity.setSize(size);
-        fileTableEntity.setFileOriginalName(originalFilename);
-
-        fileTableEntity.setType(type);
-        fileTableEntity.setSuffixName(suffix);
-        fileTableEntity.setUploadUserId(userId);
-        return fileTableEntity;
     }
 }
