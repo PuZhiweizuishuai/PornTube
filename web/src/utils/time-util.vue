@@ -45,7 +45,7 @@ function timeToNowStrning(date) {
 }
 
 function timeCover(data) {
-  if (data == null || data === '') {
+  if (data == null || data === '' || data === 'null') {
     return ''
   }
   //

@@ -62,8 +62,6 @@ public class PlayRecordingServiceImpl extends ServiceImpl<PlayRecordingDao, Play
     @Override
     public long saveHistory(FileTableEntity file, Long userId, String ua) {
         long time = System.currentTimeMillis();
-        // TODO 此处有并发bug，请求时间相近的情况下会写入两条相同的播放记录
-        // 尤其是使用qq浏览器的时候
         lock.lock();
         try {
             PlayRecordingEntity playRecordingEntity = findPlayRecordingEntityByArticleIdAndVideoId(file.getArticleId(), file.getId(), userId);

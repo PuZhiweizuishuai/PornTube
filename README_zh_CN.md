@@ -17,7 +17,7 @@
 
 ### 播放历史
 
-<img src="https://ae04.alicdn.com/kf/Uf6234d40690f4f45ab8c77b6709dd689i.jpg" title="历史记录" alt="历史记录">
+<img src="/img/history.png" title="历史记录" alt="历史记录">
 
 ## 用户主页
 
@@ -84,4 +84,6 @@ http://127.0.0.1:8000
 
 # 更新
 
-估计离下次更新不远了
+## 2022-08-17 
+
+新增播放记录时间戳

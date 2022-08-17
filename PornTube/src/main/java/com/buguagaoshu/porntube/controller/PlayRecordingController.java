@@ -1,12 +1,11 @@
 package com.buguagaoshu.porntube.controller;
 
+import com.buguagaoshu.porntube.entity.PlayRecordingEntity;
 import com.buguagaoshu.porntube.service.PlayRecordingService;
 import com.buguagaoshu.porntube.service.PlayRecordingWithArticleService;
 import com.buguagaoshu.porntube.vo.ResponseDetails;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Map;
@@ -28,5 +27,13 @@ public class PlayRecordingController {
     public ResponseDetails list(@RequestParam Map<String, Object> params,
                                 HttpServletRequest request) {
         return ResponseDetails.ok().put("data", playRecordingWithArticleService.playRecordingList(params, request));
+    }
+
+
+    @PostMapping("/api/user/playrecording/save")
+    public ResponseDetails save(@RequestBody PlayRecordingEntity playRecording, HttpServletRequest request) {
+
+        return ResponseDetails.ok().put("data",
+                playRecordingWithArticleService.savePlayLog(playRecording, request));
     }
 }

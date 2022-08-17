@@ -11,7 +11,6 @@ import org.bytedeco.javacv.Java2DFrameConverter;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
@@ -87,9 +86,15 @@ public class FFmpegUtils {
             long delayedTime = grabber.getLengthInTime() / 1000000;
 
             Random random = new Random();
+            int[] timeList = new int[count];
             for (int i = 0; i < count; i++) {
+                timeList[i] = random.nextInt((int)delayedTime - 1) + 1;
+            }
+            // 让截图按时间线排列
+            Arrays.sort(timeList);
+            for (int i : timeList) {
                 // 跳转到响应时间
-                grabber.setTimestamp((random.nextInt((int)delayedTime - 1) + 1) * 1000000L);
+                grabber.setTimestamp(i * 1000000L);
                 Frame f = grabber.grabImage();
                 Java2DFrameConverter converter = new Java2DFrameConverter();
                 BufferedImage bi = converter.getBufferedImage(f);

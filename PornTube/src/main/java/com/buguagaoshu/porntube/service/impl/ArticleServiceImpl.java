@@ -183,7 +183,13 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         wrapper.eq("id", id);
         wrapper.eq("status", ArticleStatusEnum.NORMAL.getCode());
         // 非管理员添加审核条件
-        boolean flag = !RoleTypeEnum.ADMIN.getRole().equals(JwtUtil.getRole(request));
+        boolean flag = false;
+        try {
+            flag = !RoleTypeEnum.ADMIN.getRole().equals(JwtUtil.getRole(request));
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
+
 
         if (flag) {
             wrapper.eq("examine_status", ExamineTypeEnum.SUCCESS.getCode());

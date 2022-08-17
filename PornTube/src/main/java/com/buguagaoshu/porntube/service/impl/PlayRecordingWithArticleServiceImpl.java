@@ -3,10 +3,14 @@ package com.buguagaoshu.porntube.service.impl;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.buguagaoshu.porntube.entity.ArticleEntity;
+import com.buguagaoshu.porntube.entity.FileTableEntity;
 import com.buguagaoshu.porntube.entity.PlayRecordingEntity;
 import com.buguagaoshu.porntube.service.ArticleService;
+import com.buguagaoshu.porntube.service.FileTableService;
 import com.buguagaoshu.porntube.service.PlayRecordingService;
 import com.buguagaoshu.porntube.service.PlayRecordingWithArticleService;
+import com.buguagaoshu.porntube.utils.IpUtil;
+import com.buguagaoshu.porntube.utils.JwtUtil;
 import com.buguagaoshu.porntube.utils.PageUtils;
 import com.buguagaoshu.porntube.vo.PlayRecordingWithArticleVo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,10 +33,13 @@ public class PlayRecordingWithArticleServiceImpl implements PlayRecordingWithArt
 
     private final ArticleService articleService;
 
+    private final FileTableService fileTableService;
+
     @Autowired
-    public PlayRecordingWithArticleServiceImpl(PlayRecordingService playRecordingService, ArticleService articleService) {
+    public PlayRecordingWithArticleServiceImpl(PlayRecordingService playRecordingService, ArticleService articleService, FileTableService fileTableService) {
         this.playRecordingService = playRecordingService;
         this.articleService = articleService;
+        this.fileTableService = fileTableService;
     }
 
 
@@ -103,5 +110,35 @@ public class PlayRecordingWithArticleServiceImpl implements PlayRecordingWithArt
             }
         };
         return new PageUtils(iPage);
+    }
+
+    @Override
+    public String savePlayLog(PlayRecordingEntity playRecording, HttpServletRequest request) {
+        long userId = JwtUtil.getUserId(request);
+
+        if (userId == playRecording.getUserId()) {
+            FileTableEntity videoFile = fileTableService.getById(playRecording.getVideoId());
+            if (videoFile == null) {
+                return "视频信息错误";
+            }
+            if (playRecording.getArticleId().equals(videoFile.getArticleId())) {
+                PlayRecordingEntity nowLog =
+                        playRecordingService.findPlayRecordingEntityByArticleIdAndVideoId(videoFile.getArticleId(), videoFile.getId(), userId);
+                if (nowLog == null) {
+                    playRecording.setUpdateTime(System.currentTimeMillis());
+                    playRecording.setUa(IpUtil.getUa(request));
+                    playRecordingService.save(playRecording);
+                } else {
+                    nowLog.setUa(IpUtil.getUa(request));
+                    nowLog.setVideoTime(playRecording.getVideoTime());
+                    nowLog.setUpdateTime(System.currentTimeMillis());
+                    playRecordingService.updateById(nowLog);
+                }
+                return "success";
+            }
+            return "no power";
+        } else {
+            return "用户信息错误";
+        }
     }
 }

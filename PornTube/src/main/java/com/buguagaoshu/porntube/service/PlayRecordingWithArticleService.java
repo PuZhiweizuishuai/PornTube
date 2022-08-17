@@ -1,5 +1,6 @@
 package com.buguagaoshu.porntube.service;
 
+import com.buguagaoshu.porntube.entity.PlayRecordingEntity;
 import com.buguagaoshu.porntube.utils.PageUtils;
 
 import javax.servlet.http.HttpServletRequest;
@@ -14,4 +15,7 @@ public interface PlayRecordingWithArticleService {
      * 获取历史记录分页查询
      * */
     PageUtils playRecordingList(Map<String, Object> params, HttpServletRequest request);
+
+
+    String savePlayLog(PlayRecordingEntity playRecording, HttpServletRequest request);
 }

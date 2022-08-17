@@ -12,7 +12,7 @@
     <artifactId>porntube</artifactId>
     <version>0.1.5-SNAPSHOT</version>
     <name>PornTube</name>
-    <description>Demo project for Spring Boot YouTube</description>
+    <description>一个模仿YouTube的能发弹幕的视频网站</description>
 
     <properties>
         <java.version>11</java.version>

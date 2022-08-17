@@ -1,7 +1,7 @@
 <template>
   <v-row>
     <v-col cols="3">
-      <router-link :to="`/video/${video.articleEntity.id}`">
+      <router-link :to="`/video/${video.articleEntity.id}?seek=${video.playRecordingEntity.videoTime}`">
         <v-img :src="video.articleEntity.imgUrl" aspect-ratio="1.77" max-width="400" class="white--text align-end">
           <span style="background-color: rgba(0,0,0,0.4);border-radius: 5px;">
 
@@ -12,12 +12,16 @@
     </v-col>
     <v-col>
       <v-row>
-        <router-link :to="`/video/${video.articleEntity.id}`">
+        <router-link :to="`/video/${video.articleEntity.id}?seek=${video.playRecordingEntity.videoTime}`">
           <h3>{{ video.articleEntity.title }}</h3>
         </router-link>
       </v-row>
       <v-row style="color:#606060;fount-size:12px;">
+        <strong>观看到： {{ TimeUtil.timeCover(video.playRecordingEntity.videoTime) }}</strong>
+        &nbsp;&nbsp;&nbsp;&nbsp;
+
         播放时间： {{ TimeUtil.renderTime(video.playRecordingEntity.updateTime) }}
+
       </v-row>
       <v-row style="color:#606060;fount-size:12px;">
         播放设备： {{ video.playRecordingEntity.ua }}
