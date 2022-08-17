@@ -11,6 +11,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -52,12 +53,17 @@ public class DeleteTempFileTasks {
             if (fileTableEntities.size() == 0) {
                 break;
             }
+            List<FileTableEntity> tempImg = new ArrayList<>();
             for (FileTableEntity file : fileTableEntities) {
                 repository.deleteFile(file);
                 file.setStatus(FileStatusEnum.DELETE.getCode());
+                if ("系统生成截图".equals(file.getFileOriginalName())) {
+                    tempImg.add(file);
+                }
                 num += 1;
             }
             fileTableService.updateBatchById(fileTableEntities);
+            fileTableService.removeBatchByIds(tempImg);
         }
 
         log.info(" {} 之前的过期文件删除完成", SIMPLE_DATE_FORMAT.format(endTime));
