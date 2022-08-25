@@ -18,6 +18,7 @@
     "filepond-plugin-image-preview": "^4.6.11",
     "hls.js": "^0.14.17",
     "ua-parser-js": "^1.0.2",
+    "vditor": "^3.8.17",
     "vue": "^2.6.14",
     "vue-cookies": "^1.8.1",
     "vue-filepond": "^6.0.3",

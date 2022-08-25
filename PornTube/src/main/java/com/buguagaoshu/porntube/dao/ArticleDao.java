@@ -20,5 +20,6 @@ public interface ArticleDao extends BaseMapper<ArticleEntity> {
 
 
     void addViewCount(@Param("id") long articleId, @Param("count") Long count);
-	
+
+    void addCount(@Param("col") String col, @Param("id") long articleId, @Param("count") Long count);
 }

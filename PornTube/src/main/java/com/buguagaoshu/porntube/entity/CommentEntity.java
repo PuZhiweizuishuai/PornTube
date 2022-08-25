@@ -81,4 +81,19 @@ public class CommentEntity {
 	 */
 	private Long updateTime;
 
+	private String ip;
+
+	private String ua;
+
+	private String city;
+
+
+	public void initComment() {
+		long time = System.currentTimeMillis();
+		this.status = 0;
+		this.likeCount = 0L;
+		this.createTime = time;
+		this.updateTime = time;
+		this.commentCount = 0L;
+	}
 }

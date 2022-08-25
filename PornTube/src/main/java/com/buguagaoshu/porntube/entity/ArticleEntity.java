@@ -144,4 +144,11 @@ public class ArticleEntity {
 	 * */
 	private Double frameRate;
 
+
+	private String ua;
+
+	private String ip;
+
+	private String city;
+
 }

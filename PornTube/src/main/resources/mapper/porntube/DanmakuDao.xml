@@ -13,6 +13,9 @@
         <result property="type" column="type"/>
         <result property="author" column="author"/>
         <result property="colorDec" column="color_dec"/>
+        <result property="ua" column="ua"/>
+        <result property="ip" column="ip"/>
+        <result property="city" column="city"/>
     </resultMap>
 
 

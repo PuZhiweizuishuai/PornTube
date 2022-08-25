@@ -54,4 +54,11 @@ public class DanmakuEntity {
 	 * */
 	private Long colorDec;
 
+
+	private String ip;
+
+	private String ua;
+
+	private String city;
+
 }

@@ -112,4 +112,10 @@ public class FileTableEntity {
     @TableField(exist = false)
     private String key;
 
+    private String ip;
+
+    private String ua;
+
+    private String city;
+
 }

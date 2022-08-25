@@ -22,6 +22,9 @@
         <result property="frameRate" column="frame_rate"/>
         <result property="info" column="info"/>
         <result property="status" column="status"/>
+        <result property="ua" column="ua"/>
+        <result property="ip" column="ip"/>
+        <result property="city" column="city"/>
     </resultMap>
 
 

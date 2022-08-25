@@ -73,7 +73,6 @@ export default {
   methods: {
     getUaInfo(uastr) {
       const ua = parser(uastr)
-      console.log(ua)
       return `操作系统：${ua.os.name} ${ua.os.version} 浏览器：${ua.browser.name} ${ua.browser.major}`
     }
   }

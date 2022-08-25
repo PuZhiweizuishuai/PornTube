@@ -341,6 +341,11 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         this.baseMapper.addViewCount(articleId, count);
     }
 
+    @Override
+    public void addCount(String col, Long articleId, long count) {
+        this.addCount(col, articleId, count);
+    }
+
 
     public IPage<ArticleViewData> createArticleViewData(List<ArticleViewData> articleViewData,
                                                         IPage<ArticleEntity> page) {

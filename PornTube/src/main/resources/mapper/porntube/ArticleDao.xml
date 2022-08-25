@@ -30,9 +30,15 @@
         <result property="duration" column="duration"/>
         <result property="pixelsNumber" column="pixels_number"/>
         <result property="frameRate" column="frame_rate"/>
+        <result property="ua" column="ua"/>
+        <result property="ip" column="ip"/>
+        <result property="city" column="city"/>
     </resultMap>
     <update id="addViewCount">
         update article set view_count = view_count + #{count} where id = #{id}
+    </update>
+    <update id="addCount">
+        update article set ${col} = ${col} + #{count} where id = #{id}
     </update>
     <update id="addDanmakuCount">
         update article set danmaku_count = danmaku_count + #{count} where id = #{id}
