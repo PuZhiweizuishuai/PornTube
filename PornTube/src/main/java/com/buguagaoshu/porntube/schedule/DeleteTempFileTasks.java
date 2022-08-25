@@ -57,7 +57,7 @@ public class DeleteTempFileTasks {
             for (FileTableEntity file : fileTableEntities) {
                 repository.deleteFile(file);
                 file.setStatus(FileStatusEnum.DELETE.getCode());
-                if ("系统生成截图".equals(file.getFileOriginalName())) {
+                if (WebConstant.SYSTEM_CREATE_SCREENSHOT.equals(file.getFileOriginalName())) {
                     tempImg.add(file);
                 }
                 num += 1;

@@ -1,5 +1,6 @@
 package com.buguagaoshu.porntube.utils;
 
+import com.buguagaoshu.porntube.config.WebConstant;
 import com.buguagaoshu.porntube.entity.FileTableEntity;
 import com.buguagaoshu.porntube.enums.FileTypeEnum;
 import com.buguagaoshu.porntube.vo.VideoInfo;
@@ -101,7 +102,7 @@ public class FFmpegUtils {
                 String imageName = FileTypeEnum.newFilename(SUFFIX);
                 File out = Paths.get(path, imageName).toFile();
                 ImageIO.write(bi, "jpg", out);
-                FileTableEntity fileTable = FileUtils.createFileTableEntity(imageName, SUFFIX, path, f.image.length, "系统生成截图", userId, FileTypeEnum.VIDEO_PHOTO.getCode());
+                FileTableEntity fileTable = FileUtils.createFileTableEntity(imageName, SUFFIX, path, f.image.length, WebConstant.SYSTEM_CREATE_SCREENSHOT, userId, FileTypeEnum.VIDEO_PHOTO.getCode());
                 images.add(fileTable);
             }
             return images;

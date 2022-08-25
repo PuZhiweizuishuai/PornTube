@@ -51,4 +51,7 @@ public class WebConstant {
      * 默认一周 604800000L
      * */
     public final static long DEPRECATED_FILE_TIME = 604800000L;
+
+
+    public final static String SYSTEM_CREATE_SCREENSHOT = "系统生成截图";
 }

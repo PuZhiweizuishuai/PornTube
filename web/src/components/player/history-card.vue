@@ -17,14 +17,33 @@
         </router-link>
       </v-row>
       <v-row style="color:#606060;fount-size:12px;">
-        <strong>观看到： {{ TimeUtil.timeCover(video.playRecordingEntity.videoTime) }}</strong>
-        &nbsp;&nbsp;&nbsp;&nbsp;
+        <strong>观看到：
 
-        播放时间： {{ TimeUtil.renderTime(video.playRecordingEntity.updateTime) }}
+          {{ TimeUtil.timeCover(video.playRecordingEntity.videoTime) }}
+
+        </strong>
+
+        &nbsp;&nbsp;
+
+        播放时间：{{ TimeUtil.renderTime(video.playRecordingEntity.updateTime) }}
 
       </v-row>
       <v-row style="color:#606060;fount-size:12px;">
-        播放设备： {{ video.playRecordingEntity.ua }}
+        <span
+          style="
+    margin-top: 8px;
+"
+        >播放设备： </span>
+        <v-chip
+          class="ma-2"
+          color="primary"
+          small
+        >
+          {{ getUaInfo(video.playRecordingEntity.ua) }}
+          <!-- {{ parser(video.playRecordingEntity.ua) }} -->
+          <!-- {{ video.playRecordingEntity.ua }} -->
+        </v-chip>
+
       </v-row>
       <v-row style="color:#606060;fount-size:12px;">
         {{ video.articleEntity.describes }}
@@ -35,6 +54,7 @@
 
 <script>
 import TimeUtil from '@/utils/time-util.vue'
+var parser = require('ua-parser-js')
 export default {
   name: 'History',
   props: {
@@ -45,8 +65,16 @@ export default {
   },
   data() {
     return {
+      parser,
       TimeUtil,
       videoInfo: this.video
+    }
+  },
+  methods: {
+    getUaInfo(uastr) {
+      const ua = parser(uastr)
+      console.log(ua)
+      return `操作系统：${ua.os.name} ${ua.os.version} 浏览器：${ua.browser.name} ${ua.browser.major}`
     }
   }
 }
