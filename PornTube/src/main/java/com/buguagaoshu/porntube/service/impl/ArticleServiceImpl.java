@@ -343,7 +343,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
 
     @Override
     public void addCount(String col, Long articleId, long count) {
-        this.addCount(col, articleId, count);
+        this.baseMapper.addCount(col, articleId, count);
     }
 
 

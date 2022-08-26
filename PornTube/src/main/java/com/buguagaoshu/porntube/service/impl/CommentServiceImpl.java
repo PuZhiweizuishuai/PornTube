@@ -3,6 +3,9 @@ package com.buguagaoshu.porntube.service.impl;
 import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.buguagaoshu.porntube.entity.ArticleEntity;
 import com.buguagaoshu.porntube.entity.UserEntity;
+import com.buguagaoshu.porntube.enums.CommentType;
+import com.buguagaoshu.porntube.enums.SortType;
+import com.buguagaoshu.porntube.model.CustomPage;
 import com.buguagaoshu.porntube.service.ArticleService;
 import com.buguagaoshu.porntube.service.UserService;
 import com.buguagaoshu.porntube.utils.IpUtil;
@@ -52,7 +55,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, CommentEntity> i
         Long article = Long.parseLong((String) params.get("article"));
         Integer type = Integer.parseInt((String) params.get("type"));
         Integer sort = Integer.parseInt((String) params.get("sort"));
-        if (type == 2) {
+        if (type == CommentType.SECOND_COMMENT) {
             Long fatherId = Long.parseLong((String) params.get("fatherId"));
             return commentList(params, article, fatherId, 2, sort);
         } else {
@@ -125,13 +128,13 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, CommentEntity> i
         wrapper.eq("article_id", articleId);
         wrapper.eq("type", type);
         wrapper.eq("status", 0);
-        if (type == 2) {
+        if (type == CommentType.SECOND_COMMENT) {
             wrapper.eq("parent_comment_id", fatherId);
         }
         if (sort != null) {
-            if (sort == 1) {
+            if (sort == SortType.TIME_DESC) {
                 wrapper.orderByDesc("create_time");
-            } else if (sort == 3) {
+            } else if (sort == SortType.TOP_COMMENT) {
                 wrapper.orderByDesc("comment_count");
             }
         }
@@ -139,6 +142,9 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, CommentEntity> i
                 new Query<CommentEntity>().getPage(params),
                 wrapper
         );
+        if (page.getRecords() == null || page.getRecords().size() == 0) {
+            return new PageUtils(page);
+        }
         Set<Long> userSet = page.getRecords().stream().map(CommentEntity::getUserId).collect(Collectors.toSet());
         Map<Long, UserEntity> userMap = userService.listByIds(userSet).stream().collect(Collectors.toMap(UserEntity::getId, u -> u));
 
@@ -148,56 +154,17 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, CommentEntity> i
             CommentWithUserVo commentWithUserVo = new CommentWithUserVo();
             BeanUtils.copyProperties(comment, commentWithUserVo);
             BeanUtils.copyProperties(userMap.get(comment.getUserId()), commentWithUserVo);
+            commentWithUserVo.setId(comment.getId());
             commentWithUserVoList.add(commentWithUserVo);
+
         }
 
-        IPage<CommentWithUserVo> commentWithUserVoIPage = new IPage<CommentWithUserVo>() {
-            @Override
-            public List<OrderItem> orders() {
-                return null;
-            }
-
-            @Override
-            public List<CommentWithUserVo> getRecords() {
-                return commentWithUserVoList;
-            }
-
-            @Override
-            public IPage<CommentWithUserVo> setRecords(List<CommentWithUserVo> records) {
-                return null;
-            }
-
-            @Override
-            public long getTotal() {
-                return page.getTotal();
-            }
-
-            @Override
-            public IPage<CommentWithUserVo> setTotal(long total) {
-                return null;
-            }
-
-            @Override
-            public long getSize() {
-                return page.getSize();
-            }
-
-            @Override
-            public IPage<CommentWithUserVo> setSize(long size) {
-                return null;
-            }
-
-            @Override
-            public long getCurrent() {
-                return page.getCurrent();
-            }
-
-            @Override
-            public IPage<CommentWithUserVo> setCurrent(long current) {
-                return null;
-            }
-        };
-
+        IPage<CommentWithUserVo> commentWithUserVoIPage = new CustomPage<>(
+                commentWithUserVoList,
+                page.getTotal(),
+                page.getSize(),
+                page.getCurrent()
+        );
         return new PageUtils(commentWithUserVoIPage);
     }
 

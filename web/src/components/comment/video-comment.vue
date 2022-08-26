@@ -31,7 +31,7 @@
           rows="2"
           :no-resize="true"
         /> -->
-        <Vditor ref="childvditor" :height="150" @vditor-input="getCommentText" />
+        <Vditor ref="commentVditor" :height="150" @vditor-input="getCommentText" />
       </v-col>
     </v-row>
     <v-row>
@@ -40,11 +40,9 @@
       </v-col>
     </v-row>
     <v-col />
-    <v-divider />
     <v-row>
       <v-col cols="9" style="padding-bottom: 0px;">
         <v-tabs>
-          <v-tab @click="setType(0)">评论时间</v-tab>
           <v-tab @click="setType(1)">时间倒序</v-tab>
           <v-tab>最多点赞</v-tab>
           <v-tab @click="setType(3)">最多评论</v-tab>
@@ -60,7 +58,8 @@
     <v-row v-for="item in commentsList" :key="item.id">
       <v-col cols="12">
         <!-- <Card :comment="item" :artice="artice" /> -->
-        liebiao
+        <CommentCard :author-id="authorId" :comment="item" />
+
       </v-col>
     </v-row>
     <v-row v-if="total == 0" justify="center">
@@ -104,10 +103,12 @@
 
 <script>
 import Vditor from '@/components/vditor/vditor.vue'
+import CommentCard from '@/components/comment/comment-card.vue'
 export default {
   name: 'VideoComment',
   components: {
-    Vditor
+    Vditor,
+    CommentCard
   },
   props: {
     count: {
@@ -115,6 +116,10 @@ export default {
       default: 0
     },
     article: {
+      type: Number,
+      default: 0
+    },
+    authorId: {
       type: Number,
       default: 0
     },
@@ -137,10 +142,22 @@ export default {
       commentsList: [],
       page: 1,
       length: 15,
-      type: 0
+      type: 0,
+      sort: 1,
+      size: 15
     }
   },
+  created() {
+    this.getCommentList()
+  },
   methods: {
+    getCommentList() {
+      this.httpGet(`/comment/list?article=${this.article}&type=1&sort=${this.sort}&page=${this.page}&limit=${this.size}`, (json) => {
+        this.commentsList = json.data.list
+        this.page = json.data.currPage
+        this.length = json.data.totalPage
+      })
+    },
     getCommentText(value) {
       this.commentData.comment = value
     },
@@ -155,6 +172,31 @@ export default {
           //
           this.message = '评论成功'
           this.showMessage = true
+          this.commentData.comment = ''
+          this.$refs.commentVditor.setTextValue('')
+          // const data = {
+          //   'id': 9999999999,
+          //   'articleId': this.article,
+          //   'userId': this.$store.state.userInfo.id,
+          //   'comment': this.commentData.comment,
+          //   'parentCommentId': 0,
+          //   'parentUserId': 0,
+          //   'likeCount': 0,
+          //   'commentCount': 0,
+          //   'dislikeCount': 0,
+          //   'type': 1,
+          //   'createTime': new Date().getTime(),
+          //   'updateTime': new Date().getTime(),
+          //   'ua': navigator.userAgent,
+          //   'city': null,
+          //   'username': this.$store.state.userInfo.username,
+          //   'followCount': 0,
+          //   'fansCount': 0,
+          //   'avatarUrl': this.$store.state.userInfo.avatarUrl,
+          //   'introduction': this.$store.state.userInfo.introduction
+          // }
+          // this.commentsList.push(data)
+          this.getCommentList()
         } else {
           //
           this.message = json.message
@@ -163,10 +205,12 @@ export default {
       })
     },
     pageChange(page) {
-
+      this.page = page
+      this.getCommentList()
     },
     setType(value) {
-
+      this.sort = value
+      this.getCommentList()
     }
   }
 }

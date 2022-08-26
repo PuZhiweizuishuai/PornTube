@@ -16,22 +16,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SpringBootTest
 class PornTubeApplicationTests {
 
-
-
-    @Autowired
-    private FileTableService fileTableService;
-
     @Autowired
     private ArticleService articleService;
 
-    @Autowired
-    private UserService userService;
-
-    @Autowired
-    private UserRoleService userRoleService;
-
     @Test
     void contextLoads() {
-
+        //articleService.addCount("comment_count", 8L, 1L);
     }
 }

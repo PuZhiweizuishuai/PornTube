@@ -6,7 +6,7 @@
 
 <script>
 import Vditor from 'vditor'
-import 'vditor/src/assets/scss/index.scss'
+import 'vditor/dist/index.css'
 export default {
   name: 'ShowMarkdown',
   props: {
@@ -43,10 +43,10 @@ export default {
           speech: {
             enable: this.speech
           },
-          cdn: '/vditor',
-          theme: {
-            path: '/vditor/dist/css/content-theme'
-          },
+          // cdn: '/vditor',
+          // theme: {
+          //   path: '/vditor/dist/css/content-theme'
+          // },
           emojiPath: '/emoji',
           anchor: this.anchorNum
         })

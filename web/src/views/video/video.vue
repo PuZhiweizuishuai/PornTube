@@ -104,7 +104,7 @@
       <v-col />
       <v-row style="padding-top: 12px; padding-bottom: 12px">
         <v-col :cols="colsWidth">
-          <Comment :article="id" :typenum="1" :count="videoData.commentCount" />
+          <Comment :article="id" :author-id="videoData.userId" :typenum="1" :count="videoData.commentCount" />
         </v-col>
         <v-col>
           相关视频：
