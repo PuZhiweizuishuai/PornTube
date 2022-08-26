@@ -28,5 +28,7 @@ public interface CommentService extends IService<CommentEntity> {
 
 
     PageUtils commentList(Map<String, Object> params, long articleId, long fatherId, int type, Integer sort);
+
+    void addCount(String col, long commentId, long count);
 }
 

@@ -37,6 +37,11 @@ public class CommentEntity {
 	private String comment;
 
 	/**
+	 * 二级评论时根节点评论ID
+	 * */
+	private Long commentId;
+
+	/**
 	 * 父级评论
 	 */
 	private Long parentCommentId;

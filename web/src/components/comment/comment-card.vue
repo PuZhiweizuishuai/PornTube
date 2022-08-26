@@ -100,14 +100,14 @@
     <v-row>
       <v-divider />
     </v-row>
-    <!-- <v-dialog
+    <v-dialog
       v-model="showSecond"
       max-width="1000"
     >
       <v-card>
-        <SecondComment :key="secondCommendKey" :father="comment" :type="type" />
+        <SecondComment :key="secondCommendKey" :father="comment" />
       </v-card>
-    </v-dialog> -->
+    </v-dialog>
     <v-snackbar
       v-model="showMessage"
       :top="true"
@@ -132,11 +132,13 @@
 <script>
 import ShowMarkdown from '@/components/vditor/show-markdown.vue'
 import TimeUtil from '@/utils/time-util.vue'
+import SecondComment from '@/components/comment/second-comment.vue'
 var parser = require('ua-parser-js')
 export default {
   name: 'CommentCard',
   components: {
-    ShowMarkdown
+    ShowMarkdown,
+    SecondComment
   },
   props: {
     comment: {
@@ -178,7 +180,7 @@ export default {
       return `${ua.os.name} ${ua.browser.name}`
     },
     openSecond() {
-      this.secondCommendKey += 1
+      this.secondCommendKey = Math.random() * 10000
       this.showSecond = true
     },
     like() {

@@ -84,6 +84,7 @@ CREATE TABLE `comment`  (
   `article_id` bigint NOT NULL,
   `user_id` bigint NOT NULL,
   `comment` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '评论',
+  `comment_id` bigint NULL DEFAULT NULL COMMENT '父级评论',
   `parent_comment_id` bigint NULL DEFAULT NULL COMMENT '父级评论',
   `parent_user_id` bigint NULL DEFAULT NULL COMMENT '评论对象',
   `like_count` bigint NOT NULL DEFAULT 0 COMMENT '喜欢数',

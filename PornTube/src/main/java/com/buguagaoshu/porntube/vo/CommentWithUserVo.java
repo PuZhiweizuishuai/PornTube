@@ -25,6 +25,8 @@ public class CommentWithUserVo {
      */
     private String comment;
 
+    private Long commentId;
+
     /**
      * 父级评论
      */

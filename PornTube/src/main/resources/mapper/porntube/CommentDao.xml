@@ -21,7 +21,10 @@
         <result property="ua" column="ua"/>
         <result property="ip" column="ip"/>
         <result property="city" column="city"/>
+        <result property="commentId" column="comment_id"/>
     </resultMap>
-
+    <update id="addCount">
+        update comment set ${col} = ${col} + #{count} where id = #{id}
+    </update>
 
 </mapper>

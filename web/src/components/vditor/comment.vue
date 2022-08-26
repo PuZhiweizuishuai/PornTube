@@ -4,7 +4,7 @@
 
 <script>
 import Vditor from 'vditor'
-import 'vditor/src/assets/scss/index.scss'
+import 'vditor/dist/index.css'
 export default {
   props: {
     placeholder: {
@@ -104,7 +104,7 @@ export default {
         },
         toolbar: [
           'emoji',
-          'upload',
+          // 'upload',
           'edit-mode'
         // {
         //   hotkey: '⇧⌘S',
@@ -155,21 +155,21 @@ export default {
         },
         // minHeight: this.minHeight,
         placeholder: this.placeholder,
-        upload: {
-          max: 20 * 1024 * 1024,
-          withCredentials: true,
-          headers: {
-            'X-XSRF-TOKEN': this.$cookies.get('XSRF-TOKEN')
-          },
-          accept: 'image/*',
-          url: this.uploadurl,
-          multiple: false,
-          filename(name) {
-            return name.replace(/[^(a-zA-Z0-9\u4e00-\u9fa5\.)]/g, '')
-              .replace(/[\?\\/:|<>\*\[\]\(\)\$%\{\}@~]/g, '')
-              .replace('/\\s/g', '')
-          }
-        },
+        // upload: {
+        //   max: 20 * 1024 * 1024,
+        //   withCredentials: true,
+        //   headers: {
+        //     'X-XSRF-TOKEN': this.$cookies.get('XSRF-TOKEN')
+        //   },
+        //   accept: 'image/*',
+        //   url: this.uploadurl,
+        //   multiple: false,
+        //   filename(name) {
+        //     return name.replace(/[^(a-zA-Z0-9\u4e00-\u9fa5\.)]/g, '')
+        //       .replace(/[\?\\/:|<>\*\[\]\(\)\$%\{\}@~]/g, '')
+        //       .replace('/\\s/g', '')
+        //   }
+        // },
         blur: (input) => {
           this.$emit('vditor-input', this.contentEditor.getValue())
         }

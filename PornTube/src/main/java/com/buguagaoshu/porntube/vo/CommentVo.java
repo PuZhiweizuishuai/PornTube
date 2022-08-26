@@ -36,6 +36,9 @@ public class CommentVo {
      */
     private Long parentUserId;
 
+
+    private Long commentId;
+
     /**
      * 【1 一级评论  2 二级评论】
      */

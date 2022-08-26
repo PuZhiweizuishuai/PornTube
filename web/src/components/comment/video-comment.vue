@@ -141,6 +141,7 @@ export default {
       message: '',
       commentsList: [],
       page: 1,
+      total: 0,
       length: 15,
       type: 0,
       sort: 1,
@@ -156,12 +157,18 @@ export default {
         this.commentsList = json.data.list
         this.page = json.data.currPage
         this.length = json.data.totalPage
+        this.total = json.data.totalCount
       })
     },
     getCommentText(value) {
       this.commentData.comment = value
     },
     submitComment() {
+      if (!this.$store.state.userInfo) {
+        this.message = '请先登录后再评论！'
+        this.showMessage = true
+        return
+      }
       if (this.commentData.comment === '' || this.commentData.comment == null || this.commentData.comment === '\n') {
         this.message = '评论内容不能为空！'
         this.showMessage = true
@@ -174,28 +181,7 @@ export default {
           this.showMessage = true
           this.commentData.comment = ''
           this.$refs.commentVditor.setTextValue('')
-          // const data = {
-          //   'id': 9999999999,
-          //   'articleId': this.article,
-          //   'userId': this.$store.state.userInfo.id,
-          //   'comment': this.commentData.comment,
-          //   'parentCommentId': 0,
-          //   'parentUserId': 0,
-          //   'likeCount': 0,
-          //   'commentCount': 0,
-          //   'dislikeCount': 0,
-          //   'type': 1,
-          //   'createTime': new Date().getTime(),
-          //   'updateTime': new Date().getTime(),
-          //   'ua': navigator.userAgent,
-          //   'city': null,
-          //   'username': this.$store.state.userInfo.username,
-          //   'followCount': 0,
-          //   'fansCount': 0,
-          //   'avatarUrl': this.$store.state.userInfo.avatarUrl,
-          //   'introduction': this.$store.state.userInfo.introduction
-          // }
-          // this.commentsList.push(data)
+
           this.getCommentList()
         } else {
           //

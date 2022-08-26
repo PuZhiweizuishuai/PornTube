@@ -1,6 +1,5 @@
 package com.buguagaoshu.porntube.service.impl;
 
-import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.buguagaoshu.porntube.entity.ArticleEntity;
 import com.buguagaoshu.porntube.entity.UserEntity;
 import com.buguagaoshu.porntube.enums.CommentType;
@@ -105,9 +104,23 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, CommentEntity> i
                 return null;
             }
             // 补全父评论信息
+            if (fatherComment.getCommentId() == null) {
+                commentEntity.setCommentId(fatherComment.getId());
+            } else {
+                // 二级评论下的评论
+                commentEntity.setCommentId(fatherComment.getCommentId());
+            }
+
             commentEntity.setParentCommentId(fatherComment.getId());
             commentEntity.setParentUserId(fatherComment.getUserId());
             commentEntity.setType(2);
+
+
+            if (!commentEntity.getCommentId().equals(commentEntity.getParentCommentId())) {
+                this.addCount("comment_count", commentEntity.getCommentId(), 1L);
+            }
+
+            this.addCount("comment_count", fatherComment.getId(), 1L);
         }
 
         commentEntity.setIp(IpUtil.getIpAddr(request));
@@ -129,7 +142,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, CommentEntity> i
         wrapper.eq("type", type);
         wrapper.eq("status", 0);
         if (type == CommentType.SECOND_COMMENT) {
-            wrapper.eq("parent_comment_id", fatherId);
+            wrapper.eq("comment_id", fatherId);
         }
         if (sort != null) {
             if (sort == SortType.TIME_DESC) {
@@ -166,6 +179,11 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, CommentEntity> i
                 page.getCurrent()
         );
         return new PageUtils(commentWithUserVoIPage);
+    }
+
+    @Override
+    public void addCount(String col, long commentId, long count) {
+        this.baseMapper.addCount(col, commentId, count);
     }
 
 }
