@@ -7,7 +7,7 @@ target/
 /temp
 /PornTube/file
 /PornTube/log
-
+/PornTube/.mvn
 ### STS ###
 .apt_generated
 .classpath
