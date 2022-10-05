@@ -19,7 +19,7 @@
 
 <img src="/img/home.png" title="首页" alt="首页">
 
-## Video Page
+### Video Page
 
 <img src="https://ae04.alicdn.com/kf/U94c7f938e2d14c2c81c9e4af25ee94966.jpg" title="播放页" alt="播放页">
 
@@ -28,7 +28,7 @@
 
 <img src="/img/history.png" title="历史记录" alt="历史记录">
 
-## User Home
+### User Home
 
 <img src="https://sc01.alicdn.com/kf/U2052324455ff4565a98489a4cc0975f8Y.jpg" title="个人主页" alt="个人主页">
 
@@ -92,5 +92,8 @@ http://127.0.0.1:8000
 
 **Tips:** The first user registered with the name admin will automatically become an administrator.
 
+# CHANGE LOG
+
+[CHANGELOG](/CHANGELOG.md)
 
 

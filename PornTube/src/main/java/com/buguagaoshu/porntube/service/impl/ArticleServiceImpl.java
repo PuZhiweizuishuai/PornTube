@@ -82,7 +82,10 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
                 new Query<ArticleEntity>().getPage(params),
                 wrapper
         );
+        return addUserInfo(page);
+    }
 
+    public PageUtils addUserInfo(IPage<ArticleEntity> page) {
         Set<Long> userIdList = page.getRecords().stream().map(ArticleEntity::getUserId).collect(Collectors.toSet());
         if (userIdList.size() == 0) {
             return null;
@@ -334,6 +337,34 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
 //            playRecordingService.saveHistory(file, userId, IpUtil.getUa(request));
 //            return true;
 //        }
+    }
+
+    @Override
+    public PageUtils nowCategory(Map<String, Object> params, Integer id) {
+        QueryWrapper<ArticleEntity> wrapper = new QueryWrapper<>();
+        // 首先判断分类ID是不是父分类
+        CategoryEntity categoryEntity = categoryCache.getCategoryEntityMap().get(id);
+        if (categoryEntity == null) {
+            return new PageUtils(null);
+        }
+
+        wrapper.eq("status", ArticleStatusEnum.NORMAL.getCode());
+        wrapper.eq("examine_status", ExamineTypeEnum.SUCCESS.getCode());
+        // 是父分类ID
+        if (categoryEntity.getFatherId() == 0) {
+            // 获取子类元素
+            categoryEntity = categoryCache.getCategoryMapWithChildren().get(id);
+            List<Integer> integerSet = categoryEntity.getChildren().stream().map(CategoryEntity::getId).collect(Collectors.toList());
+            wrapper.in("category", integerSet);
+        } else {
+            wrapper.eq("category", id);
+        }
+        wrapper.orderByDesc("create_time");
+        IPage<ArticleEntity> page = this.page(
+                new Query<ArticleEntity>().getPage(params),
+                wrapper
+        );
+        return addUserInfo(page);
     }
 
     @Override

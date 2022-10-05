@@ -1,5 +1,47 @@
 <template>
   <v-container fill-height fluid style="padding-left: 24px; padding-right: 24px">
+    <v-row>
+      <v-col>
+
+        <v-menu
+          v-for="item in categoryList"
+          :key="item.id"
+          open-on-hover
+
+          offset-y
+        >
+          <template v-slot:activator="{ on, attrs }">
+            <v-btn
+              text
+              color="primary"
+              v-bind="attrs"
+              @click="setCategory(item)"
+              v-on="on"
+            >
+              {{ item.name }}
+            </v-btn>
+          </template>
+
+          <v-list>
+            <v-list-item
+              v-for="c in item.children"
+              :key="c.id"
+            >
+              <v-list-item-title>
+                <router-link :to="`/v/${c.id}`">
+                  {{ c.name }}
+                </router-link>
+              </v-list-item-title>
+            </v-list-item>
+          </v-list>
+        </v-menu>
+
+      </v-col>
+    </v-row>
+    <v-row>
+      <v-divider />
+    </v-row>
+    <v-col />
     <!-- <v-row>
       <div
         class="d-flex flex-wrap"
@@ -33,6 +75,9 @@
         @input="pageChange"
       />
     </v-row>
+    <v-col>
+      &nbsp;
+    </v-col>
   </v-container>
 </template>
 
@@ -49,7 +94,8 @@ export default {
       videoList: [],
       page: 1,
       size: 24,
-      length: 0
+      length: 0,
+      categoryList: []
     }
   },
   created() {
@@ -59,10 +105,18 @@ export default {
     } else {
       this.page = this.$route.query.page
     }
-
+    this.getCategory()
     this.getVideoList()
   },
   methods: {
+    getCategory() {
+      this.httpGet(`/category/tree`, (json) => {
+        this.categoryList = json.data
+      })
+    },
+    setCategory(value) {
+      this.$router.push(`/v/${value.id}`)
+    },
     getVideoList() {
       fetch(`/api/article/home/list?page=${this.page}&limit=${this.size}`, {
         headers: {

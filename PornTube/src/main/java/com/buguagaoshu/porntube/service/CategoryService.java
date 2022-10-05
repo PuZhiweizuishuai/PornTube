@@ -18,6 +18,8 @@ public interface CategoryService extends IService<CategoryEntity> {
 
     PageUtils queryPage(Map<String, Object> params);
 
+    Map<Integer, CategoryEntity> categoryEntityMapWithChildren(List<CategoryEntity> entities);
+
     List<CategoryEntity> listWithTree();
 
     Map<Integer, CategoryEntity> categoryEntityMap();

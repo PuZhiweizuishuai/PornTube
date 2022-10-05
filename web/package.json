@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "core-js": "^3.22.5",
-    "dplayer": "^1.26.0",
+    "dplayer": "^1.27.0",
     "filepond": "^4.30.3",
     "filepond-plugin-file-validate-size": "^2.2.7",
     "filepond-plugin-file-validate-type": "^1.2.8",

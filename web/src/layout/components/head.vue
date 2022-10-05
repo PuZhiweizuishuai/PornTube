@@ -47,7 +47,7 @@ export default {
       userInfo: {},
       headItem: [
         { icon: 'mdi-account', text: '个人主页', link: '/user/', id: 0 },
-        { icon: 'mdi-cash-usd', text: '付费会员', link: '/vip', id: 3 },
+        { icon: 'mdi-cash', text: '付费会员', link: '/vip', id: 3 },
         { icon: 'mdi-application', text: '创作中心', link: '/studio', id: 1 },
         { icon: 'mdi-wrench', text: '自定义频道', link: '/user/setting', id: 4 },
         { icon: 'mdi-logout', text: '退出', link: '/logout', id: 2 }

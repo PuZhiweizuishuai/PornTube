@@ -32,6 +32,11 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
     }
 
     @Override
+    public Map<Integer, CategoryEntity> categoryEntityMapWithChildren(List<CategoryEntity> entities) {
+        return entities.stream().collect(Collectors.toMap(CategoryEntity::getId, c -> c));
+    }
+
+    @Override
     public Map<Integer, CategoryEntity> categoryEntityMap() {
         List<CategoryEntity> entities = baseMapper.selectList(null);
         return entities.stream().collect(Collectors.toMap(CategoryEntity::getId, c -> c));

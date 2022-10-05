@@ -1,6 +1,9 @@
 <template>
   <v-container fill-height>
     <NoLoginShow v-if="this.$store.state.userInfo == null" />
+    <v-col>
+      &nbsp;
+    </v-col>
   </v-container>
 </template>
 

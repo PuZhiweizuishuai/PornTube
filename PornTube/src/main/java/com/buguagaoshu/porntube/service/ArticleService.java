@@ -72,6 +72,14 @@ public interface ArticleService extends IService<ArticleEntity> {
      * */
     Boolean hasThisVideoPlayPower(FileTableEntity file, Long userId, HttpServletRequest request);
 
+    /**
+     * 返回当前分类下的视频
+     * @param id 分类ID
+     * @param params 查询参数
+     * @return 视频列表
+     * */
+    PageUtils nowCategory(Map<String, Object> params, Integer id);
+
 
     void addViewCount(Long articleId, long count);
 

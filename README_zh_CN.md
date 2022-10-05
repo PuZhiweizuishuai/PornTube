@@ -11,7 +11,7 @@
 
 <img src="/img/home.png" title="首页" alt="首页">
 
-## 播放页
+### 播放页
 
 <img src="https://ae04.alicdn.com/kf/U94c7f938e2d14c2c81c9e4af25ee94966.jpg" title="播放页" alt="播放页">
 
@@ -19,7 +19,7 @@
 
 <img src="/img/history.png" title="历史记录" alt="历史记录">
 
-## 用户主页
+### 用户主页
 
 <img src="https://sc01.alicdn.com/kf/U2052324455ff4565a98489a4cc0975f8Y.jpg" title="个人主页" alt="个人主页">
 

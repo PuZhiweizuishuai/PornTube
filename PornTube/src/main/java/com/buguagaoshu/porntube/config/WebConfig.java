@@ -53,6 +53,7 @@ public class WebConfig implements WebMvcConfigurer {
                 log.info("开始缓存分类信息");
                 categoryCache.setCategoryEntities(categoryService.listWithTree());
                 categoryCache.setCategoryEntityMap(categoryService.categoryEntityMap());
+                categoryCache.setCategoryMapWithChildren(categoryService.categoryEntityMapWithChildren(categoryCache.getCategoryEntities()));
                 log.info("分类信息缓存完成！");
             }
         };

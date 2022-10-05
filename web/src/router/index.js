@@ -49,6 +49,12 @@ const routes = [
         meta: { title: '播放' }
       },
       {
+        path: '/v/:id',
+        name: 'Category',
+        component: () => import('@/views/category/index.vue'),
+        meta: { title: '分区' }
+      },
+      {
         path: '/user/setting',
         name: 'UserSetting',
         component: () => import('@/views/user/setting.vue'),

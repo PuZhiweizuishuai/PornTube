@@ -16,6 +16,16 @@ public class CategoryCache {
 
     private Map<Integer, CategoryEntity> categoryEntityMap;
 
+    private Map<Integer, CategoryEntity> categoryMapWithChildren;
+
+    public Map<Integer, CategoryEntity> getCategoryMapWithChildren() {
+        return categoryMapWithChildren;
+    }
+
+    public void setCategoryMapWithChildren(Map<Integer, CategoryEntity> categoryMapWithChildren) {
+        this.categoryMapWithChildren = categoryMapWithChildren;
+    }
+
     public List<CategoryEntity> getCategoryEntities() {
         return categoryEntities;
     }
