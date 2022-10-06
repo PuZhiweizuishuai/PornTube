@@ -13,6 +13,7 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.nio.file.Paths;
+import java.security.SecureRandom;
 import java.util.*;
 
 /**
@@ -86,7 +87,7 @@ public class FFmpegUtils {
             // 获取视频时长， / 1000000 将单位转换为秒
             long delayedTime = grabber.getLengthInTime() / 1000000;
 
-            Random random = new Random();
+            Random random = SecureRandom.getInstanceStrong();
             int[] timeList = new int[count];
             for (int i = 0; i < count; i++) {
                 timeList[i] = random.nextInt((int)delayedTime - 1) + 1;

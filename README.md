@@ -92,7 +92,7 @@ http://127.0.0.1:8000
 
 **Tips:** The first user registered with the name admin will automatically become an administrator.
 
-# CHANGE LOG
+## CHANGE LOG
 
 [CHANGELOG](/CHANGELOG.md)
 

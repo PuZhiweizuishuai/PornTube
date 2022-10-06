@@ -47,7 +47,7 @@ public class AesUtil {
     public static String encrypt(String strToEncrypt, String secret) {
         try {
             setKey(secret);
-            Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
+            Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5PADDING");
             cipher.init(Cipher.ENCRYPT_MODE, secretKey);
             return Base64.getEncoder().encodeToString(cipher.doFinal(strToEncrypt.getBytes(StandardCharsets.UTF_8)));
         } catch (Exception e) {
@@ -80,7 +80,7 @@ public class AesUtil {
 
         String originalString = "howtodoinjava.com";
         String encryptedString = AesUtil.encrypt(originalString, WebConstant.AES_KEY) ;
-        String decryptedString = AesUtil.decrypt("CXhJQNlj8DYc2hs3Ccf9NNahZysKiSOR7WHyI+lBaMw=", WebConstant.AES_KEY) ;
+        String decryptedString = AesUtil.decrypt(encryptedString, WebConstant.AES_KEY) ;
 
         System.out.println(originalString);
         System.out.println(encryptedString);

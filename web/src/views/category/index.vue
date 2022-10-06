@@ -1,8 +1,11 @@
 <template>
   <v-container fill-height fluid style="padding-left: 24px; padding-right: 24px">
+    <!-- 当前分区信息 -->
     <v-row>
       <v-col>
-
+        <v-btn fab icon color="primary" @click="back()">
+          <v-icon>mdi-arrow-left-thick</v-icon>
+        </v-btn>
         <v-btn style="font-weight: bold;font-size: 20px" large text color="primary" @click="setCategoryFather()"> {{ categoryList.name }} </v-btn>
         <span v-if="showChileName" style="font-weight: bold;font-size: 20px">
           /
@@ -128,6 +131,9 @@ export default {
       this.$router.push({ query: { page: this.page }})
       this.getVideoList()
       this.$vuetify.goTo(0)
+    },
+    back() {
+      this.$router.go(-1)
     }
   }
 }

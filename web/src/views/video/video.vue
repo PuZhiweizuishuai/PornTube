@@ -138,6 +138,7 @@ export default {
     }
   },
   created() {
+    this.$vuetify.goTo(0)
     this.id = parseInt(this.$route.params.id)
     this.videoInfo()
     this.onResize()
