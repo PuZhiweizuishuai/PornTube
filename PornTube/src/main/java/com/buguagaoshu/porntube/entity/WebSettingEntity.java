@@ -1,6 +1,7 @@
 package com.buguagaoshu.porntube.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
@@ -46,7 +47,7 @@ public class WebSettingEntity {
 	/**
 	 * 网页简短的描述
 	 */
-	private String describe;
+	private String webDescribe;
 
 	/**
 	 * 是否开启每日上传视频增加非会员观看次数 【0 关闭， 1开启】
@@ -70,6 +71,7 @@ public class WebSettingEntity {
 	private Long createTime;
 
 
-	private Long homeMaxVideoCount;
+
+	private Integer homeMaxVideoCount;
 
 }

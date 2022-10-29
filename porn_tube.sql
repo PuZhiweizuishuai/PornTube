@@ -334,7 +334,7 @@ CREATE TABLE `web_setting`  (
   `no_vip_view_count` int NOT NULL DEFAULT 5 COMMENT '非vip 每日观看次数',
   `logo_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT '/logo.png' COMMENT '网页logo地址',
   `open_invitation_register` int NOT NULL DEFAULT 1 COMMENT '是否开启邀请码注册 【0 关闭， 1开启】',
-  `describe` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '网页简短的描述',
+  `webDescribe` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '网页简短的描述',
   `open_upload_video_add_view_count` int NOT NULL DEFAULT 1 COMMENT '是否开启每日上传视频增加非会员观看次数 【0 关闭， 1开启】',
   `open_examine` int NOT NULL DEFAULT 1 COMMENT '是否开启视频，文章，图片审核 【0 关闭， 1 开启】',
   `id` int NOT NULL AUTO_INCREMENT,
@@ -424,4 +424,4 @@ INSERT INTO `category` VALUES (75, '环球', 2, 73, '全球范围内发生的具
 INSERT INTO `category` VALUES (76, '社会', 2, 73, '日常生活的社会事件、社会问题、社会风貌的报道', NULL, 0, 0, 0);
 INSERT INTO `category` VALUES (77, '综合', 2, 73, '除上述领域外其它垂直领域的综合资讯', NULL, 0, 0, 0);
 
-INSERT INTO `web_setting` VALUES ('PornTube', 1, 5, '/favicon.png', 1, '一个牛逼的视频网站', 1, 1, 1, 0, 50);
+INSERT INTO `web_setting` VALUES ('PornTube', 1, 5, '/favicon.png', 0, '一个牛逼的视频网站', 1, 1, 1, 0, 50);

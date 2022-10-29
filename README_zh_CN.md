@@ -73,6 +73,7 @@ npm install
 npm run serve
 ```
 
+
 **最后打开**
 
 
@@ -81,6 +82,12 @@ http://127.0.0.1:8000
 ```
 
 **提示：** 第一个以admin为用户名注册的用户将自动成为管理员！
+
+
+### 前端无法编译
+
+如果出现 `ESLint is not a constructor` 的错误，请在 `vue.config.js` 中添加：`lintOnSave: false`
+
 
 ## 更新
 

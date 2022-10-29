@@ -23,7 +23,7 @@
           <v-row justify="center">
             <v-col cols="10">
               <v-textarea
-                v-model="setting.describe"
+                v-model="setting.webDescribe"
                 label="简介"
               />
             </v-col>

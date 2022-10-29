@@ -45,6 +45,8 @@ public class WebSettingServiceImpl extends ServiceImpl<WebSettingDao, WebSetting
 
     @Override
     public ReturnCodeEnum saveSetting(WebSettingEntity webSettingEntity) {
+        webSettingEntity.setCreateTime(System.currentTimeMillis());
+        webSettingEntity.setId(null);
         this.save(webSettingEntity);
         webSettingCache.setWebSettingEntity(webSettingEntity);
         return ReturnCodeEnum.SUCCESS;

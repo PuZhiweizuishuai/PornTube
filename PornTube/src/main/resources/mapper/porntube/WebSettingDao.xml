@@ -10,7 +10,7 @@
         <result property="noVipViewCount" column="no_vip_view_count"/>
         <result property="logoUrl" column="logo_url"/>
         <result property="openInvitationRegister" column="open_invitation_register"/>
-        <result property="describe" column="describe"/>
+        <result property="webDescribe" column="web_describe"/>
         <result property="openUploadVideoAddViewCount" column="open_upload_video_add_view_count"/>
         <result property="openExamine" column="open_examine"/>
         <result property="id" column="id"/>

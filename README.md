@@ -90,6 +90,13 @@ Open
 http://127.0.0.1:8000
 ```
 
+
+### Question
+
+前端无法编译
+
+如果出现 `ESLint is not a constructor` 的错误，请在 `vue.config.js` 中添加：`lintOnSave: false`
+
 **Tips:** The first user registered with the name admin will automatically become an administrator.
 
 ## CHANGE LOG

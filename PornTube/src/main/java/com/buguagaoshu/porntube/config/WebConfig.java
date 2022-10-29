@@ -79,7 +79,8 @@ public class WebConfig implements WebMvcConfigurer {
                     "/api/category/**",
                     "/api/danmaku/v3",
                     "/api/danmaku/v3/**",
-                    "/api/upload/file/**"
+                    "/api/upload/file/**",
+                    "/api/comment/**"
                 );
 
         registry.addInterceptor(adminInterceptor)
