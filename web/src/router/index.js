@@ -10,37 +10,36 @@ const routes = [
     path: '/',
     name: 'Index',
     component: Index,
-    meta: { title: 'PornTube' },
     children: [
       {
         path: '/',
         name: 'Index',
         component: Home,
-        meta: { title: 'PornTube' }
+        meta: { title: '首页' }
       },
       {
         path: '/hot',
         name: 'Hot',
         component: () => import('@/views/home/hot.vue'),
-        meta: { title: 'PornTube 时下流行' }
+        meta: { title: '时下流行' }
       },
       {
         path: '/subscribe',
         name: 'Subscribe',
         component: () => import('@/views/home/subscribe.vue'),
-        meta: { title: 'PornTube 订阅' }
+        meta: { title: '订阅' }
       },
       {
         path: '/history',
         name: 'History',
         component: () => import('@/views/home/history.vue'),
-        meta: { title: 'PornTube 播放历史' }
+        meta: { title: '播放历史' }
       },
       {
         path: '/playlist',
         name: 'Playlist',
         component: () => import('@/views/home/playlist.vue'),
-        meta: { title: 'PornTube 稍后再看' }
+        meta: { title: '稍后再看' }
       },
       {
         path: '/video/:id',
@@ -214,6 +213,11 @@ router.beforeEach((to, from, next) => {
     }).then(response => response.json())
       .then(json => {
         router.app.$options.store.state.webInfo = json.data
+        if (to.meta.title === '首页') {
+          document.title = router.app.$options.store.state.webInfo.name
+        } else {
+          document.title = router.app.$options.store.state.webInfo.name + ' - ' + to.meta.title
+        }
       })
       .catch(e => {
         return null
@@ -221,7 +225,11 @@ router.beforeEach((to, from, next) => {
   }
   // 路由发生变化修改页面title
   if (to.meta.title) {
-    document.title = to.meta.title
+    if (to.meta.title === '首页') {
+      document.title = router.app.$options.store.state.webInfo.name
+    } else {
+      document.title = router.app.$options.store.state.webInfo.name + ' - ' + to.meta.title
+    }
   }
   if (checkPower.updateUserRole(router.app.$options.store.state.userInfo)) {
     router.app.$options.store.state.userInfo.userRoleEntity.role = 'ROLE_USER'
