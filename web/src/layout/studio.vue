@@ -7,7 +7,7 @@
     >
       <router-link :to="`/user/${this.$store.state.userInfo.id}`">
         <v-row justify="center" align="center">
-          <v-col cols="12" style="text-align: center">
+          <v-col cols="12" style="text-align: center;margin-top: 12px;">
             <v-avatar size="62">
               <v-img :src="this.$store.state.userInfo.avatarUrl" />
             </v-avatar>

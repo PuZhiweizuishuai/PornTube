@@ -269,10 +269,12 @@ export default {
       }
     },
     setTitle(title) {
-      if (title.length > 50) {
-        this.article.title = title.substring(0, 50)
-      } else {
-        this.article.title = title
+      if (this.article.title === '' || this.article.title == null || this.article.title === undefined) {
+        if (title.length > 50) {
+          this.article.title = title.substring(0, 50)
+        } else {
+          this.article.title = title
+        }
       }
     },
     uploadFile() {

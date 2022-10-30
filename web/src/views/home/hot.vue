@@ -1,6 +1,6 @@
 <template>
   <v-container fill-height>
-    hot
+    开发中 hot
     <v-col>
       &nbsp;
     </v-col>

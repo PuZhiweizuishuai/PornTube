@@ -8,7 +8,7 @@
         >
           <div id="top" />
           <v-row justify="center">
-            <v-col cols="10">
+            <v-col cols="10" style="margin-top: 12px;margin-bottom: 12px;">
               <v-btn block color="secondary" @click="create">生成邀请码</v-btn>
             </v-col>
           </v-row>
