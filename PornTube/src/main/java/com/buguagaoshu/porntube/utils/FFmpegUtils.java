@@ -98,6 +98,7 @@ public class FFmpegUtils {
                 // 跳转到响应时间
                 grabber.setTimestamp(i * 1000000L);
                 Frame f = grabber.grabImage();
+                //System.out.println(f.imageWidth);
                 Java2DFrameConverter converter = new Java2DFrameConverter();
                 BufferedImage bi = converter.getBufferedImage(f);
                 String imageName = FileTypeEnum.newFilename(SUFFIX);
@@ -108,6 +109,8 @@ public class FFmpegUtils {
             }
             return images;
         } catch (Exception e) {
+            e.printStackTrace();
+            log.error("截图失败：文件名： {}， 错误信息：{}",videFile.getName(), e.getMessage());
             return null;
         } finally {
             try {

@@ -4,6 +4,16 @@ server:
     enabled: true
 
 spring:
+  web:
+    resources:
+      chain:
+        # 开启静态资源缓存
+        cache: true
+        enabled: true
+        compressed: true
+      cache:
+        # 设置缓存时间
+        period: 2592000
   datasource:
     driverClassName: com.mysql.cj.jdbc.Driver
     # 192.168.43.128

@@ -117,39 +117,10 @@ export default {
         // }
         ],
         height: 200,
-        hint: {
-          delay: 1000,
-          emojiPath: '/emoji',
-          emoji: this.emojis,
-          extend: [
-            {
-              key: '@',
-              hint: (key) => {
-                console.log(key)
-                if ('vanessa'.indexOf(key.toLocaleLowerCase()) > -1) {
-                  console.log('limian: ', key)
-                  return [
-                    {
-                      value: '@Vanessa',
-                      html: '<img src="https://avatars0.githubusercontent.com/u/970828?s=60&v=4"/> Vanessa',
-                      dataInfo: 1
-                    },
-                    {
-                      value: '@v',
-                      html: '<img src="https://avatars0.githubusercontent.com/u/970828?s=60&v=4"/> V',
-                      dataInfo: 1
-                    }
-                  ]
-                }
-                return []
-              }
-            }
-          ]
-        },
-        cdn: '/vditor',
-        theme: {
-          path: '/vditor/dist/css/content-theme'
-        },
+        // cdn: '/vditor',
+        // theme: {
+        //   path: '/vditor/dist/css/content-theme'
+        // },
         cache: {
           enable: false
         },
