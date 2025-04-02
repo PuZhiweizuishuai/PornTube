@@ -15,7 +15,7 @@ public class SQLFilter {
      * @param str 待验证的字符串
      */
     public static String sqlInject(String str) {
-        if (StringUtils.isEmpty(str)) {
+        if (!StringUtils.hasLength(str)) {
             return null;
         }
         //去掉'|"|;|\字符

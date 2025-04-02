@@ -19,7 +19,7 @@ import com.buguagaoshu.porntube.dao.InvitationCodeDao;
 import com.buguagaoshu.porntube.entity.InvitationCodeEntity;
 import com.buguagaoshu.porntube.service.InvitationCodeService;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Pu Zhiwei

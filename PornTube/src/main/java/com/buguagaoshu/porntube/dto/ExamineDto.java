@@ -3,7 +3,7 @@ package com.buguagaoshu.porntube.dto;
 import lombok.Data;
 import lombok.NonNull;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 /**
  * @author Pu Zhiwei {@literal puzhiweipuzhiwei@foxmail.com}

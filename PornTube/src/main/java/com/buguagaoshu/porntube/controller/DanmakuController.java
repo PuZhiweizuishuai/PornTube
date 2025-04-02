@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 
 /**
@@ -28,7 +28,7 @@ public class DanmakuController {
     }
 
 
-    @GetMapping("/api/danmaku/v3")
+    @GetMapping("/api/danmaku/v3/")
     public ResponseDetails get(@RequestParam("id") Long id,
                                @RequestParam("max") Integer max) {
         return ResponseDetails.ok().put("data", danmakuService.danmakuList(id, max))
@@ -36,7 +36,7 @@ public class DanmakuController {
     }
 
 
-    @PostMapping("/api/danmaku/v3")
+    @PostMapping("/api/danmaku/v3/")
     public ResponseDetails post(@RequestBody DanmakuDto danmakuDto,
                                 HttpServletRequest request) {
         ReturnCodeEnum codeEnum = danmakuService.saveDanmaku(danmakuDto, request);

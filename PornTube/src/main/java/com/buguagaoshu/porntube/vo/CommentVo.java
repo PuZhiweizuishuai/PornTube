@@ -3,8 +3,8 @@ package com.buguagaoshu.porntube.vo;
 import com.buguagaoshu.porntube.valid.ListValue;
 import lombok.Data;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 /**
  * @author Pu Zhiwei {@literal puzhiweipuzhiwei@foxmail.com}

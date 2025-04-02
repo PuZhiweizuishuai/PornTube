@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.imageio.ImageIO;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpSession;
 import java.awt.*;
 import java.awt.image.RenderedImage;
 import java.io.ByteArrayInputStream;

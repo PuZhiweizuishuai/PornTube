@@ -2,7 +2,7 @@ package com.buguagaoshu.porntube.utils;
 
 import org.springframework.util.StringUtils;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
@@ -52,7 +52,7 @@ public class IpUtil {
 
     public static String getUa(HttpServletRequest request) {
         String ua = request.getHeader("user-agent");
-        if (StringUtils.isEmpty(ua)) {
+        if (!StringUtils.hasLength(ua)) {
             return "未知设备";
         }
         // 避免 UA 过长插入失败

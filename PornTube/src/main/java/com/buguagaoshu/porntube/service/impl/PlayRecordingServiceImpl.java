@@ -17,7 +17,7 @@ import com.buguagaoshu.porntube.dao.PlayRecordingDao;
 import com.buguagaoshu.porntube.entity.PlayRecordingEntity;
 import com.buguagaoshu.porntube.service.PlayRecordingService;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 
 @Service("playRecordingService")

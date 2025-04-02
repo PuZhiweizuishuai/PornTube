@@ -5,7 +5,7 @@ import com.buguagaoshu.porntube.repository.VerifyCodeRepository;
 import org.springframework.stereotype.Repository;
 
 
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpSession;
 
 
 /**

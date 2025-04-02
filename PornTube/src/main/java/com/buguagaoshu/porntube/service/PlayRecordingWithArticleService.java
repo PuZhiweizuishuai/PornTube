@@ -3,7 +3,7 @@ package com.buguagaoshu.porntube.service;
 import com.buguagaoshu.porntube.entity.PlayRecordingEntity;
 import com.buguagaoshu.porntube.utils.PageUtils;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 
 /**

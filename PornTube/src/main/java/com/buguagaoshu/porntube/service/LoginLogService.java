@@ -6,7 +6,7 @@ import com.buguagaoshu.porntube.utils.PageUtils;
 
 import com.buguagaoshu.porntube.entity.LoginLogEntity;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 
 /**

@@ -6,7 +6,7 @@ import com.buguagaoshu.porntube.entity.CommentEntity;
 import com.buguagaoshu.porntube.vo.CommentVo;
 import com.buguagaoshu.porntube.vo.CommentWithUserVo;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 

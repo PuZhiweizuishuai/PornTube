@@ -15,7 +15,7 @@ import com.buguagaoshu.porntube.dao.LoginLogDao;
 import com.buguagaoshu.porntube.entity.LoginLogEntity;
 import com.buguagaoshu.porntube.service.LoginLogService;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 
 @Service("loginLogService")

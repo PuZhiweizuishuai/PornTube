@@ -6,7 +6,7 @@ import com.buguagaoshu.porntube.enums.ReturnCodeEnum;
 import com.buguagaoshu.porntube.utils.PageUtils;
 import com.buguagaoshu.porntube.entity.DanmakuEntity;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 

@@ -26,7 +26,7 @@ import com.buguagaoshu.porntube.dao.DanmakuDao;
 import com.buguagaoshu.porntube.entity.DanmakuEntity;
 import com.buguagaoshu.porntube.service.DanmakuService;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Pu Zhiwei

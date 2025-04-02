@@ -32,7 +32,7 @@ import com.buguagaoshu.porntube.entity.CommentEntity;
 import com.buguagaoshu.porntube.service.CommentService;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 
 @Service("commentService")

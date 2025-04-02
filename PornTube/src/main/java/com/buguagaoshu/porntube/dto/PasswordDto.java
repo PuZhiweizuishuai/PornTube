@@ -2,7 +2,7 @@ package com.buguagaoshu.porntube.dto;
 
 import lombok.Data;
 
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotBlank;
 
 
 /**

@@ -10,8 +10,8 @@ import com.buguagaoshu.porntube.entity.ArticleEntity;
 import com.buguagaoshu.porntube.vo.ArticleViewData;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.Map;
 
