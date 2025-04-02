@@ -93,9 +93,10 @@ http://127.0.0.1:8000
 
 ### Question
 
-前端无法编译
+Frontend Fails to Compile
 
-如果出现 `ESLint is not a constructor` 的错误，请在 `vue.config.js` 中添加：`lintOnSave: false`
+If you encounter the error `ESLint is not a constructor`, add `lintOnSave: false` to your `vue.config.js`.
+
 
 **Tips:** The first user registered with the name admin will automatically become an administrator.
 
@@ -103,4 +104,9 @@ http://127.0.0.1:8000
 
 [CHANGELOG](/CHANGELOG.md)
 
+
+## Disclaimer
+
+
+The project name and logo are inspired by a well-known website, intended solely for fun and reference. Any use of this project for illegal purposes is strictly prohibited. If you utilize this project to build a platform with functionality similar to that of the aforementioned website, the developer shall not be held liable for any resulting consequences or responsibilities.
 
