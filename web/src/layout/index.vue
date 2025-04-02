@@ -7,7 +7,7 @@
     >
       <router-link v-for="item in items" :key="item.text" :to="item.link">
         <v-list-item
-          link
+          linkz
         >
           <v-list-item-action>
             <v-icon>{{ item.icon }}</v-icon>
