@@ -40,7 +40,7 @@
         solo-inverted
         hide-details
         prepend-inner-icon="mdi-magnify"
-        label="搜索"
+        placeholder="搜索"
       />
       <v-spacer />
       <v-tooltip bottom>

@@ -9,20 +9,22 @@ import * as directives from 'vuetify/directives'
 import '@mdi/font/css/materialdesignicons.css'
 import App from './App.vue'
 import router from './router'
-
+import HttpFetch from './utils/fetch'
 
 const app = createApp(App)
 
+app.config.globalProperties.SERVER_API_URL = '/api'
+
 const vuetify = createVuetify({
-    components,
-    directives,
-    icons: {
-      defaultSet: 'mdi',
-    },
-  })
+  components,
+  directives,
+  icons: {
+    defaultSet: 'mdi',
+  },
+})
 
 app.use(createPinia())
 app.use(router)
 app.use(vuetify)
-
+app.use(HttpFetch)
 app.mount('#app')

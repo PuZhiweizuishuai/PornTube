@@ -52,7 +52,7 @@ for example, Video upload, danmaku, historical records, Auto generate cover imag
 
 ## Quick start
 
-**Run Environment: Java11, Node 14, Maven3**
+**Run Environment: Java17, Node 20, Maven3.9**
 
 Creating a database, Configuring Database Addresses
 

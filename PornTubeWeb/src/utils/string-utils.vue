@@ -13,6 +13,6 @@ function clarityDisplay(pixelsNumber) {
 }
 
 export default {
-  clarityDisplay
+  clarityDisplay,
 }
 </script>

@@ -5,12 +5,19 @@
 </template>
 
 <script>
+import { useWebInfoStore } from '@/stores/webInfoStore'
 export default {
   name: 'App',
 
   data: () => ({
     //
   }),
+  mounted() {
+    this.httpGet('/web/info', (json) => {
+      const webInfoStore = useWebInfoStore()
+      webInfoStore.updateWebInfo(json.data)
+    })
+  },
 }
 </script>
 

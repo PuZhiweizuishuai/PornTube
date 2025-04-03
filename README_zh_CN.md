@@ -43,7 +43,7 @@
 
 ## 快速运行
 
-**运行环境: Java11, Node 14, Maven3**
+**运行环境: Java17, Node 20, Maven3.9**
 
 使用 porn_tube.sql 创建数据库，配置数据库地址
 

@@ -4,7 +4,19 @@ function renderTime(date) {
     return ''
   }
   const da = new Date(date)
-  return da.getFullYear() + '-' + (da.getMonth() + 1) + '-' + da.getDate() + ' ' + da.getHours() + ':' + da.getMinutes() + ':' + da.getSeconds()
+  return (
+    da.getFullYear() +
+    '-' +
+    (da.getMonth() + 1) +
+    '-' +
+    da.getDate() +
+    ' ' +
+    da.getHours() +
+    ':' +
+    da.getMinutes() +
+    ':' +
+    da.getSeconds()
+  )
 }
 
 function formateTimeToChinese(date) {
@@ -12,7 +24,18 @@ function formateTimeToChinese(date) {
     return ''
   }
   const da = new Date(date)
-  return da.getFullYear() + '年' + (da.getMonth() + 1) + '月' + da.getDate() + '日 ' + da.getHours() + '时' + da.getMinutes() + '分'
+  return (
+    da.getFullYear() +
+    '年' +
+    (da.getMonth() + 1) +
+    '月' +
+    da.getDate() +
+    '日 ' +
+    da.getHours() +
+    '时' +
+    da.getMinutes() +
+    '分'
+  )
 }
 
 function formateTime(strat, end) {
@@ -64,6 +87,6 @@ export default {
   renderTime,
   formateTimeToChinese,
   formateTime,
-  timeCover
+  timeCover,
 }
 </script>

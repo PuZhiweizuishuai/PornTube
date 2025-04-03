@@ -1,5 +1,4 @@
 <script>
-
 function checkPower(userInfo) {
   if (userInfo.userRoleEntity.role === 'ROLE_ADMIN') {
     return 'admin'
@@ -32,7 +31,10 @@ function updateUserRole(userInfo) {
   if (userInfo === null) {
     return false
   }
-  if (userInfo.userRoleEntity.role === 'ROLE_VIP' && userInfo.userRoleEntity.vipStopTime < new Date().getTime()) {
+  if (
+    userInfo.userRoleEntity.role === 'ROLE_VIP' &&
+    userInfo.userRoleEntity.vipStopTime < new Date().getTime()
+  ) {
     return true
   }
   return false
@@ -41,6 +43,6 @@ function updateUserRole(userInfo) {
 export default {
   checkPower,
   updateUserRole,
-  checkVip
+  checkVip,
 }
 </script>
