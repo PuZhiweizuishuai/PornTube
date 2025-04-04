@@ -1,6 +1,7 @@
 package com.buguagaoshu.porntube.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.buguagaoshu.porntube.dto.ArtDanmakuDto;
 import com.buguagaoshu.porntube.dto.DanmakuDto;
 import com.buguagaoshu.porntube.enums.ReturnCodeEnum;
 import com.buguagaoshu.porntube.utils.PageUtils;
@@ -23,12 +24,21 @@ public interface DanmakuService extends IService<DanmakuEntity> {
 
     /**
      * 获取弹幕列表
+     * 重构前端后使用新版播放器，新版播放器弹幕与旧版有区别
      * */
+    @Deprecated
     List<Object> danmakuList(Long id, Integer max);
 
     /**
      * 保存弹幕
      * */
+    @Deprecated
     ReturnCodeEnum saveDanmaku(DanmakuDto danmakuDto, HttpServletRequest request);
+
+
+    ReturnCodeEnum saveArtDanmaku(ArtDanmakuDto danmakuDto, HttpServletRequest request);
+
+
+    List<DanmakuEntity> artDanmakuList(Long id, Integer max);
 }
 

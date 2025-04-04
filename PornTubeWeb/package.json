@@ -11,7 +11,10 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
+    "artplayer": "^5.2.2",
+    "artplayer-plugin-danmuku": "^5.1.5",
     "pinia": "^3.0.1",
+    "vditor": "^3.10.9",
     "vue": "^3.5.13",
     "vue-router": "^4.5.0",
     "vuetify": "^3.8.0"

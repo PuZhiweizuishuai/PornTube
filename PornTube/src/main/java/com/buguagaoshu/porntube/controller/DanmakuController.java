@@ -1,6 +1,7 @@
 package com.buguagaoshu.porntube.controller;
 
 import com.buguagaoshu.porntube.config.DPlayerConstants;
+import com.buguagaoshu.porntube.dto.ArtDanmakuDto;
 import com.buguagaoshu.porntube.dto.DanmakuDto;
 import com.buguagaoshu.porntube.enums.ReturnCodeEnum;
 import com.buguagaoshu.porntube.service.DanmakuService;
@@ -27,7 +28,6 @@ public class DanmakuController {
         this.danmakuService = danmakuService;
     }
 
-
     @GetMapping("/api/danmaku/v3/")
     public ResponseDetails get(@RequestParam("id") Long id,
                                @RequestParam("max") Integer max) {
@@ -45,6 +45,21 @@ public class DanmakuController {
         }
         return ResponseDetails.ok(codeEnum)
                 .put("code", DPlayerConstants.DPLAYER_SUCCESS_CODE);
+    }
+
+    @GetMapping("/api/danmaku/v1")
+    public ResponseDetails getArt(@RequestParam("id") Long id) {
+        return ResponseDetails.ok().put("data", danmakuService.artDanmakuList(id, 1000));
+    }
+
+    @PostMapping("/api/danmaku/v1")
+    public ResponseDetails saveArt(@RequestBody ArtDanmakuDto danmakuDto,
+                                   HttpServletRequest request) {
+        ReturnCodeEnum codeEnum = danmakuService.saveArtDanmaku(danmakuDto, request);
+        if (codeEnum.equals(ReturnCodeEnum.NO_LOGIN)) {
+            return ResponseDetails.ok(codeEnum).put("code", 1);
+        }
+        return ResponseDetails.ok(codeEnum).put("code", 0);
     }
 
 }

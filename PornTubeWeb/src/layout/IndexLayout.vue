@@ -2,7 +2,9 @@
   <div>
     <v-app-bar color="red">
       <v-app-bar-nav-icon @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
-      <v-app-bar-title>PornTube</v-app-bar-title>
+      <v-app-bar-title>
+        <span style="cursor: pointer" @click="goToHome()">{{ webInfo.name }}</span>
+      </v-app-bar-title>
       <!-- <v-container>
         <v-row>
           <v-col cols="5"> -->
@@ -33,7 +35,11 @@
           <v-btn v-bind="props" icon="mdi-bell"></v-btn>
         </template>
       </v-tooltip>
-      <v-btn prepend-icon="mdi-account-circle" variant="outlined" @click="goToLoginPage()"
+      <v-btn
+        class="mr-2"
+        prepend-icon="mdi-account-circle"
+        variant="outlined"
+        @click="goToLoginPage()"
         >登录</v-btn
       >
     </v-app-bar>
@@ -72,10 +78,12 @@
 </template>
 
 <script>
+import { useWebInfoStore } from '@/stores/webInfoStore'
 export default {
   data: () => ({
     drawer: true,
     theme: 'light',
+    webInfo: {},
     items: [
       { icon: 'mdi-home', text: '首页', link: '/' },
       { icon: 'mdi-trending-up', text: '时下流行', link: '/hot' },
@@ -86,12 +94,18 @@ export default {
       { icon: 'mdi-help-circle', text: '帮助', link: '/help' },
     ],
   }),
+  created() {
+    this.webInfo = useWebInfoStore().webInfo
+  },
   methods: {
     onClick() {
       this.theme = this.theme === 'light' ? 'dark' : 'light'
     },
     goToLoginPage() {
       this.$router.push('/login')
+    },
+    goToHome() {
+      this.$router.push('/')
     },
   },
   watch: {

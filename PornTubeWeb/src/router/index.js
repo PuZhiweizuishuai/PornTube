@@ -15,6 +15,12 @@ const router = createRouter({
           component: () => import('@/views/home/IndexView.vue'),
           meta: { title: '首页' },
         },
+        {
+          path: '/video/:id',
+          name: 'Vide',
+          component: () => import('@/views/player/VideoView.vue'),
+          meta: { title: '播放' }
+        },
       ],
     },
     {
