@@ -13,7 +13,11 @@
 
 ### 播放页
 
-<img src="/img/play.jpg" title="播放页" alt="播放页">
+<img src="/img/video.png" title="播放页" alt="播放页">
+
+### 评论
+
+<img src="/img/comment.png" title="评论" alt="评论">
 
 ### 播放历史
 
@@ -21,11 +25,15 @@
 
 ### 用户主页
 
-<img src="/img/user.jpg" title="个人主页" alt="个人主页">
+<img src="/img/user.png" title="个人主页" alt="个人主页">
 
 ### 投稿
 
-<img src="/img/publish01.png" title="投稿" alt="投稿">
+<img src="/img/publish.png" title="投稿" alt="投稿">
+
+#### 稿件自动截图
+
+<img src="/img/Capture.png" title="视频自动截图" alt="视频自动截图">
 
 
 ## 简介 
@@ -40,10 +48,12 @@
 
 比如视频投稿，发送弹幕，视频播放，播放历史, 自动生成封面图等
 
+PornTubeWeb 是正在开发的新版前端页面
+
 
 ## 快速运行
 
-**运行环境: Java17, Node 20, Maven3.9**
+**运行环境: Java17, Node 20, Maven 3.9**
 
 使用 porn_tube.sql 创建数据库，配置数据库地址
 
@@ -57,20 +67,20 @@ mvn clean package
 **之后**
 
 ```bash
-java -jar target/porntube-0.1.2-SNAPSHOT
+java -jar target/porntube-*-SNAPSHOT
 ```
 
 **运行前端服务**
 
 ```bash
-cd web
+cd PornTubeWeb
 npm install
 ```
 
 **之后**
 
 ```bash
-npm run serve
+npm run dev
 ```
 
 
@@ -78,13 +88,13 @@ npm run serve
 
 
 ```
-http://127.0.0.1:8000
+http://127.0.0.1:8080
 ```
 
 **提示：** 第一个以admin为用户名注册的用户将自动成为管理员！
 
 
-### 前端无法编译
+### 旧版前端无法编译
 
 如果出现 `ESLint is not a constructor` 的错误，请在 `vue.config.js` 中添加：`lintOnSave: false`
 

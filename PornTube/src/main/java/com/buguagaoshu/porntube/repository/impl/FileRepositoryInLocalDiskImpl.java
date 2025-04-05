@@ -133,13 +133,13 @@ public class FileRepositoryInLocalDiskImpl implements FileRepository {
                 fileTableEntity.setPixelsNumber((long) videoInfo.getWidth() * videoInfo.getHeight());
                 fileTableEntity.setFrameRate(videoInfo.getFrameRate());
                 fileTableEntity.setInfo(videoInfo.toJson());
-                // 自动截图
-                List<FileTableEntity> fileTableEntities = FFmpegUtils.randomGrabberFFmpegImage(Paths.get(path, filename).toFile(), 6, userId);
-                if (fileTableEntities != null) {
-                    // 保存截图
-                    fileTableService.saveBatch(fileTableEntities);
-                    list.addAll(fileTableEntities);
-                }
+                // 实现了前端自动截图，不再需要后端自动截图
+                // List<FileTableEntity> fileTableEntities = FFmpegUtils.randomGrabberFFmpegImage(Paths.get(path, filename).toFile(), 6, userId);
+//                if (fileTableEntities != null) {
+//                    // 保存截图
+//                    fileTableService.saveBatch(fileTableEntities);
+//                    list.addAll(fileTableEntities);
+//                }
             }
 
             fileTableEntity.setStatus(FileStatusEnum.NOT_USE_FILE.getCode());

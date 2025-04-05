@@ -15,26 +15,33 @@
 
 ## screenshot
 
-### Home 
+### Home
 
-<img src="/img/home.png" title="首页" alt="首页">
+<img src="/img/home.png" title="Home" alt="Home">
 
 ### Video Page
 
-<img src="/img/play.jpg" title="播放页" alt="播放页">
+<img src="/img/video.png" title="Video Page" alt="Video Page">
 
+### Comment
 
-### history
+<img src="/img/comment.png" title="Comment" alt="Comment">
 
-<img src="/img/history.png" title="历史记录" alt="历史记录">
+### History
+
+<img src="/img/history.png" title="History" alt="History">
 
 ### User Home
 
-<img src="/img/user.jpg" title="个人主页" alt="个人主页">
+<img src="/img/user.png" title="User Home" alt="User Home">
 
-### publish
+### Publish
 
-<img src="/img/publish01.png" title="投稿" alt="投稿">
+<img src="/img/publish.png" title="Publish" alt="Publish">
+
+#### Video Capture
+
+<img src="/img/Capture.png" title="Video Capture" alt="Video Capture">
 
 
 ## introduction 
@@ -49,10 +56,11 @@ Still in development. But most of the gong'n has been done.
 
 for example, Video upload, danmaku, historical records, Auto generate cover image, etc.
 
+PornTubeWeb It is a new front-end page under development
 
 ## Quick start
 
-**Run Environment: Java17, Node 20, Maven3.9**
+**Run Environment: Java17, Node 20, Maven 3.9**
 
 Creating a database, Configuring Database Addresses
 
@@ -66,20 +74,20 @@ mvn clean package
 **Then**
 
 ```bash
-java -jar target/porntube-0.1.2-SNAPSHOT
+java -jar target/porntube-*-SNAPSHOT
 ```
 
 **Run front end server**
 
 ```bash
-cd web
+cd PornTubeWeb
 npm install
 ```
 
 **Then**
 
 ```bash
-npm run serve
+npm run dev
 ```
 
 **Final**
@@ -87,11 +95,13 @@ npm run serve
 Open
 
 ```
-http://127.0.0.1:8000
+http://127.0.0.1:8080
 ```
 
 
 ### Question
+
+If you are unable to compile using an older version of the frontend
 
 Frontend Fails to Compile
 

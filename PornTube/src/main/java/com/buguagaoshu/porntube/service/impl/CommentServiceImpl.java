@@ -168,6 +168,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, CommentEntity> i
             BeanUtils.copyProperties(comment, commentWithUserVo);
             BeanUtils.copyProperties(userMap.get(comment.getUserId()), commentWithUserVo);
             commentWithUserVo.setId(comment.getId());
+            commentWithUserVo.setCreateTime(comment.getCreateTime());
             commentWithUserVoList.add(commentWithUserVo);
 
         }

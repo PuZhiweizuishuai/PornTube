@@ -34,6 +34,7 @@
         <VideoCared :video="item" />
       </v-col>
     </v-row>
+
     <v-row justify="center">
       <v-pagination
         v-model="page"
@@ -41,6 +42,7 @@
         @input="pageChange"
       />
     </v-row>
+
     <v-col>
       &nbsp;
     </v-col>
