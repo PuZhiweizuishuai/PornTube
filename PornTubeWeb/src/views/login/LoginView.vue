@@ -50,6 +50,7 @@
 import LoginFrom from '@/components/form/LoginForm.vue'
 import RegisterFrom from '@/components/form/RegisterForm.vue'
 import { useWebInfoStore } from '@/stores/webInfoStore'
+import { useUserStore } from '@/stores/userStore'
 export default {
   name: 'LoginView',
   components: {
@@ -59,7 +60,7 @@ export default {
   data() {
     return {
       verifyImageUrl: '/api/verifyImage',
-      user: {},
+      user: useUserStore(),
       type: '登录',
       moveMessage: '没有账号，创建账号',
       showLogin: true,
@@ -75,10 +76,13 @@ export default {
     userLogin(value) {
       this.httpPost('/login', value, (json) => {
         if (json.status === 200) {
-          const user = json.data
+          const userData = json.data
           // 保存用户
-          // 跳转到首页
-          //this.$router.push('/')
+          this.user.setUserData(userData)
+          // 检查是否有重定向参数
+          const redirect = this.$route.query.redirect
+          // 如果有重定向参数，则跳转到指定页面，否则跳转到首页
+          this.$router.push(redirect || '/')
         } else {
           this.message = json.message
           this.showMessage = true

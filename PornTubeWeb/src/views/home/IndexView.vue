@@ -31,9 +31,17 @@
         <VideoCared :video="item" />
       </v-col>
     </v-row>
-    <v-row justify="center">
-      <v-pagination v-model="page" :length="length" @input="pageChange" />
-    </v-row>
+    <v-container>
+      <v-row justify="center">
+        <v-pagination
+          rounded="circle"
+          :total-visible="7"
+          v-model="page"
+          :length="length"
+          @input="pageChange"
+        />
+      </v-row>
+    </v-container>
     <v-col> &nbsp; </v-col>
   </v-container>
 </template>

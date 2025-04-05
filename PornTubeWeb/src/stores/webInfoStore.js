@@ -24,6 +24,7 @@ export const useWebInfoStore = defineStore('webInfo', {
   actions: {
     // 可根据需要添加 action 方法
     updateWebInfo(newInfo) {
+      localStorage.setItem('webInfo', JSON.stringify(newInfo))
       this.webInfo = newInfo
     },
   },

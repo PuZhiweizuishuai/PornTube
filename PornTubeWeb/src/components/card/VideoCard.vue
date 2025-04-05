@@ -2,10 +2,18 @@
   <!-- padding-left: 10px; padding-right: 10px; -->
   <div style="width: 350px">
     <router-link :to="`/video/${videoInfo.id}`">
-      <v-img :src="videoInfo.imgUrl" outlined aspect-ratio="1.77" class="white--text align-end">
-        <span style="background-color: rgba(0, 0, 0, 0.4); border-radius: 5px; color: white">
-          {{ TimeUtil.timeCover(videoInfo.duration) }}
-        </span>
+      <v-img :src="videoInfo.imgUrl" :aspect-ratio="16 / 9" cover class="rounded" height="100%">
+        <div class="d-flex fill-height align-end">
+          <v-chip
+            style="background-color: rgba(0, 0, 0, 50%)"
+            variant="text"
+            color="white"
+            size="small"
+            class="mb-1 mr-1 bg-black-transparent"
+          >
+            {{ TimeUtil.timeCover(videoInfo.duration) }}
+          </v-chip>
+        </div>
       </v-img>
       <!-- <span> {{ TimeUtil.timeCover(videoInfo.duration) }} </span> -->
     </router-link>

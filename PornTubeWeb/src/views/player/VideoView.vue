@@ -87,7 +87,7 @@
                     <router-link :to="`/user/${videoData.userId}`" class="text-decoration-none">
                       <div class="text-subtitle-1 font-weight-bold">{{ videoData.username }}</div>
                     </router-link>
-                    <div class="text-caption text-grey">个性签名</div>
+                    <div class="text-caption text-grey">个性签名: {{ videoData.introduction }}</div>
                   </div>
                   <v-spacer></v-spacer>
                   <v-btn variant="outlined" density="comfortable" color="primary" class="ml-2"

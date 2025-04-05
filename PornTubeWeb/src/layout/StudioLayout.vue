@@ -3,11 +3,11 @@
     <v-app-bar color="red">
       <v-app-bar-nav-icon @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
       <v-app-bar-title>
-        <span style="cursor: pointer" @click="goToHome()">{{ webInfo.name }}</span>
+        <span style="cursor: pointer" @click="goToHome()">{{ webInfo.name }} Studio</span>
       </v-app-bar-title>
       <!-- <v-container>
-        <v-row>
-          <v-col cols="5"> -->
+          <v-row>
+            <v-col cols="5"> -->
       <v-text-field
         density="compact"
         prepend-inner-icon="mdi-magnify"
@@ -19,8 +19,8 @@
         color="#F44336"
       ></v-text-field>
       <!-- </v-col>
-        </v-row>
-      </v-container> -->
+          </v-row>
+        </v-container> -->
       <!-- 占位分割 -->
       <v-spacer />
       <!-- 发布 -->
@@ -48,6 +48,20 @@
     <!-- temporary -->
     <v-navigation-drawer v-model="drawer">
       <div class="d-flex flex-column h-100">
+        <router-link :to="`/user/${userInfo.userData.id}`">
+          <v-row justify="center" align="center">
+            <v-col cols="12" style="text-align: center; margin-top: 12px">
+              <v-avatar size="62">
+                <v-img :src="userInfo.userData.avatarUrl" />
+              </v-avatar>
+            </v-col>
+          </v-row>
+          <v-row justify="center" align="center">
+            <v-col cols="12" style="text-align: center; color: #2196f3">
+              {{ userInfo.userData.username }}
+            </v-col>
+          </v-row>
+        </router-link>
         <v-list>
           <v-list-item
             v-for="item in items"
@@ -78,8 +92,8 @@
     </v-main>
   </div>
 </template>
-
-<script>
+  
+  <script>
 import { useWebInfoStore } from '@/stores/webInfoStore'
 import { useUserStore } from '@/stores/userStore'
 import AppBarHead from '@/components/user/AppBarHead.vue'
@@ -92,13 +106,11 @@ export default {
     theme: 'light',
     webInfo: {},
     items: [
-      { icon: 'mdi-home', text: '首页', link: '/' },
-      { icon: 'mdi-trending-up', text: '时下流行', link: '/hot' },
-      { icon: 'mdi-youtube-subscription', text: '订阅', link: '/subscribe' },
-      { icon: 'mdi-history', text: '历史记录', link: '/history' },
-      { icon: 'mdi-playlist-play', text: '稍后再看', link: '/playlist' },
-      // { icon: 'mdi-cog', text: '设置', link: '/settings' },
-      { icon: 'mdi-help-circle', text: '关于', link: '/about' },
+      { icon: 'mdi-application', text: '信息中心', link: '/studio' },
+      { icon: 'mdi-filmstrip-box-multiple', text: '投稿列表', link: '/studio/list' },
+      { icon: 'mdi-upload', text: '投稿', link: '/studio/upload' },
+      { icon: 'mdi-database', text: '数据分析', link: '/studio/data' },
+      { icon: 'mdi-account-multiple', text: '粉丝管理', link: '/studio/fans' },
     ],
     userInfo: useUserStore(),
   }),
@@ -113,7 +125,7 @@ export default {
       this.$router.push('/login')
     },
     goToHome() {
-      this.$router.push('/')
+      this.$router.push('/studio')
     },
     goToPublish() {
       this.$router.push('/studio/upload')
@@ -126,3 +138,4 @@ export default {
   },
 }
 </script>
+  

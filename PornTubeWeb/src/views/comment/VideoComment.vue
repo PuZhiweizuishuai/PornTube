@@ -80,7 +80,7 @@
 <script>
 import Vditor from '@/components/vditor/VditorComponents.vue'
 import CommentCard from '@/components/card/comment/CommentCard.vue'
-
+import { useUserStore } from '@/stores/userStore'
 export default {
   name: 'VideoComment',
   components: {
@@ -124,6 +124,7 @@ export default {
       type: 0,
       sort: 1,
       size: 15,
+      userInfo: useUserStore(),
     }
   },
   created() {
@@ -145,7 +146,7 @@ export default {
       this.commentData.comment = value
     },
     submitComment() {
-      if (!this.$store.state.userInfo) {
+      if (this.userInfo.userData == null) {
         this.message = '请先登录后再评论！'
         this.showMessage = true
         return

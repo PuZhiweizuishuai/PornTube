@@ -85,7 +85,7 @@
 <script>
 import Card from '@/components/card/comment/SecondCard.vue'
 import SecondCommentVditor from '@/components/vditor/VditorComment.vue'
-
+import { useUserStore } from '@/stores/userStore'
 export default {
   name: 'SecondComment',
   components: {
@@ -123,6 +123,7 @@ export default {
       showMessage: false,
       secondCommentKey: 0,
       uploadurl: this.SERVER_API_URL + '/uploads/file',
+      userInfo: useUserStore(),
     }
   },
   created() {
@@ -151,7 +152,7 @@ export default {
       )
     },
     submit() {
-      if (!this.$store.state.userInfo) {
+      if (this.userInfo.userData == null) {
         this.message = '请先登录后再评论！'
         this.showMessage = true
         return

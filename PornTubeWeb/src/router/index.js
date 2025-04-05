@@ -1,6 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeLayout from '../layout/IndexLayout.vue'
 
+// 默认网站名称
+const DEFAULT_TITLE = 'PornTube'
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -21,7 +24,90 @@ const router = createRouter({
           component: () => import('@/views/player/VideoView.vue'),
           meta: { title: '播放' }
         },
+        {
+          path: '/v/:id',
+          name: 'Category',
+          component: () => import('@/views/category/CategoryView.vue'),
+          meta: { title: '分区' }
+        },
+        {
+          path: '/user/setting',
+          name: 'UserSetting',
+          component: () => import('@/views/user/SettingView.vue'),
+          meta: {
+            title: '个人设置',
+            requireAuth: true
+          }
+        },
+        {
+          path: '/user/:id',
+          name: 'User',
+          component: () => import('@/views/user/UserIndexView.vue'),
+          meta: { title: '个人主页' }
+        },
+        {
+          path: '/history',
+          name: 'History',
+          component: () => import('@/views/home/HistoryView.vue'),
+          meta: { title: '播放历史' }
+        },
+        {
+          path: '/hot',
+          name: 'Hot',
+          component: () => import('@/views/home/HotView.vue'),
+          meta: { title: '时下流行' }
+        },
+        {
+          path: '/subscribe',
+          name: 'Subscribe',
+          component: () => import('@/views/home/SubscribeView.vue'),
+          meta: { title: '订阅' }
+        },
+        {
+          path: '/playlist',
+          name: 'Playlist',
+          component: () => import('@/views/home/PlayListView.vue'),
+          meta: { title: '稍后再看' }
+        },
+        {
+          path: '/settings',
+          name: 'Setting',
+          component: () => import('@/views/home/SettingView.vue'),
+          meta: { title: '设置' }
+        },
+        {
+          path: '/about',
+          name: 'About',
+          component: () => import('@/views/home/AboutView.vue'),
+          meta: { title: '关于' }
+        },
       ],
+    },
+    {
+      path: '/studio',
+      name: 'Studio',
+      component: () => import('@/layout/StudioLayout.vue'),
+      meta: { title: '创作中心' },
+      children: [
+        {
+          path: '/studio',
+          name: 'StudioIndex',
+          component: () => import('@/views/studio/HomeView.vue'),
+          meta: {
+            title: '创作中心',
+            requireAuth: true
+          }
+        },
+        {
+          path: '/studio/upload',
+          name: 'Upload',
+          component: () => import('@/views/studio/UploadView.vue'),
+          meta: {
+            title: '投稿',
+            requireAuth: true
+          }
+        },
+      ] 
     },
     {
       path: '/login',
@@ -31,7 +117,57 @@ const router = createRouter({
         title: '登录',
       },
     },
+    {
+      path: '/:pathMatch(.*)*',
+      name: '404',
+      component: () => import('@/views/404.vue'),
+      meta: {
+        title: '404'
+      }
+    }
   ],
+})
+
+// 导航守卫，在路由跳转前进行权限判断
+router.beforeEach((to, from, next) => {
+  // 尝试从localStorage获取网站信息作为标题
+  let siteTitle = DEFAULT_TITLE
+  try {
+    // App.vue中会将网站信息存储到localStorage，如果有则使用它
+    const webInfoStr = localStorage.getItem('webInfo')
+    if (webInfoStr) {
+      const webInfo = JSON.parse(webInfoStr)
+      if (webInfo && webInfo.name) {
+        siteTitle = webInfo.name
+      }
+    }
+  } catch (e) {
+    console.error('获取网站标题失败', e)
+  }
+
+  // 设置页面标题
+  document.title = to.meta.title ? `${siteTitle} - ${to.meta.title}` : siteTitle
+  
+  // 判断页面是否需要登录权限
+  if (to.meta.requireAuth) {
+    // 判断用户是否已登录，通过localStorage直接判断
+    const userData = localStorage.getItem('user')
+    
+    if (userData && userData !== 'undefined' && userData !== '') {
+      // 已登录，允许访问
+      next()
+    } else {
+      // 未登录，重定向到登录页面
+      next({
+        path: '/login',
+        // 将原本要访问的页面路径作为查询参数传递，便于登录后重定向回去
+        query: { redirect: to.fullPath }
+      })
+    }
+  } else {
+    // 不需要登录权限的页面，直接访问
+    next()
+  }
 })
 
 export default router

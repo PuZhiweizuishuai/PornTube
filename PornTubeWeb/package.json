@@ -13,10 +13,14 @@
   "dependencies": {
     "artplayer": "^5.2.2",
     "artplayer-plugin-danmuku": "^5.1.5",
+    "filepond": "^4.32.7",
+    "filepond-plugin-file-validate-type": "^1.2.9",
+    "filepond-plugin-image-preview": "^4.6.12",
     "pinia": "^3.0.1",
     "ua-parser-js": "^2.0.3",
     "vditor": "^3.10.9",
     "vue": "^3.5.13",
+    "vue-filepond": "^7.0.4",
     "vue-router": "^4.5.0",
     "vuetify": "^3.8.0"
   },
