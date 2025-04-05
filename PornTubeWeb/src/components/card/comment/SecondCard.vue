@@ -1,94 +1,94 @@
 <template>
-  <v-container>
-    <v-row justify="center">
-      <v-col cols="12" class="pt-0">
-        <router-link :to="`/user/${comment.userId}`">
-          <v-avatar size="32" style="float: left">
-            <v-img :src="comment.avatarUrl" />
-          </v-avatar>
-        </router-link>
-        <p style="margin-left: 60px">
-          <router-link :to="`/user/${comment.userId}`">
-            {{ comment.username }}
-          </router-link>
-          <v-chip class="ma-2" color="primary" size="x-small" text-color="white">
-            {{ parserUa() }}
-          </v-chip>
-          <span v-html="`&nbsp;&nbsp;&nbsp;&nbsp;`" />
-          {{ TimeUtil.renderTime(comment.createTime) }}
-        </p>
+  <v-card variant="flat" class="pa-3 my-2" color="grey-lighten-4">
+    <v-row>
+      <v-col cols="12" class="pb-0">
+        <v-row no-gutters>
+          <v-col cols="auto">
+            <router-link :to="`/user/${comment.userId}`">
+              <v-avatar size="32" class="mr-3">
+                <v-img :src="comment.avatarUrl" />
+              </v-avatar>
+            </router-link>
+          </v-col>
+          <v-col>
+            <div class="d-flex align-center">
+              <router-link :to="`/user/${comment.userId}`" class="text-decoration-none">
+                <span class="text-subtitle-2 font-weight-medium">{{ comment.username }}</span>
+              </router-link>
+              <v-chip class="ml-2" color="primary" size="x-small" text-color="white">
+                {{ parserUa() }}
+              </v-chip>
+              <v-spacer></v-spacer>
+              <span class="text-caption text-grey">{{
+                TimeUtil.renderTime(comment.createTime)
+              }}</span>
+            </div>
+          </v-col>
+        </v-row>
       </v-col>
     </v-row>
-    <v-row justify="center">
-      <v-col cols="12">
-        <span v-if="comment.parentCommentId != father.id" style="float: left">
-          回复<router-link :to="`/user/${comment.parentUserId}`" target="_blank"
-            >@ {{ comment.username }} :</router-link
+
+    <v-row>
+      <v-col class="pl-12 py-2">
+        <div v-if="comment.parentCommentId != father.id" class="text-body-2 text-primary mb-1">
+          回复
+          <router-link
+            :to="`/user/${comment.parentUserId}`"
+            class="text-decoration-none"
+            target="_blank"
           >
-        </span>
-        <!-- <span :id="'secondCommentView' + comment.id" /> -->
-        <!-- {{ comment.content }} -->
+            @{{ comment.username }}:
+          </router-link>
+        </div>
         <ShowMarkdown :markdown="comment.comment" :anchor="0" />
       </v-col>
     </v-row>
-    <v-row justify="end">
-      <v-tooltip text="评论" location="top">
-        <template v-slot:activator="{ props }">
-          <v-btn
-            v-bind="props"
-            variant="flat"
-            color="blue"
-            @click="setComment()"
-            icon="mdi-comment"
-            size="x-small"
-          >
-          </v-btn>
-        </template>
-      </v-tooltip>
-      <span>{{ comment.commentCount }} </span>
 
-      <span v-html="`&nbsp;&nbsp;`" />
-      <span v-html="`&nbsp;&nbsp;`" />
-
-      <v-tooltip text="赞" location="top">
-        <template v-slot:activator="{ props }">
-          <v-btn
-            v-bind="props"
-            size="x-small"
-            variant="flat"
-            color="green"
-            @click="like()"
-            icon="mdi-thumb-up"
-          ></v-btn>
-        </template>
-      </v-tooltip>
-      <span>{{ comment.likeCount }} </span>
-
-      <span v-html="`&nbsp;&nbsp;`" />
-      <!-- <span v-html="`&nbsp;&nbsp;`" />
-        <v-btn
-          icon
-  
-          small
-        >
-          <v-icon>mdi-thumb-down</v-icon>
-        </v-btn>
-        {{ comment.badCount }}
-  
-        <span v-html="`&nbsp;&nbsp;`" /> -->
-      <span v-html="`&nbsp;&nbsp;`" />
-    </v-row>
     <v-row>
-      <v-divider />
+      <v-col>
+        <div class="d-flex justify-end align-center">
+          <v-tooltip text="评论" location="top">
+            <template v-slot:activator="{ props }">
+              <v-btn
+                v-bind="props"
+                variant="text"
+                color="indigo"
+                @click="setComment"
+                icon="mdi-comment"
+                size="small"
+                class="mr-1"
+              ></v-btn>
+            </template>
+          </v-tooltip>
+          <span class="text-body-2 mr-4">{{ comment.commentCount }}</span>
+
+          <v-tooltip text="赞" location="top">
+            <template v-slot:activator="{ props }">
+              <v-btn
+                v-bind="props"
+                size="small"
+                variant="text"
+                color="primary"
+                @click="like()"
+                icon="mdi-thumb-up"
+                class="mr-1"
+              ></v-btn>
+            </template>
+          </v-tooltip>
+          <span class="text-body-2">{{ likeCount }}</span>
+        </div>
+      </v-col>
     </v-row>
+
+    <v-divider class="mt-2"></v-divider>
+
     <v-snackbar v-model="showMessage" location="top" :timeout="3000">
       {{ message }}
-
       <template v-slot:actions>
         <v-btn color="pink" variant="text" @click="showMessage = false">关闭</v-btn>
       </template>
     </v-snackbar>
-  </v-container>
+  </v-card>
 </template>
   
 <script>

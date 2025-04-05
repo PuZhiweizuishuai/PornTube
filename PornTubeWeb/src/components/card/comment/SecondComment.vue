@@ -1,81 +1,85 @@
 <template>
-  <v-container>
+  <v-card flat>
     <div id="commentTop" ref="commentTop" />
-    <v-row justify="center">
-      <v-col cols="11">
-        <h3>评论</h3>
-      </v-col>
-    </v-row>
-    <v-row justify="center">
-      <v-col cols="11">
-        <SecondCommentVditor
-          :key="secondCommentKey"
-          ref="secondCommentView"
-          :idname="`second-comment-${father.id}`"
-          :placeholder="commentPlaceholder"
-          @vditor-input="getSecondCommentText"
-        />
-      </v-col>
-    </v-row>
-    <v-row justify="end">
-      <v-col cols="3">
-        <!-- <v-row justify="center">
-            <img :src="verifyImageUrl" alt="验证码" title="点击刷新" style="cursor:pointer;" @click="getVerifyImage">
-          </v-row> -->
-      </v-col>
+    <v-container>
+      <v-row>
+        <v-col>
+          <div class="d-flex align-center">
+            <h3 class="text-h5 font-weight-medium">评论</h3>
+            <v-spacer></v-spacer>
+          </div>
+        </v-col>
+      </v-row>
 
-      <v-col cols="3" />
-      <v-col cols="3">
-        <v-row justify="end" class="mb-3">
-          <v-btn color="success" @click="submit">评论</v-btn>
+      <v-row>
+        <v-col>
+          <v-card variant="text" class="pa-3">
+            <SecondCommentVditor
+              :key="secondCommentKey"
+              ref="secondCommentView"
+              :idname="`second-comment-${father.id}`"
+              :placeholder="commentPlaceholder"
+              @vditor-input="getSecondCommentText"
+            />
+            <div class="d-flex justify-end mt-3">
+              <v-btn color="success" @click="submit">提交评论</v-btn>
+            </div>
+          </v-card>
+        </v-col>
+      </v-row>
+
+      <v-divider class="my-4"></v-divider>
+
+      <v-row>
+        <v-col>
+          <v-tabs v-model="activeTab" color="primary" bg-color="transparent">
+            <v-tab value="1" @click="setSort(1)">时间倒序</v-tab>
+            <v-tab value="0" @click="setSort(0)">评论时间</v-tab>
+            <v-tab value="2">最多点赞</v-tab>
+            <v-tab value="3" @click="setSort(3)">最多评论</v-tab>
+          </v-tabs>
+        </v-col>
+      </v-row>
+
+      <v-divider class="mb-4"></v-divider>
+
+      <v-row v-if="total == 0" justify="center" class="my-6">
+        <v-icon
+          icon="mdi-message-text-outline"
+          size="large"
+          color="grey-lighten-1"
+          class="mr-2"
+        ></v-icon>
+        <h3 class="text-grey-lighten-1">暂无评论，来抢个沙发吧！</h3>
+      </v-row>
+
+      <template v-else>
+        <v-row v-for="item in secondList" :key="item.id">
+          <v-col>
+            <Card :father="father" :comment="item" :type="type" @comment="getComment" />
+          </v-col>
         </v-row>
-      </v-col>
-      <v-col cols="1" />
-    </v-row>
+      </template>
 
-    <v-row>
-      <v-divider />
-    </v-row>
-    <v-row>
-      <v-col cols="10" class="pa-0">
-        <v-tabs>
-          <v-tab @click="setSort(1)">时间倒序</v-tab>
-          <v-tab @click="setSort(0)">评论时间</v-tab>
-          <v-tab>最多点赞</v-tab>
-          <v-tab @click="setSort(3)">最多评论</v-tab>
-        </v-tabs>
-      </v-col>
-    </v-row>
-    <v-row>
-      <v-divider />
-    </v-row>
-    <v-row v-for="item in secondList" :key="item.id" justify="center">
-      <v-col cols="11">
-        <Card :father="father" :comment="item" :type="type" @comment="getComment" />
-      </v-col>
-    </v-row>
+      <v-row justify="center" class="my-4">
+        <v-pagination
+          :total-visible="7"
+          v-model="page"
+          :length="length"
+          rounded="circle"
+          color="blue"
+          @update:model-value="pageChange"
+        />
+      </v-row>
+    </v-container>
 
-    <v-row v-if="total == 0" justify="center">
-      <h3>暂无评论，来抢个沙发吧！</h3>
-    </v-row>
-    <v-row justify="center">
-      <v-pagination
-        :total-visible="7"
-        v-model="page"
-        :length="length"
-        rounded="circle"
-        color="blue"
-        @update:model-value="pageChange"
-      />
-    </v-row>
     <v-snackbar v-model="showMessage" location="top" :timeout="3000">
       {{ message }}
-
       <template v-slot:actions>
         <v-btn color="pink" variant="text" @click="showMessage = false">关闭</v-btn>
       </template>
     </v-snackbar>
-  </v-container>
+  </v-card>
 </template>
   
 <script>
@@ -100,7 +104,7 @@ export default {
   },
   data() {
     return {
-      // verifyImageUrl: this.SERVER_API_URL + '/verifyImage',
+      activeTab: '1',
       secondList: [],
       page: 1,
       size: 10,
@@ -109,7 +113,6 @@ export default {
       total: 0,
       comment: {
         comment: '',
-        // verifyCode: '',
         type: this.type,
         articleId: this.father.articleId,
         parentCommentId: this.father.id,
@@ -124,15 +127,13 @@ export default {
   },
   created() {
     this.getSecondList()
-    console.log(this.father)
   },
   methods: {
     getComment(value) {
-      this.$refs.commentTop.scrollIntoView()
+      this.$refs.commentTop.scrollIntoView({ behavior: 'smooth' })
       this.commentPlaceholder = '回复 @' + value.username + ': ' + value.comment
       this.secondCommentKey++
       this.comment.parentCommentId = value.id
-      // this.comment.fatherId = value.fatherId
     },
     getVerifyImage() {
       this.verifyImageUrl = this.SERVER_API_URL + '/verifyImage?t=' + new Date().getTime()
@@ -142,19 +143,15 @@ export default {
         `/comment/list?article=${this.father.articleId}&fatherId=${this.father.id}&page=${this.page}&limit=${this.size}&sort=${this.sort}&type=2`,
         (json) => {
           if (json.status === 200) {
-            //
             this.secondList = json.data.list
             this.length = json.data.totalPage
             this.total = json.data.totalCount
-          } else {
-            //
           }
         }
       )
     },
     submit() {
-      //
-      if (!this.store.state.userInfo) {
+      if (!this.$store.state.userInfo) {
         this.message = '请先登录后再评论！'
         this.showMessage = true
         return
@@ -168,22 +165,15 @@ export default {
         this.showMessage = true
         return
       }
-      // if (this.comment.verifyCode == null || this.comment.verifyCode === '') {
-      //   this.message = '验证码不能为空！'
-      //   this.showMessage = true
-      //   return
-      // }
 
       this.httpPost('/comment/save', this.comment, (json) => {
         if (json.status === 200) {
           this.message = '评论成功！'
           this.showMessage = true
-          this.comment.verifyCode = ''
           this.comment.comment = ''
           this.$refs.secondCommentView.setTextValue('')
           this.getSecondList()
         } else {
-          //
           this.message = json.message
           this.showMessage = true
         }
@@ -198,6 +188,7 @@ export default {
     },
     setSort(sort) {
       this.sort = sort
+      this.activeTab = sort.toString()
       this.getSecondList()
     },
   },

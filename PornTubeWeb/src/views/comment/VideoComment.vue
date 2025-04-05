@@ -1,67 +1,80 @@
 <!-- 视频评论组件 -->
 <template>
-  <div>
-    <v-row>
-      <v-col> {{ commentCount }} 条评论 </v-col>
-    </v-row>
-    <v-row>
-      <v-col class="pt-0">
-        <Vditor ref="commentVditor" :height="150" @vditor-input="getCommentText" />
-      </v-col>
-    </v-row>
-    <v-row>
-      <v-col>
-        <v-btn color="primary" style="float: right" @click="submitComment">评论</v-btn>
-      </v-col>
-    </v-row>
-    <v-col />
-    <v-row>
-      <v-col cols="9" class="pb-0">
-        <v-tabs>
-          <v-tab @click="setType(1)">时间倒序</v-tab>
-          <v-tab>最多点赞</v-tab>
-          <v-tab @click="setType(3)">最多评论</v-tab>
-        </v-tabs>
-      </v-col>
-    </v-row>
-    <!-- 分割线 -->
-    <v-row>
-      <v-divider />
-    </v-row>
-    <v-row v-for="item in commentsList" :key="item.id">
-      <v-col cols="12">
-        <!-- <Card :comment="item" :artice="artice" /> -->
-        <CommentCard :author-id="authorId" :comment="item" />
-      </v-col>
-    </v-row>
-    <v-row v-if="total == 0" justify="center">
-      <h3>暂无评论</h3>
-    </v-row>
-    <!-- 页码 -->
-    <v-row justify="center">
-      <v-pagination
-        v-model="page"
-        rounded="circle"
-        :length="length"
-        color="blue"
-        :total-visible="7"
-        @update:model-value="pageChange"
-      />
-    </v-row>
-    <v-row>
-      <v-col>
-        <v-divider />
-      </v-col>
-    </v-row>
+  <v-card>
+    <v-container>
+      <v-row>
+        <v-col>
+          <div class="d-flex align-center mb-4">
+            <h2 class="text-h5 font-weight-medium">{{ commentCount }} 条评论</h2>
+            <v-spacer></v-spacer>
+          </div>
+        </v-col>
+      </v-row>
+
+      <v-row>
+        <v-col>
+          <v-card variant="text" class="pa-3 mb-3">
+            <Vditor ref="commentVditor" :height="150" @vditor-input="getCommentText" />
+            <div class="d-flex justify-end mt-3">
+              <v-btn color="primary" @click="submitComment">发表评论</v-btn>
+            </div>
+          </v-card>
+        </v-col>
+      </v-row>
+
+      <v-divider class="mb-4"></v-divider>
+
+      <v-row class="mb-3">
+        <v-col>
+          <v-tabs v-model="activeTab" color="primary" bg-color="transparent">
+            <v-tab value="1" @click="setType(1)">时间倒序</v-tab>
+            <v-tab value="2">最多点赞</v-tab>
+            <v-tab value="3" @click="setType(3)">最多评论</v-tab>
+          </v-tabs>
+        </v-col>
+      </v-row>
+
+      <v-divider></v-divider>
+
+      <v-row v-if="total == 0" justify="center" class="my-6">
+        <v-icon
+          icon="mdi-message-text-outline"
+          size="large"
+          color="grey-lighten-1"
+          class="mr-2"
+        ></v-icon>
+        <h3 class="text-grey-lighten-1">暂无评论</h3>
+      </v-row>
+
+      <template v-else>
+        <v-row v-for="item in commentsList" :key="item.id">
+          <v-col>
+            <CommentCard :author-id="authorId" :comment="item" />
+          </v-col>
+        </v-row>
+      </template>
+
+      <v-row justify="center" class="my-4">
+        <v-pagination
+          v-model="page"
+          rounded="circle"
+          :length="length"
+          color="blue"
+          :total-visible="7"
+          @update:model-value="pageChange"
+        />
+      </v-row>
+
+      <v-divider class="mt-2"></v-divider>
+    </v-container>
 
     <v-snackbar v-model="showMessage" location="top" :timeout="3000">
       {{ message }}
-
       <template v-slot:actions>
         <v-btn color="pink" variant="text" @click="showMessage = false">关闭</v-btn>
       </template>
     </v-snackbar>
-  </div>
+  </v-card>
 </template>
   
 <script>
@@ -95,6 +108,7 @@ export default {
   data() {
     return {
       commentCount: this.count,
+      activeTab: '1',
       commentData: {
         articleId: this.article,
         comment: '',
@@ -124,7 +138,6 @@ export default {
           this.page = json.data.currPage
           this.length = json.data.totalPage
           this.total = json.data.totalCount
-          console.log(this.length)
         }
       )
     },
@@ -132,7 +145,7 @@ export default {
       this.commentData.comment = value
     },
     submitComment() {
-      if (!this.store.state.userInfo) {
+      if (!this.$store.state.userInfo) {
         this.message = '请先登录后再评论！'
         this.showMessage = true
         return
@@ -148,15 +161,12 @@ export default {
       }
       this.httpPost('/comment/save', this.commentData, (json) => {
         if (json.status === 200) {
-          //
           this.message = '评论成功'
           this.showMessage = true
           this.commentData.comment = ''
           this.$refs.commentVditor.setTextValue('')
-
           this.getCommentList()
         } else {
-          //
           this.message = json.message
           this.showMessage = true
         }
@@ -168,6 +178,7 @@ export default {
     },
     setType(value) {
       this.sort = value
+      this.activeTab = value.toString()
       this.getCommentList()
     },
   },
