@@ -90,7 +90,7 @@
                     <div class="text-caption text-grey">个性签名</div>
                   </div>
                   <v-spacer></v-spacer>
-                  <v-btn variant="text" density="comfortable" color="primary" class="ml-2"
+                  <v-btn variant="outlined" density="comfortable" color="primary" class="ml-2"
                     >关注：{{ videoData.followCount }}</v-btn
                   >
                 </div>
@@ -124,6 +124,13 @@
             </v-card-text>
           </v-card>
 
+          <Comment
+            :article="id"
+            :author-id="videoData.userId"
+            :typenum="1"
+            :count="videoData.commentCount"
+          />
+
           <!-- 评论区 -->
         </v-col>
 
@@ -144,10 +151,12 @@
 <script>
 import TimeUtil from '@/utils/time-util.vue'
 import PlayerVideo from '@/components/player/PlayerVideo.vue'
+import Comment from '@/views/comment/VideoComment.vue'
 export default {
   name: 'VideoView',
   components: {
     PlayerVideo,
+    Comment,
   },
   data() {
     return {

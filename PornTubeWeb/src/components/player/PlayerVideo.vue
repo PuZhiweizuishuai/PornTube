@@ -41,7 +41,7 @@ export default {
         // 视频封面
         poster: this.picurl,
         // 自动启用迷你窗口
-        autoMini: true,
+        // autoMini: true,
         // 显示视频反转按钮
         flip: true,
         // 显示视频播放速度
