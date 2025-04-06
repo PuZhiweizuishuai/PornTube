@@ -193,6 +193,26 @@ const router = createRouter({
             requireAuth: true,
             requireAdmin: true
           }
+        },
+        {
+          path: '/admin/file/list',
+          name: 'FileList',
+          component: () => import('@/views/admin/FileTableView.vue'),
+          meta: {
+            title: '文件列表',
+            requireAuth: true,
+            requireAdmin: true
+          }
+        },
+        {
+          path: '/admin/userlist',
+          name: 'UserList',
+          component: () => import('@/views/admin/UserList.vue'),
+          meta: {
+            title: '用户列表',
+            requireAuth: true,
+            requireAdmin: true
+          }
         }
       ]
     },

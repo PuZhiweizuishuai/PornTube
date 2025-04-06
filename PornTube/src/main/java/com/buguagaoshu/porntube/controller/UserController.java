@@ -18,6 +18,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 
+import java.util.Map;
+
 /**
  * @author Pu Zhiwei {@literal puzhiweipuzhiwei@foxmail.com}
  * create          2020-09-05 14:48
@@ -88,5 +90,11 @@ public class UserController {
     public ResponseDetails updateInfo(@RequestBody User user,
                                       HttpServletRequest request) {
         return ResponseDetails.ok(userService.updateInfo(user, request));
+    }
+
+
+    @GetMapping("/api/admin/user/list")
+    public ResponseDetails userList(@RequestParam Map<String, Object> params) {
+        return ResponseDetails.ok().put("data", userService.userList(params));
     }
 }

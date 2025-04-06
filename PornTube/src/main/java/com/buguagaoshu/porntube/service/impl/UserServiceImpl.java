@@ -16,6 +16,8 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -78,6 +80,34 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
         );
 
         return new PageUtils(page);
+    }
+
+    /**
+     * 返回用户列表
+     * */
+    @Override
+    public PageUtils userList(Map<String, Object> params) {
+        QueryWrapper<UserEntity> wrapper = new QueryWrapper<>();
+        wrapper.orderByDesc("create_time");
+        IPage<UserEntity> page = this.page(
+                new Query<UserEntity>().getPage(params),
+                wrapper
+        );
+        // 将用户列表转换为只包含用户ID的Set
+        Set<Long> userIdSet = page.getRecords().stream()
+                .map(UserEntity::getId)
+                .collect(Collectors.toSet());
+
+        Map<Long, UserRoleEntity> userRoleEntityMap = userRoleService.listByUserId(userIdSet);
+        List<User> userList = new ArrayList<>();
+        for (UserEntity user :  page.getRecords()) {
+            user.setPassword("");
+            User vos = new User();
+            BeanUtils.copyProperties(user, vos);
+            vos.setUserRoleEntity(userRoleEntityMap.get(vos.getId()));
+            userList.add(vos);
+        }
+        return new PageUtils(userList, page.getTotal(), page.getSize(), page.getCurrent());
     }
 
     @Override

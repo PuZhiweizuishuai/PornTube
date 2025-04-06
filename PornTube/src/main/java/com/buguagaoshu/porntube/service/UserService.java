@@ -25,6 +25,9 @@ public interface UserService extends IService<UserEntity> {
 
     PageUtils queryPage(Map<String, Object> params);
 
+
+    PageUtils userList(Map<String, Object> params);
+
     /**
      * 登录接口
      * @param loginDetails 登录请求数据

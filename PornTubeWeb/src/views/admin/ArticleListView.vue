@@ -55,7 +55,7 @@
               <div class="mt-1 text-caption d-flex align-center">
                 <v-icon size="small" class="mr-1">mdi-tag-multiple</v-icon>
                 <span v-for="(tag, index) in parseTags(item.tag)" :key="index" class="mr-1">
-                  <v-chip size="x-small" color="grey-lighten-3" class="mr-1">
+                  <v-chip size="x-small" color="blue" class="mr-1">
                     {{ tag }}
                   </v-chip>
                 </span>
@@ -81,7 +81,7 @@
               <v-chip size="small" color="primary-lighten-1" class="mb-1">
                 {{ getCategoryInfo(item.category).parent }}
               </v-chip>
-              <v-chip size="small" variant="outlined" color="primary">
+              <v-chip size="small" variant="outlined" color="blue">
                 {{ getCategoryInfo(item.category).children }}
               </v-chip>
             </div>

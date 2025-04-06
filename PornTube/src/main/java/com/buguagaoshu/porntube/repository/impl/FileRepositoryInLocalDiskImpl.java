@@ -160,6 +160,20 @@ public class FileRepositoryInLocalDiskImpl implements FileRepository {
     }
 
     @Override
+    public boolean deleteFileWithDatabase(FileTableEntity fileTableEntity) {
+        FileTableEntity file = fileTableService.getById(fileTableEntity.getId());
+        if (file == null) {
+            return false;
+        }
+        if (file.getArticleId() != null) {
+            return false;
+        }
+        deleteFile(file);
+        fileTableService.removeById(file.getId());
+        return true;
+    }
+
+    @Override
     public boolean deleteFile(FileTableEntity fileTableEntity) {
         String pathStr = fileTableEntity.getFileUrl().replace("/api/upload/" + FileTypeEnum.ROOT + "/", "");
         try {

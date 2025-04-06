@@ -2,7 +2,12 @@ package com.buguagaoshu.porntube.service.impl;
 
 import com.buguagaoshu.porntube.entity.UserEntity;
 import org.springframework.stereotype.Service;
+
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -30,6 +35,21 @@ public class UserRoleServiceImpl extends ServiceImpl<UserRoleDao, UserRoleEntity
     @Override
     public UserRoleEntity findByUserId(Long id) {
         return this.getOne(new QueryWrapper<UserRoleEntity>().eq("userId", id));
+    }
+
+    @Override
+    public Map<Long, UserRoleEntity> listByUserId(Set<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return new HashMap<>();
+        }
+        QueryWrapper<UserRoleEntity> queryWrapper = new QueryWrapper<>();
+        queryWrapper.in("userId", userIds);
+        List<UserRoleEntity> list = this.list(queryWrapper);
+        Map<Long, UserRoleEntity> map = new HashMap<>();
+        for (UserRoleEntity userRole : list) {
+            map.put(userRole.getUserid(), userRole);
+        }
+        return map;
     }
 
     @Override

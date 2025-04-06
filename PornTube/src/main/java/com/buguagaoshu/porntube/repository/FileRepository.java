@@ -32,7 +32,13 @@ public interface FileRepository {
     Path load(String filePath) throws FileNotFoundException;
 
     /**
-     * 删除文件
+     * 删除本地文件和数据库文件
+     *
+     */
+    boolean deleteFileWithDatabase(FileTableEntity fileTableEntity);
+
+    /**
+     * 删除本地文件
      * */
     boolean deleteFile(FileTableEntity fileTableEntity);
 }

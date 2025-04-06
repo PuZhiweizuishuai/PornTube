@@ -2,6 +2,8 @@ package com.buguagaoshu.porntube.service.impl;
 
 import com.buguagaoshu.porntube.enums.FileStatusEnum;
 import com.buguagaoshu.porntube.enums.FileTypeEnum;
+import com.buguagaoshu.porntube.repository.FileRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,11 +24,12 @@ public class FileTableServiceImpl extends ServiceImpl<FileTableDao, FileTableEnt
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
+        QueryWrapper<FileTableEntity> wrapper = new QueryWrapper<>();
+        wrapper.orderByDesc("upload_time");
         IPage<FileTableEntity> page = this.page(
                 new Query<FileTableEntity>().getPage(params),
-                new QueryWrapper<FileTableEntity>()
+                wrapper
         );
-
         return new PageUtils(page);
     }
 

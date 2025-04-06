@@ -5,7 +5,9 @@ import com.buguagaoshu.porntube.entity.UserEntity;
 import com.buguagaoshu.porntube.utils.PageUtils;
 import com.buguagaoshu.porntube.entity.UserRoleEntity;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 
@@ -24,6 +26,8 @@ public interface UserRoleService extends IService<UserRoleEntity> {
      * @return 用户权限
      * */
     UserRoleEntity findByUserId(Long id);
+
+    Map<Long, UserRoleEntity> listByUserId(Set<Long> userIds);
 
     /**
      * 写入角色
