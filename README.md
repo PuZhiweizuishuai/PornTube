@@ -44,6 +44,11 @@
 <img src="/img/Capture.png" title="Video Capture" alt="Video Capture">
 
 
+### User Management
+
+<img src="/img/admin_user.png" title="User Management" alt="User Management">
+
+
 ## introduction 
 
 A simple video website
@@ -56,7 +61,7 @@ Still in development. But most of the gong'n has been done.
 
 for example, Video upload, danmaku, historical records, Auto generate cover image, etc.
 
-PornTubeWeb It is a new front-end page under development
+The web folder contains the legacy frontend interface. Please compile the new frontend interface using the project under PornTubeWeb.
 
 ## Quick start
 
@@ -95,7 +100,7 @@ npm run dev
 Open
 
 ```
-http://127.0.0.1:8080
+http://127.0.0.1:5173
 ```
 
 
