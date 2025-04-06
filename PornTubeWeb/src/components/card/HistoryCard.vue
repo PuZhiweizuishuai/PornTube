@@ -9,7 +9,6 @@
           <v-img
             :src="video.articleEntity.imgUrl"
             :aspect-ratio="16 / 9"
-            cover
             class="rounded"
             height="100%"
           >

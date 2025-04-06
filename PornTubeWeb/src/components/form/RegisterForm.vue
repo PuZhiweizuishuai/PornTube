@@ -1,85 +1,100 @@
 <template>
   <div>
-    <v-row justify="center">
-      <v-col cols="10">
-        <v-text-field
-          v-model="registerUser.mail"
-          placeholder="请输入你的邮箱"
-          label="邮箱"
-          :rules="[() => registerUser.mail != null || '邮箱不能为空']"
-          type="email"
-          clearable
-        />
-      </v-col>
-    </v-row>
-    <v-row justify="center">
-      <v-col cols="10">
-        <v-text-field
-          v-model="registerUser.phone"
-          placeholder="请输入你的手机号（系统原因，此项选填）"
-          label="手机号"
-          clearable
-        />
-      </v-col>
-    </v-row>
-    <v-row justify="center">
-      <v-col cols="10">
-        <v-text-field
-          v-model="registerUser.username"
-          placeholder="昵称"
-          label="昵称"
-          :rules="[() => registerUser.username != null || '昵称不能为空']"
-          clearable
-        />
-      </v-col>
-    </v-row>
-    <v-row justify="center">
-      <v-col cols="10">
-        <v-text-field
-          v-model="registerUser.password"
-          placeholder="密码"
-          label="密码"
-          :rules="[() => registerUser.password != null || '密码不能为空']"
-          clearable
-          type="password"
-        />
-      </v-col>
-    </v-row>
-    <v-row v-if="webInfo.openInvitationRegister == 1" justify="center">
-      <v-col cols="10">
-        <v-text-field
-          v-model="registerUser.invitationCode"
-          placeholder="邀请码"
-          label="邀请码"
-          clearable
-          :rules="[() => registerUser.invitationCode != null || '邀请码不能为空']"
-        />
-      </v-col>
-    </v-row>
-    <v-row justify="center">
-      <v-col cols="5">
-        <img
-          :src="verifyImageUrl"
-          alt="验证码"
-          title="点击刷新"
-          style="cursor: pointer"
-          @click="getVerifyImage"
-        />
-      </v-col>
-      <v-col cols="5">
-        <v-text-field
-          v-model="registerUser.verifyCode"
-          placeholder="验证码"
-          label="验证码"
-          :rules="[() => registerUser.verifyCode != null || '验证码不能为空']"
-          clearable
-        />
-      </v-col>
-    </v-row>
-    <v-row justify="center">
-      <v-btn color="primary" @click="submitRegister">注册</v-btn>
-    </v-row>
-    <v-snackbar v-model="snackbar" :color="color" :timeout="3000" :top="true">
+    <v-text-field
+      v-model="registerUser.mail"
+      label="邮箱"
+      placeholder="请输入你的邮箱"
+      :rules="[(v) => !!v || '邮箱不能为空']"
+      type="email"
+      density="comfortable"
+      class="mb-4"
+      prepend-inner-icon="mdi-email-outline"
+      clearable
+    />
+
+    <v-text-field
+      v-model="registerUser.phone"
+      label="手机号"
+      placeholder="请输入你的手机号（系统原因，此项选填）"
+      density="comfortable"
+      class="mb-4"
+      prepend-inner-icon="mdi-phone-outline"
+      clearable
+    />
+
+    <v-text-field
+      v-model="registerUser.username"
+      label="昵称"
+      placeholder="昵称"
+      :rules="[(v) => !!v || '昵称不能为空']"
+      density="comfortable"
+      class="mb-4"
+      prepend-inner-icon="mdi-account-outline"
+      clearable
+    />
+
+    <v-text-field
+      v-model="registerUser.password"
+      label="密码"
+      placeholder="密码"
+      :rules="[
+        (v) => !!v || '密码不能为空',
+        (v) => (v && v.length >= 6) || '密码长度不能小于6个字符',
+      ]"
+      density="comfortable"
+      class="mb-4"
+      prepend-inner-icon="mdi-lock-outline"
+      type="password"
+      clearable
+    />
+
+    <v-text-field
+      v-if="webInfo.openInvitationRegister == 1"
+      v-model="registerUser.invitationCode"
+      label="邀请码"
+      placeholder="邀请码"
+      :rules="[(v) => !!v || '邀请码不能为空']"
+      density="comfortable"
+      class="mb-4"
+      prepend-inner-icon="mdi-ticket-outline"
+      clearable
+    />
+
+    <div class="d-flex align-center mb-6">
+      <v-img
+        :src="verifyImageUrl"
+        alt="验证码"
+        title="点击刷新"
+        style="cursor: pointer; max-width: 150px; height: 40px; border-radius: 4px"
+        @click="getVerifyImage"
+        class="me-3"
+      />
+      <v-text-field
+        v-model="registerUser.verifyCode"
+        label="验证码"
+        placeholder="验证码"
+        :rules="[(v) => !!v || '验证码不能为空']"
+        density="comfortable"
+        prepend-inner-icon="mdi-text-box-check-outline"
+        clearable
+      />
+    </div>
+
+    <div class="text-center">
+      <v-btn
+        color="primary"
+        size="large"
+        variant="elevated"
+        rounded="lg"
+        :loading="loading"
+        @click="submitRegister"
+        block
+      >
+        注册
+      </v-btn>
+    </div>
+
+    <v-snackbar v-model="snackbar" :color="color" :timeout="3000" location="top" rounded="pill">
       {{ message }}
     </v-snackbar>
   </div>
@@ -104,6 +119,7 @@ export default {
       color: 'success',
       message: '分享成功',
       webInfo: {},
+      loading: false,
     }
   },
   created() {
@@ -112,7 +128,7 @@ export default {
   methods: {
     submitRegister() {
       var re =
-        /^(([^()[\]\\.,;:\s@\"]+(\.[^()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+        /^(([^()[\]\\.,;:\s@]+(\.[^()[\]\\.,;:\s@]+)*)|(.+))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
       if (!re.test(this.registerUser.mail)) {
         this.message = '邮箱格式错误'
         this.color = 'error'
@@ -132,7 +148,7 @@ export default {
         return
       }
       if (
-        this.$store.state.webInfo.openInvitationRegister === 1 &&
+        this.webInfo.openInvitationRegister === 1 &&
         this.registerUser.invitationCode === '' &&
         this.registerUser.username !== 'admin'
       ) {
@@ -151,8 +167,12 @@ export default {
           return
         }
       }
-      // sconsole.log(this.registerUser)
+
+      this.loading = true
       this.$emit('register', this.registerUser)
+      setTimeout(() => {
+        this.loading = false
+      }, 2000)
     },
     getVerifyImage() {
       this.verifyImageUrl = '/api/verifyImage?t=' + new Date().getTime()

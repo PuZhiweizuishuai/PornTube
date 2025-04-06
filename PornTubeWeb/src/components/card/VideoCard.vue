@@ -2,7 +2,7 @@
   <!-- padding-left: 10px; padding-right: 10px; -->
   <div style="width: 350px">
     <router-link :to="`/video/${videoInfo.id}`">
-      <v-img :src="videoInfo.imgUrl" :aspect-ratio="16 / 9" cover class="rounded" height="100%">
+      <v-img :src="videoInfo.imgUrl" :aspect-ratio="16 / 9" class="rounded" height="100%">
         <div class="d-flex fill-height align-end">
           <v-chip
             style="background-color: rgba(0, 0, 0, 50%)"

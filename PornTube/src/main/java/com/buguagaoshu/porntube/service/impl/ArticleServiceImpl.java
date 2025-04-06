@@ -14,7 +14,6 @@ import com.buguagaoshu.porntube.utils.*;
 import com.buguagaoshu.porntube.vo.ArticleViewData;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.jsonwebtoken.Claims;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,31 +37,31 @@ import org.springframework.web.bind.annotation.RequestParam;
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
+ * 文章服务实现类
  * @author Pu Zhiwei
  */
 @Slf4j
 @Service("articleService")
 public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> implements ArticleService {
 
+    private static final String TAG = "ArticleServiceImpl";
+    private static final int MAX_TITLE_LENGTH = 50;
+    private static final int MAX_DESCRIBE_LENGTH = 200;
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
     private final CategoryCache categoryCache;
-
     private final WebSettingCache webSettingCache;
-
     private final FileTableService fileTableService;
-
     private final UserService userService;
-
     private final UserRoleService userRoleService;
-
     private PlayRecordingService playRecordingService;
 
     @Autowired
-    public void setPlayRecordingService(PlayRecordingService playRecordingService) {
-        this.playRecordingService = playRecordingService;
-    }
-
-    @Autowired
-    public ArticleServiceImpl(CategoryCache categoryCache, WebSettingCache webSettingCache, FileTableService fileTableService, UserService userService, UserRoleService userRoleService) {
+    public ArticleServiceImpl(CategoryCache categoryCache, 
+                             WebSettingCache webSettingCache, 
+                             FileTableService fileTableService, 
+                             UserService userService, 
+                             UserRoleService userRoleService) {
         this.categoryCache = categoryCache;
         this.webSettingCache = webSettingCache;
         this.fileTableService = fileTableService;
@@ -70,14 +69,14 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         this.userRoleService = userRoleService;
     }
 
+    @Autowired
+    public void setPlayRecordingService(PlayRecordingService playRecordingService) {
+        this.playRecordingService = playRecordingService;
+    }
+
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
-        QueryWrapper<ArticleEntity> wrapper = new QueryWrapper<>();
-
-
-        wrapper.eq("status", ArticleStatusEnum.NORMAL.getCode());
-        wrapper.eq("examine_status", ExamineTypeEnum.SUCCESS.getCode());
-        wrapper.orderByDesc("create_time");
+        QueryWrapper<ArticleEntity> wrapper = createNormalArticleWrapper();
         IPage<ArticleEntity> page = this.page(
                 new Query<ArticleEntity>().getPage(params),
                 wrapper
@@ -85,19 +84,36 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         return addUserInfo(page);
     }
 
+    /**
+     * 创建普通文章查询条件
+     */
+    private QueryWrapper<ArticleEntity> createNormalArticleWrapper() {
+        QueryWrapper<ArticleEntity> wrapper = new QueryWrapper<>();
+        wrapper.eq("status", ArticleStatusEnum.NORMAL.getCode());
+        wrapper.eq("examine_status", ExamineTypeEnum.SUCCESS.getCode());
+        wrapper.orderByDesc("create_time");
+        return wrapper;
+    }
+
+    /**
+     * 为文章添加用户信息
+     */
     public PageUtils addUserInfo(IPage<ArticleEntity> page) {
         Set<Long> userIdList = page.getRecords().stream().map(ArticleEntity::getUserId).collect(Collectors.toSet());
-        if (userIdList.size() == 0) {
+        if (userIdList.isEmpty()) {
             return null;
         }
         Map<Long, UserEntity> userEntityMap = userService.userMapList(userIdList);
         List<ArticleViewData> articleViewData = new ArrayList<>();
+        
         page.getRecords().forEach(a -> {
             ArticleViewData viewData = new ArticleViewData();
             UserEntity userEntity = userEntityMap.get(a.getUserId());
             BeanUtils.copyProperties(a, viewData);
             viewData.setUsername(userEntity.getUsername());
             viewData.setAvatarUrl(userEntity.getAvatarUrl());
+            
+            // 添加分类信息
             CategoryEntity categoryEntity = categoryCache.getCategoryEntityMap().get(a.getCategory());
             viewData.setChildrenCategory(categoryEntity);
             if (categoryEntity.getFatherId() != 0) {
@@ -106,6 +122,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
             }
             articleViewData.add(viewData);
         });
+        
         return new PageUtils(createArticleViewData(articleViewData, page));
     }
 
@@ -113,131 +130,190 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
     @Transactional(rollbackFor = Exception.class)
     public ReturnCodeEnum saveVideo(VideoArticleDto videoArticleDto, HttpServletRequest request) {
         long userId = JwtUtil.getUserId(request);
-        ArticleEntity articleEntity = new ArticleEntity();
-        if (videoArticleDto.getTitle().length() > 50) {
+        // 标题验证
+        if (videoArticleDto.getTitle().length() > MAX_TITLE_LENGTH) {
             return ReturnCodeEnum.TITLE_TO_LONG;
         }
-        articleEntity.setTitle(videoArticleDto.getTitle());
-        ObjectMapper objectMapper = new ObjectMapper();
-        try {
-            articleEntity.setTag(objectMapper.writeValueAsString(videoArticleDto.getTag()));
-        } catch (JsonProcessingException e) {
-            log.warn("用户 {} 添加的视频标签序列化失败", userId);
+        
+        // 描述验证
+        if (!StringUtils.hasText(videoArticleDto.getDescribe()) && videoArticleDto.getDescribe().length() > MAX_DESCRIBE_LENGTH) {
+            return ReturnCodeEnum.DESCRIBE_TO_LONG;
         }
+
+        // 分类验证
         CategoryEntity categoryEntity = categoryCache.getCategoryEntityMap().get(videoArticleDto.getCategory());
         if (categoryEntity == null) {
             return ReturnCodeEnum.CATEGORY_NOT_FOUND;
         }
-        articleEntity.setCategory(videoArticleDto.getCategory());
-        if (!StringUtils.hasText(videoArticleDto.getDescribe()) && videoArticleDto.getDescribe().length() > 200) {
-            return ReturnCodeEnum.DESCRIBE_TO_LONG;
-        }
-        articleEntity.setDescribes(videoArticleDto.getDescribe());
+
         // 检查图片所有权
-        FileTableEntity imageId = fileTableService.getById(videoArticleDto.getImageId());
-        if (imageId == null || imageId.getUploadUserId() != userId) {
+        FileTableEntity imageFile = fileTableService.getById(videoArticleDto.getImageId());
+        if (imageFile == null || imageFile.getUploadUserId() != userId) {
             return ReturnCodeEnum.IMAGE_NO_POWER;
         }
 
-        articleEntity.setImgUrl(imageId.getFileUrl());
-        articleEntity.setUserId(userId);
-        long time = System.currentTimeMillis();
-        articleEntity.setCreateTime(time);
-        articleEntity.setUpdateTime(time);
         // 检查视频权限
-        FileTableEntity videoId = fileTableService.getById(videoArticleDto.getVideo().getId());
-        if (videoId == null || videoId.getUploadUserId() != userId) {
+        FileTableEntity videoFile = fileTableService.getById(videoArticleDto.getVideo().getId());
+        if (videoFile == null || videoFile.getUploadUserId() != userId) {
             return ReturnCodeEnum.VIDEO_NO_POWER;
         }
 
-        // TODO 在审核时将投稿量加 1
-        // TODO 并且记得看是否提高普通用户每日观看
-        if (webSettingCache.getWebSettingEntity().getOpenExamine() == 1) {
-            articleEntity.setExamineStatus(ExamineTypeEnum.PENDING_REVIEW.getCode());
-        } else {
-            articleEntity.setExamineStatus(ExamineTypeEnum.SUCCESS.getCode());
-        }
-        articleEntity.setType(FileTypeEnum.VIDEO.getCode());
-        // TODO 增加视频列表上传功能
-        articleEntity.setDuration(videoId.getDuration());
-        articleEntity.setPixelsNumber(videoId.getPixelsNumber());
-        articleEntity.setFrameRate(videoId.getFrameRate());
+        ArticleEntity articleEntity = buildArticleEntity(videoArticleDto, userId, imageFile, videoFile);
+        
+        // 保存文章
         this.save(articleEntity);
-        List<FileTableEntity> list = new ArrayList<>();
-        videoId.setArticleId(articleEntity.getId());
-        imageId.setArticleId(articleEntity.getId());
-        // 改写文件状态
-        videoId.setStatus(FileStatusEnum.USED.getCode());
-        imageId.setStatus(FileStatusEnum.USED.getCode());
-        list.add(videoId);
-        list.add(imageId);
-        fileTableService.updateBatchById(list);
+        
+        // 更新文件状态
+        updateFileStatus(articleEntity.getId(), imageFile, videoFile);
+        
         return ReturnCodeEnum.SUCCESS;
+    }
+
+    /**
+     * 构建文章实体
+     */
+    private ArticleEntity buildArticleEntity(VideoArticleDto dto, long userId, FileTableEntity imageFile, FileTableEntity videoFile) {
+        ArticleEntity article = new ArticleEntity();
+        article.setTitle(dto.getTitle());
+        article.setDescribes(dto.getDescribe());
+        article.setCategory(dto.getCategory());
+        article.setImgUrl(imageFile.getFileUrl());
+        article.setUserId(userId);
+        
+        long time = System.currentTimeMillis();
+        article.setCreateTime(time);
+        article.setUpdateTime(time);
+        
+        // 设置标签
+        try {
+            article.setTag(OBJECT_MAPPER.writeValueAsString(dto.getTag()));
+        } catch (JsonProcessingException e) {
+            log.warn("用户 {} 添加的视频标签序列化失败", userId);
+        }
+        
+        // 设置审核状态
+        if (webSettingCache.getWebSettingEntity().getOpenExamine() == 1) {
+            article.setExamineStatus(ExamineTypeEnum.PENDING_REVIEW.getCode());
+        } else {
+            article.setExamineStatus(ExamineTypeEnum.SUCCESS.getCode());
+        }
+        
+        // 设置视频信息
+        article.setType(FileTypeEnum.VIDEO.getCode());
+        article.setDuration(videoFile.getDuration());
+        article.setPixelsNumber(videoFile.getPixelsNumber());
+        article.setFrameRate(videoFile.getFrameRate());
+        
+        return article;
+    }
+
+    /**
+     * 更新文件状态
+     */
+    private void updateFileStatus(Long articleId, FileTableEntity imageFile, FileTableEntity videoFile) {
+        List<FileTableEntity> files = new ArrayList<>(2);
+        
+        videoFile.setArticleId(articleId);
+        imageFile.setArticleId(articleId);
+        
+        // 改写文件状态
+        videoFile.setStatus(FileStatusEnum.USED.getCode());
+        imageFile.setStatus(FileStatusEnum.USED.getCode());
+        
+        files.add(videoFile);
+        files.add(imageFile);
+        
+        fileTableService.updateBatchById(files);
     }
 
     @Override
     public ArticleViewData getVideo(long id, HttpServletRequest request) {
+        // 获取用户ID，未登录用户为-1
         long userId = -1;
         try {
             userId = JwtUtil.getUserId(request);
         } catch (UserNotLoginException ignored) {}
 
+        // 构建查询条件
         QueryWrapper<ArticleEntity> wrapper = new QueryWrapper<>();
         wrapper.eq("id", id);
         wrapper.eq("status", ArticleStatusEnum.NORMAL.getCode());
-        // 非管理员添加审核条件
-        boolean flag = false;
+        
+        // 判断是否为管理员
+        boolean isAdmin = false;
         try {
-            flag = !RoleTypeEnum.ADMIN.getRole().equals(JwtUtil.getRole(request));
+            if (RoleTypeEnum.ADMIN.getRole().equals(JwtUtil.getRole(request))) {
+                isAdmin = true;
+            }
         } catch (Exception e) {
-            log.error(e.getMessage());
+            log.error("获取用户角色失败: {}", e.getMessage());
         }
-
-
-        if (flag) {
-            wrapper.eq("examine_status", ExamineTypeEnum.SUCCESS.getCode());
-        }
-
 
         ArticleEntity articleEntity = this.getOne(wrapper);
         if (articleEntity == null) {
-            ArticleViewData articleViewData = new ArticleViewData();
-            articleViewData.setIsShow(false);
-            return articleViewData;
+            return createHiddenArticleView();
         }
+        
+        // 如果不是管理员，且视频未通过审核
+        if (!isAdmin && articleEntity.getExamineStatus() != ExamineTypeEnum.SUCCESS.getCode()) {
+            return createHiddenArticleView();
+        }
+        
+        return buildArticleViewData(articleEntity, userId);
+    }
+
+    /**
+     * 创建隐藏的文章视图（无权查看时返回）
+     */
+    private ArticleViewData createHiddenArticleView() {
         ArticleViewData articleViewData = new ArticleViewData();
-        BeanUtils.copyProperties(articleEntity, articleViewData);
-        UserEntity author = userService.getById(articleEntity.getUserId());
-        articleViewData.setUsername(author.getUsername());
-        articleViewData.setFollowCount(author.getFollowCount());
-        articleViewData.setAvatarUrl(author.getAvatarUrl());
-        articleViewData.setIntroduction(author.getIntroduction());
+        articleViewData.setIsShow(false);
+        return articleViewData;
+    }
 
-        articleViewData.setDanmakuCount(articleEntity.getDanmakuCount());
+    /**
+     * 构建文章视图数据
+     */
+    private ArticleViewData buildArticleViewData(ArticleEntity article, long userId) {
+        ArticleViewData viewData = new ArticleViewData();
+        BeanUtils.copyProperties(article, viewData);
+        
+        // 添加作者信息
+        UserEntity author = userService.getById(article.getUserId());
+        viewData.setUsername(author.getUsername());
+        viewData.setFollowCount(author.getFollowCount());
+        viewData.setAvatarUrl(author.getAvatarUrl());
+        viewData.setIntroduction(author.getIntroduction());
+        viewData.setDanmakuCount(article.getDanmakuCount());
 
-        List<FileTableEntity> video = fileTableService.findArticleVideo(id);
+        // 添加视频信息
+        List<FileTableEntity> videos = fileTableService.findArticleVideo(article.getId());
         long time = System.currentTimeMillis();
-        for (FileTableEntity f : video) {
-            f.setKey(AesUtil.encrypt(userId + "#" + f.getId() + "#" + (time + WebConstant.KEY_EXPIRY_DATE) + "#" + f.getFileNewName(), WebConstant.AES_KEY));
+        for (FileTableEntity video : videos) {
+            video.setKey(AesUtil.encrypt(
+                userId + "#" + video.getId() + "#" + (time + WebConstant.KEY_EXPIRY_DATE) + "#" + video.getFileNewName(), 
+                WebConstant.AES_KEY
+            ));
         }
-        articleViewData.setVideo(video);
+        viewData.setVideo(videos);
 
-        ObjectMapper mapper = new ObjectMapper();
+        // 添加标签
         try {
-            articleViewData.setTag((List<String>) mapper.readValue(articleEntity.getTag(), List.class));
+            viewData.setTag((List<String>) OBJECT_MAPPER.readValue(article.getTag(), List.class));
         } catch (JsonProcessingException e) {
-            log.warn("视频id为 {} 的投稿反序列化标签时出现异常，请及时检查！", articleEntity.getId());
+            log.warn("视频id为 {} 的投稿反序列化标签时出现异常", article.getId());
         }
 
-
-        CategoryEntity categoryEntity = categoryCache.getCategoryEntityMap().get(articleEntity.getCategory());
-        articleViewData.setChildrenCategory(categoryEntity);
+        // 添加分类信息
+        CategoryEntity categoryEntity = categoryCache.getCategoryEntityMap().get(article.getCategory());
+        viewData.setChildrenCategory(categoryEntity);
         if (categoryEntity.getFatherId() != 0) {
             CategoryEntity f = categoryCache.getCategoryEntityMap().get(categoryEntity.getFatherId());
-            articleViewData.setFatherCategory(f);
+            viewData.setFatherCategory(f);
         }
-        articleViewData.setIsShow(true);
-        return articleViewData;
+        
+        viewData.setIsShow(true);
+        return viewData;
     }
 
     @Override
@@ -247,15 +323,15 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
 
     @Override
     public PageUtils userArticleList(Map<String, Object> params, Long id, Integer type) {
-        QueryWrapper<ArticleEntity> wrapper = new QueryWrapper<>();
+        // 参数验证
         if (type == null || (type < FileTypeEnum.VIDEO.getCode() && type > FileTypeEnum.ARTICLE.getCode())) {
             type = FileTypeEnum.VIDEO.getCode();
         }
+        
+        QueryWrapper<ArticleEntity> wrapper = createNormalArticleWrapper();
         wrapper.eq("user_id", id);
         wrapper.eq("type", type);
-        wrapper.eq("status", ArticleStatusEnum.NORMAL.getCode());
-        wrapper.eq("examine_status", ExamineTypeEnum.SUCCESS.getCode());
-        wrapper.orderByDesc("create_time");
+        
         IPage<ArticleEntity> page = this.page(
                 new Query<ArticleEntity>().getPage(params),
                 wrapper
@@ -266,6 +342,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
 
     @Override
     public PageUtils examineList(@RequestParam Map<String, Object> params, HttpServletRequest request) {
+        // 权限验证
         if (!RoleTypeEnum.ADMIN.getRole().equals(JwtUtil.getRole(request))) {
             return null;
         }
@@ -273,10 +350,12 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         QueryWrapper<ArticleEntity> wrapper = new QueryWrapper<>();
         wrapper.eq("examine_status", ExamineTypeEnum.PENDING_REVIEW.getCode());
         wrapper.orderByDesc("create_time");
+        
         IPage<ArticleEntity> page = this.page(
                 new Query<ArticleEntity>().getPage(params),
                 wrapper
         );
+        
         return new PageUtils(createArticleViewData(addArticleCategory(page), page));
     }
 
@@ -284,12 +363,16 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
     public ReturnCodeEnum examine(ExamineDto examineDto, HttpServletRequest request) {
         ArticleEntity articleEntity = this.getById(examineDto.getVideoId());
         long userId = JwtUtil.getUserId(request);
+        
         if (articleEntity == null) {
             return ReturnCodeEnum.NOO_FOUND;
         }
+        
         if (articleEntity.getExamineStatus() == ExamineTypeEnum.SUCCESS.getCode()) {
             return ReturnCodeEnum.REVIEWED;
         }
+        
+        // 更新审核状态
         if (examineDto.getResult()) {
             articleEntity.setExamineStatus(ExamineTypeEnum.SUCCESS.getCode());
         } else {
@@ -299,71 +382,84 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         articleEntity.setExamineUser(userId);
         articleEntity.setExamineMessage(examineDto.getMessage());
         this.updateById(articleEntity);
-        // TODO 加入缓存处理
+        
+        // 更新用户提交计数
         userService.addSubmitCount(articleEntity.getUserId(), 1);
-        // TODO 向用户发送处理结果
+        
         return ReturnCodeEnum.SUCCESS;
     }
 
     @Override
     public Boolean hasThisVideoPlayPower(FileTableEntity file, Long userId, HttpServletRequest request) {
-        // TODO 取消不登录无法观看
+        // 所有用户都有观看权限
         if (userId == -1) {
             return true;
         }
+        
+        // 记录播放历史并更新播放计数
         long result = playRecordingService.saveHistory(file, userId, IpUtil.getUa(request));
         if (result != 0) {
             this.addViewCount(result, 1L);
         }
+        
         return true;
-//        if (userId == -1) {
-//            return false;
-//        }
-//        UserRoleEntity userRoleEntity = userRoleService.findByUserId(userId);
-//        String role = userRoleEntity.getRole();
-//        // 如果是管理员或VIP，则只记录播放信息，不记录播放次数
-//        if (RoleTypeEnum.ADMIN.getRole().equals(role) || RoleTypeEnum.VIP.getRole().equals(role)) {
-//            playRecordingService.saveHistory(file, userId, IpUtil.getUa(request));
-//            return true;
-//        }
-//        // TODO 修改为非会员可以重复观看这几个视频
-//        if (webSettingCache.getWebSettingEntity().getOpenNoVipLimit() == 1) {
-//            if (playRecordingService.todayPlayCount(userId) <= webSettingCache.getWebSettingEntity().getNoVipViewCount()) {
-//                playRecordingService.saveHistory(file, userId, IpUtil.getUa(request));
-//                return true;
-//            }
-//            return false;
-//        } else {
-//            playRecordingService.saveHistory(file, userId, IpUtil.getUa(request));
-//            return true;
-//        }
+        
+        /* 
+        // 原有会员限制代码，已注释
+        if (userId == -1) {
+            return false;
+        }
+        UserRoleEntity userRoleEntity = userRoleService.findByUserId(userId);
+        String role = userRoleEntity.getRole();
+        // 如果是管理员或VIP，则只记录播放信息，不记录播放次数
+        if (RoleTypeEnum.ADMIN.getRole().equals(role) || RoleTypeEnum.VIP.getRole().equals(role)) {
+            playRecordingService.saveHistory(file, userId, IpUtil.getUa(request));
+            return true;
+        }
+        // TODO 修改为非会员可以重复观看这几个视频
+        if (webSettingCache.getWebSettingEntity().getOpenNoVipLimit() == 1) {
+            if (playRecordingService.todayPlayCount(userId) <= webSettingCache.getWebSettingEntity().getNoVipViewCount()) {
+                playRecordingService.saveHistory(file, userId, IpUtil.getUa(request));
+                return true;
+            }
+            return false;
+        } else {
+            playRecordingService.saveHistory(file, userId, IpUtil.getUa(request));
+            return true;
+        }
+        */
     }
 
     @Override
     public PageUtils nowCategory(Map<String, Object> params, Integer id) {
-        QueryWrapper<ArticleEntity> wrapper = new QueryWrapper<>();
-        // 首先判断分类ID是不是父分类
+        // 检查分类是否存在
         CategoryEntity categoryEntity = categoryCache.getCategoryEntityMap().get(id);
         if (categoryEntity == null) {
             return new PageUtils(null);
         }
 
+        QueryWrapper<ArticleEntity> wrapper = new QueryWrapper<>();
         wrapper.eq("status", ArticleStatusEnum.NORMAL.getCode());
         wrapper.eq("examine_status", ExamineTypeEnum.SUCCESS.getCode());
-        // 是父分类ID
+        
+        // 根据父分类或子分类筛选
         if (categoryEntity.getFatherId() == 0) {
-            // 获取子类元素
+            // 获取所有子分类ID
             categoryEntity = categoryCache.getCategoryMapWithChildren().get(id);
-            List<Integer> integerSet = categoryEntity.getChildren().stream().map(CategoryEntity::getId).collect(Collectors.toList());
-            wrapper.in("category", integerSet);
+            List<Integer> childCategoryIds = categoryEntity.getChildren().stream()
+                .map(CategoryEntity::getId)
+                .collect(Collectors.toList());
+            wrapper.in("category", childCategoryIds);
         } else {
             wrapper.eq("category", id);
         }
+        
         wrapper.orderByDesc("create_time");
         IPage<ArticleEntity> page = this.page(
                 new Query<ArticleEntity>().getPage(params),
                 wrapper
         );
+        
         return addUserInfo(page);
     }
 
@@ -377,7 +473,9 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         this.baseMapper.addCount(col, articleId, count);
     }
 
-
+    /**
+     * 创建文章视图数据分页对象
+     */
     public IPage<ArticleViewData> createArticleViewData(List<ArticleViewData> articleViewData,
                                                         IPage<ArticleEntity> page) {
         return new IPage<ArticleViewData>() {
@@ -428,20 +526,25 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         };
     }
 
+    /**
+     * 为文章添加分类信息
+     */
     public List<ArticleViewData> addArticleCategory(IPage<ArticleEntity> page) {
         List<ArticleViewData> articleViewData = new ArrayList<>();
         page.getRecords().forEach(a -> {
             ArticleViewData viewData = new ArticleViewData();
             BeanUtils.copyProperties(a, viewData);
+            
             CategoryEntity categoryEntity = categoryCache.getCategoryEntityMap().get(a.getCategory());
             viewData.setChildrenCategory(categoryEntity);
             if (categoryEntity.getFatherId() != 0) {
                 CategoryEntity f = categoryCache.getCategoryEntityMap().get(categoryEntity.getFatherId());
                 viewData.setFatherCategory(f);
             }
+            
             articleViewData.add(viewData);
         });
+        
         return articleViewData;
     }
-
 }

@@ -1,57 +1,71 @@
 <template>
   <div>
-    <v-row justify="center">
-      <v-col cols="10">
-        <v-text-field
-          v-model="username"
-          placeholder="请输入你的邮箱或手机号"
-          label="邮箱或手机号"
-          :rules="[() => username != null || '请输入邮箱或手机号']"
-          clearable
-        />
-      </v-col>
-    </v-row>
-    <v-row justify="center">
-      <v-col cols="10">
-        <v-text-field
-          v-model="password"
-          placeholder="密码"
-          label="密码"
-          clearable
-          :rules="[() => password != null || '密码不能为空']"
-          type="password"
-        />
-      </v-col>
-    </v-row>
-    <v-row justify="center">
-      <v-col cols="5">
-        <img
-          :src="verifyImageUrl"
-          alt="验证码"
-          title="点击刷新"
-          style="cursor: pointer"
-          @click="getVerifyImage"
-        />
-      </v-col>
-      <v-col cols="5">
-        <v-text-field
-          v-model="verifyCode"
-          placeholder="验证码"
-          label="验证码"
-          :rules="[() => verifyCode != null || '验证码不能为空']"
-          clearable
-        />
-      </v-col>
-    </v-row>
-    <v-row justify="center">
-      <v-col cols="3">
-        <v-switch v-model="rememberMe" label="记住我" />
-      </v-col>
-      <v-col cols="7" />
-    </v-row>
-    <v-row justify="center">
-      <v-btn color="primary" @click="submitLog">登录</v-btn>
-    </v-row>
+    <v-text-field
+      v-model="username"
+      label="邮箱或手机号"
+      placeholder="请输入你的邮箱或手机号"
+      :rules="[(v) => !!v || '请输入邮箱或手机号']"
+      density="comfortable"
+      class="mb-4"
+      prepend-inner-icon="mdi-email-outline"
+      clearable
+    />
+
+    <v-text-field
+      v-model="password"
+      label="密码"
+      placeholder="密码"
+      :rules="[(v) => !!v || '密码不能为空']"
+      density="comfortable"
+      class="mb-4"
+      prepend-inner-icon="mdi-lock-outline"
+      type="password"
+      clearable
+    />
+
+    <div class="d-flex align-center mb-4">
+      <v-img
+        :src="verifyImageUrl"
+        alt="验证码"
+        title="点击刷新"
+        style="cursor: pointer; max-width: 150px; height: 40px; border-radius: 4px"
+        @click="getVerifyImage"
+        class="me-3"
+      />
+      <v-text-field
+        v-model="verifyCode"
+        label="验证码"
+        placeholder="验证码"
+        :rules="[(v) => !!v || '验证码不能为空']"
+        density="comfortable"
+        prepend-inner-icon="mdi-text-box-check-outline"
+        clearable
+      />
+    </div>
+
+    <div class="d-flex mb-6">
+      <v-switch
+        v-model="rememberMe"
+        label="记住我"
+        color="primary"
+        density="comfortable"
+        hide-details
+      />
+    </div>
+
+    <div class="text-center">
+      <v-btn
+        color="primary"
+        size="large"
+        variant="elevated"
+        rounded="lg"
+        :loading="loading"
+        @click="submitLog"
+        block
+      >
+        登录
+      </v-btn>
+    </div>
   </div>
 </template>
 
@@ -65,6 +79,7 @@ export default {
       password: '',
       verifyCode: '',
       rememberMe: false,
+      loading: false,
     }
   },
   methods: {
@@ -82,7 +97,11 @@ export default {
       if (username === '' || password === '' || verifyCode === '') {
         return
       }
+      this.loading = true
       this.$emit('login', user)
+      setTimeout(() => {
+        this.loading = false
+      }, 2000)
     },
     getVerifyImage() {
       this.verifyImageUrl = '/api/verifyImage?t=' + new Date().getTime()

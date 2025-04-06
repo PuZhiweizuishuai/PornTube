@@ -83,6 +83,7 @@ const router = createRouter({
         },
       ],
     },
+    // 创作者中心
     {
       path: '/studio',
       name: 'Studio',
@@ -107,7 +108,83 @@ const router = createRouter({
             requireAuth: true
           }
         },
+        {
+          path: '/studio/list',
+          name: 'UploadList',
+          component: () => import('@/views/studio/ListView.vue'),
+          meta: {
+            title: '稿件管理',
+            requireAuth: true
+          }
+        },
+        {
+          path: '/studio/fans',
+          name: 'FansView',
+          component: () => import('@/views/studio/FansView.vue'),
+          meta: {
+            title: '粉丝管理',
+            requireAuth: true
+          }
+        },
+        {
+          path: '/studio/data',
+          name: 'DataView',
+          component: () => import('@/views/studio/DataInfoView.vue'),
+          meta: {
+            title: '数据分析',
+            requireAuth: true
+          }
+        },
       ] 
+    },
+    // 系统管理
+    {
+      path: '/admin',
+      name: 'Admin',
+      component: () => import('@/layout/AdminLayout.vue'),
+      meta: { title: '管理中心' },
+      children: [
+        {
+          path: '/admin',
+          name: 'AdminIndex',
+          component: () => import('@/views/admin/IndexView.vue'),
+          meta: {
+            title: '管理中心',
+            requireAuth: true,
+            requireAdmin: true
+          }
+        },
+        {
+          path: '/admin/invitation',
+          name: 'invitation',
+          component: () => import('@/views/admin/InvitationView.vue'),
+          meta: {
+            title: '邀请码',
+            requireAuth: true,
+            requireAdmin: true
+          }
+        },
+        {
+          path: '/admin/websetting',
+          name: 'WebSetting',
+          component: () => import('@/views/admin/WebSetting.vue'),
+          meta: {
+            title: '网页设置',
+            requireAuth: true,
+            requireAdmin: true
+          }
+        },
+        {
+          path: '/admin/examine',
+          name: 'Examine',
+          component: () => import('@/views/admin/ExamineView.vue'),
+          meta: {
+            title: '内容审核',
+            requireAuth: true,
+            requireAdmin: true
+          }
+        }
+      ]
     },
     {
       path: '/login',

@@ -1,0 +1,1 @@
+import{_ as o,c as n,w as r,r as s,o as a,e as c}from"./index-TiTfTDly.js";const _={};function p(i,e,f,l,d,u){const t=s("v-container");return a(),n(t,null,{default:r(()=>e[0]||(e[0]=[c(" 设置开发中 ")])),_:1})}const x=o(_,[["render",p]]);export{x as default};

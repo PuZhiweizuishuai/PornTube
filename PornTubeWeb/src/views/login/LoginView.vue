@@ -1,45 +1,49 @@
 <template>
-  <v-main>
+  <v-main class="login-view">
     <v-container fill-height>
       <v-row justify="center" align="center">
-        <v-col cols="12">
-          <v-card class="mx-auto" max-width="500">
-            <v-col></v-col>
-            <v-row style="height: 64px" justify="center">
-              <v-col cols="10">
-                <v-btn variant="text" @click="backHome">
-                  <v-icon> mdi-arrow-left </v-icon>
+        <v-col cols="12" sm="8" md="6" lg="5">
+          <v-card class="mx-auto elevation-6 rounded-lg" color="surface">
+            <v-card-item>
+              <v-row class="mt-2 mb-2" justify="start">
+                <v-btn
+                  color="primary"
+                  variant="text"
+                  prepend-icon="mdi-arrow-left"
+                  @click="backHome"
+                >
                   返回
                 </v-btn>
-              </v-col>
-            </v-row>
-            <v-row justify="center">
-              <img :src="webInfo.logoUrl" height="36px" />
-            </v-row>
-            <v-col></v-col>
-            <v-row justify="center">
-              <h1>{{ webInfo.name }} &nbsp; {{ type }}</h1>
-            </v-row>
-            <v-row style="height: 48px" />
-            <LoginFrom v-show="showLogin" @login="userLogin" />
-            <RegisterFrom v-show="showLogin == false" @register="register" />
-            <v-col></v-col>
-            <v-row justify="center">
-              <v-col cols="5">
-                <v-btn variant="text" color="primary">忘记密码</v-btn>
-              </v-col>
-              <v-col cols="5" style="text-align: right">
-                <v-btn variant="text" @click="moveRegister">{{ moveMessage }}</v-btn>
-              </v-col>
-            </v-row>
-            <v-col></v-col>
+              </v-row>
+              <v-row justify="center" class="mb-4">
+                <v-img :src="webInfo.logoUrl" height="40" class="mx-auto" contain></v-img>
+              </v-row>
+              <v-row justify="center" class="mb-6">
+                <h1 class="text-h4 font-weight-bold primary--text text-center">
+                  {{ webInfo.name }} {{ type }}
+                </h1>
+              </v-row>
+            </v-card-item>
+
+            <v-card-text>
+              <LoginFrom v-if="showLogin" @login="userLogin" />
+              <RegisterFrom v-else @register="register" />
+            </v-card-text>
+
+            <v-card-actions class="px-6 mb-3">
+              <v-btn variant="text" color="primary"> 忘记密码 </v-btn>
+              <v-spacer></v-spacer>
+              <v-btn variant="text" color="primary" @click="moveRegister">
+                {{ moveMessage }}
+              </v-btn>
+            </v-card-actions>
           </v-card>
         </v-col>
       </v-row>
-      <v-snackbar v-model="showMessage" :timeout="3000">
+      <v-snackbar v-model="showMessage" :timeout="3000" color="error" location="top" rounded="pill">
         {{ message }}
         <template v-slot:actions>
-          <v-btn color="pink" variant="text" @click="showMessage = false"> 关闭 </v-btn>
+          <v-btn color="white" variant="text" @click="showMessage = false"> 关闭 </v-btn>
         </template>
       </v-snackbar>
     </v-container>
@@ -51,6 +55,7 @@ import LoginFrom from '@/components/form/LoginForm.vue'
 import RegisterFrom from '@/components/form/RegisterForm.vue'
 import { useWebInfoStore } from '@/stores/webInfoStore'
 import { useUserStore } from '@/stores/userStore'
+
 export default {
   name: 'LoginView',
   components: {
@@ -121,4 +126,8 @@ export default {
 }
 </script>
 
-<style></style>
+<style>
+.login-view {
+  background-color: rgb(249, 249, 249);
+}
+</style>
