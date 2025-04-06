@@ -183,6 +183,16 @@ const router = createRouter({
             requireAuth: true,
             requireAdmin: true
           }
+        },
+        {
+          path: '/admin/article/list',
+          name: 'ArticleList',
+          component: () => import('@/views/admin/ArticleListView.vue'),
+          meta: {
+            title: '稿件列表',
+            requireAuth: true,
+            requireAdmin: true
+          }
         }
       ]
     },

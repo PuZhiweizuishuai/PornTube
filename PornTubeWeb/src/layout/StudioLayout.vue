@@ -73,6 +73,16 @@
             rounded="xl"
           />
         </v-list>
+        <v-list v-if="CheckPower.checkPower(userInfo.userData) == 'admin'">
+          <v-list-item
+            :key="'admin'"
+            :prepend-icon="'mdi-security'"
+            :title="'管理中心'"
+            :value="'/admin'"
+            :href="'/admin'"
+            rounded="xl"
+          />
+        </v-list>
 
         <v-spacer></v-spacer>
 
@@ -97,11 +107,13 @@
 import { useWebInfoStore } from '@/stores/webInfoStore'
 import { useUserStore } from '@/stores/userStore'
 import AppBarHead from '@/components/user/AppBarHead.vue'
+import CheckPower from '@/utils/check-power.vue'
 export default {
   components: {
     AppBarHead,
   },
   data: () => ({
+    CheckPower,
     drawer: true,
     theme: 'light',
     webInfo: {},

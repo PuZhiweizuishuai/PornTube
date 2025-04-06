@@ -52,6 +52,13 @@ public class ArticleController {
     }
 
 
+    /**
+     * 创作者中心
+     * */
+    @GetMapping("/api/studio/article/list")
+    public ResponseDetails userList(@RequestParam Map<String, Object> params, @RequestParam(value = "type", required = false) String type,HttpServletRequest request) {
+        return ResponseDetails.ok().put("data", articleService.userArticleList(params, type, request));
+    }
 
 
     /**

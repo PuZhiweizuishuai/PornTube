@@ -321,6 +321,9 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         this.baseMapper.addDanmakuCount(id, count);
     }
 
+    /**
+     * 个人主页视频列表
+     * */
     @Override
     public PageUtils userArticleList(Map<String, Object> params, Long id, Integer type) {
         // 参数验证
@@ -338,6 +341,29 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         );
 
         return new PageUtils(createArticleViewData(addArticleCategory(page), page));
+    }
+
+    @Override
+    public PageUtils userArticleList(Map<String, Object> params, String type, HttpServletRequest request) {
+        long userId = JwtUtil.getUserId(request);
+
+
+        QueryWrapper<ArticleEntity> wrapper = new QueryWrapper<>();
+        // 如果是管理员，加载所有数据
+        if ("admin".equals(type) && RoleTypeEnum.ADMIN.getRole().equals(JwtUtil.getRole(request))) {
+            //
+        } else {
+            wrapper.eq("user_id", userId);
+        }
+
+
+        wrapper.orderByDesc("create_time");
+
+        IPage<ArticleEntity> page = this.page(
+                new Query<ArticleEntity>().getPage(params),
+                wrapper
+        );
+        return new PageUtils(page);
     }
 
     @Override

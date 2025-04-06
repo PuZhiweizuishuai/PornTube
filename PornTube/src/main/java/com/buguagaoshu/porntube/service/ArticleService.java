@@ -53,6 +53,14 @@ public interface ArticleService extends IService<ArticleEntity> {
 
 
     /**
+     * 获取用户上传的所有稿件
+     * 仅登录后可访问
+     * 只能查看自己的
+     * */
+    PageUtils userArticleList(Map<String, Object> params, String type, HttpServletRequest request);
+
+
+    /**
      * 获取待审核视频
      * */
     PageUtils examineList(@RequestParam Map<String, Object> params, HttpServletRequest request);
