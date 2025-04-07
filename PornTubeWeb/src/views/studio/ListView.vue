@@ -352,7 +352,7 @@ export default {
     },
     editItem(item) {
       // 跳转到编辑页面
-      this.$router.push(`/studio/edit/${item.id}`)
+      this.$router.push(`/studio/upload?edit=${item.id}`)
     },
     confirmDelete(item) {
       this.selectedItem = item
@@ -361,11 +361,22 @@ export default {
     deleteItem() {
       if (!this.selectedItem) return
 
-      // 模拟删除成功
-      this.showNotification('删除成功', 'success')
-      this.articles = this.articles.filter((item) => item.id !== this.selectedItem.id)
-      this.deleteDialog = false
-      this.selectedItem = null
+      this.httpPost('/studio/article/delete', this.selectedItem, (json) => {
+        if (json.data == 0) {
+          this.showNotification('删除成功', 'success')
+          this.articles = this.articles.filter((item) => item.id !== this.selectedItem.id)
+          this.deleteDialog = false
+          this.selectedItem = null
+        } else if (json.data == 1) {
+          this.showNotification('没有权限', 'success')
+          this.deleteDialog = false
+          this.selectedItem = null
+        } else {
+          this.showNotification('已经删除', 'success')
+          this.deleteDialog = false
+          this.selectedItem = null
+        }
+      })
     },
     showNotification(message, type = 'info') {
       this.message = message

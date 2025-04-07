@@ -352,8 +352,13 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         // 如果是管理员，加载所有数据
         if ("admin".equals(type) && RoleTypeEnum.ADMIN.getRole().equals(JwtUtil.getRole(request))) {
             //
+            String active = (String) params.get("active");
+            if ("delete".equals(active)) {
+                wrapper.eq("status", ArticleStatusEnum.DELETE.getCode());
+            }
         } else {
             wrapper.eq("user_id", userId);
+            wrapper.eq("status", ArticleStatusEnum.NORMAL.getCode());
         }
 
 
@@ -413,6 +418,40 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         userService.addSubmitCount(articleEntity.getUserId(), 1);
         
         return ReturnCodeEnum.SUCCESS;
+    }
+
+    @Override
+    public int deleteArticle(ArticleEntity entity, HttpServletRequest request) {
+        // 如果是管理员，可以删除所有视频
+        ArticleEntity sys = getById(entity.getId());
+        if (sys == null) {
+            return 2;
+        }
+        if (RoleTypeEnum.ADMIN.getRole().equals(JwtUtil.getRole(request))) {
+            return deleteArticleInDatabase(sys);
+        } else {
+           long userId = JwtUtil.getUserId(request);
+           if (sys.getUserId().equals(userId)) {
+               return deleteArticleInDatabase(sys);
+           } else {
+               return 1;
+           }
+        }
+    }
+
+    public int deleteArticleInDatabase(ArticleEntity sys) {
+        // 将状态设置为删除
+        sys.setStatus(ArticleStatusEnum.DELETE.getCode());
+        List<FileTableEntity> article = fileTableService.findArticle(sys.getId());
+        for (FileTableEntity f : article) {
+            f.setStatus(FileStatusEnum.DELETE.getCode());
+        }
+        // 更新文件状态
+        fileTableService.updateBatchById(article);
+
+        this.updateById(sys);
+        // 删除成功
+        return 0;
     }
 
     @Override
@@ -487,6 +526,23 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         );
         
         return addUserInfo(page);
+    }
+
+    @Override
+    public boolean restore(ArticleEntity articleEntity, HttpServletRequest request) {
+        ArticleEntity sys = getById(articleEntity.getId());
+        if (sys == null) {
+            return false;
+        }
+        sys.setStatus(ArticleStatusEnum.NORMAL.getCode());
+        List<FileTableEntity> article = fileTableService.findArticle(sys.getId());
+        for (FileTableEntity f : article) {
+            f.setStatus(FileStatusEnum.USED.getCode());
+        }
+        // 更新文件状态
+        fileTableService.updateBatchById(article);
+        this.updateById(sys);
+        return true;
     }
 
     @Override

@@ -1,6 +1,7 @@
 package com.buguagaoshu.porntube.controller;
 
 import com.buguagaoshu.porntube.dto.VideoArticleDto;
+import com.buguagaoshu.porntube.entity.ArticleEntity;
 import com.buguagaoshu.porntube.service.ArticleService;
 import com.buguagaoshu.porntube.vo.ResponseDetails;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,6 +61,13 @@ public class ArticleController {
         return ResponseDetails.ok().put("data", articleService.userArticleList(params, type, request));
     }
 
+    @PostMapping("/api/studio/article/delete")
+    public ResponseDetails deleteArticle(@RequestBody ArticleEntity articleEntity,
+                                         HttpServletRequest request) {
+
+        return ResponseDetails.ok().put("data", articleService.deleteArticle(articleEntity, request));
+    }
+
 
     /**
      *
@@ -69,6 +77,15 @@ public class ArticleController {
     public ResponseDetails examineVideo(@RequestParam Map<String, Object> params,
                                         HttpServletRequest request) {
         return ResponseDetails.ok().put("data", articleService.examineList(params, request));
+    }
+
+    /**
+     * 恢复删除视频
+     * */
+    @PostMapping("/api/admin/article/restore")
+    public ResponseDetails restore(@RequestBody ArticleEntity articleEntity,
+                                   HttpServletRequest request) {
+        return ResponseDetails.ok().put("data", articleService.restore(articleEntity, request));
     }
 
 }

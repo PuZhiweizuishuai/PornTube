@@ -12,7 +12,7 @@ public enum FileStatusEnum {
 
     USED(1, "已使用文件"),
 
-    DELETE(-1, "文件已被删除")
+    DELETE(-1, "数据库已经标记为删除，但是文件还在文件系统，删除文件请到文件管理删除")
     ;
     int code;
     String msg;

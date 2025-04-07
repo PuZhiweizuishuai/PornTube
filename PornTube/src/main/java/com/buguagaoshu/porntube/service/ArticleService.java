@@ -72,6 +72,14 @@ public interface ArticleService extends IService<ArticleEntity> {
 
 
     /**
+     * 删除视频
+     * @return  0 删除成功
+     * 1 没权限
+     * 2 不存在
+     * */
+    int deleteArticle(ArticleEntity entity, HttpServletRequest request);
+
+    /**
      * 检查视频播放权限
      * @param file 视频文件
      * @param userId 用户信息和请求信息
@@ -87,6 +95,13 @@ public interface ArticleService extends IService<ArticleEntity> {
      * @return 视频列表
      * */
     PageUtils nowCategory(Map<String, Object> params, Integer id);
+
+
+
+    /**
+     * 恢复视频
+     * */
+    boolean restore(ArticleEntity articleEntity, HttpServletRequest request);
 
 
     void addViewCount(Long articleId, long count);

@@ -67,15 +67,15 @@
               <v-btn
                 v-bind="props"
                 size="small"
-                variant="text"
-                color="primary"
+                :variant="isLiked ? 'flat' : 'text'"
+                :color="isLiked ? 'success' : 'primary'"
                 @click="like()"
                 icon="mdi-thumb-up"
                 class="mr-1"
               ></v-btn>
             </template>
           </v-tooltip>
-          <span class="text-body-2">{{ likeCount }}</span>
+          <span class="text-body-2" :class="{ 'text-success': isLiked }">{{ likeCount }}</span>
         </div>
       </v-col>
     </v-row>
@@ -95,6 +95,7 @@
 import TimeUtil from '@/utils/time-util.vue'
 import ShowMarkdown from '@/components/vditor/ShowMarkdown.vue'
 import { UAParser } from 'ua-parser-js'
+import { useUserStore } from '@/stores/userStore'
 
 export default {
   components: {
@@ -117,13 +118,12 @@ export default {
       showMessage: false,
       message: '',
       likeCount: this.comment?.likeCount || 0,
+      isLiked: false,
+      userInfo: useUserStore(),
     }
   },
   created() {
-    // Vditor.md2html(this.comment.content).then((data) => {
-    //   this.content = data
-    //   this.showComment()
-    // })
+    this.checkLike()
   },
   mounted() {},
   methods: {
@@ -135,19 +135,31 @@ export default {
       this.$emit('comment', this.comment)
     },
     like() {
-      const likeInfo = {
-        targetId: this.comment.id,
-        targetType: 1,
-        type: 0,
+      if (this.userInfo.userData == null) {
+        this.showMessage = true
+        this.message = '请先登录后再点赞'
+        return
       }
-      this.httpPost('/click/like', likeInfo, (json) => {
+      this.httpPost(`/like/toggle?likeObjId=${this.comment.id}&type=1`, {}, (json) => {
         if (json.status === 200) {
-          this.message = '点赞成功'
-          this.likeCount += 1
+          this.isLiked = json.data.like
+          this.likeCount += json.data.like ? 1 : -1
+          this.message = json.data.info
           this.showMessage = true
         } else {
-          this.message = json.message
+          this.message = json.data.info || '操作失败'
           this.showMessage = true
+        }
+      })
+    },
+    checkLike() {
+      if (this.userInfo.userData == null) {
+        this.isLiked = false
+        return
+      }
+      this.httpGet(`/like/status?likeObjId=${this.comment.id}&type=1`, (json) => {
+        if (json.status === 200) {
+          this.isLiked = json.data
         }
       })
     },

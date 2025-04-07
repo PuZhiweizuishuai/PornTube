@@ -16,5 +16,13 @@ import java.util.Map;
 public interface LikeTableService extends IService<LikeTableEntity> {
 
     PageUtils queryPage(Map<String, Object> params);
+
+    /**
+     * type: 【0 视频图片文章主帖子  1 评论】
+     * */
+    Map<String, Object> toggleLike(Long likeObjId, Integer type, Long userId);
+
+
+    LikeTableEntity checkLike(Long likeObjId, Integer type, Long userId);
 }
 

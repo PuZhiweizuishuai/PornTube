@@ -1,6 +1,11 @@
 <template>
   <div>
     <v-container fluid>
+      <!-- 添加 Snackbar 组件 -->
+      <v-snackbar v-model="snackbar.show" :color="snackbar.color" :timeout="2000" location="top">
+        {{ snackbar.text }}
+      </v-snackbar>
+
       <v-row style="padding-top: 12px; padding-bottom: 12px">
         <v-col style="padding-bottom: 0px">
           <PlayerVideo
@@ -26,9 +31,9 @@
             <v-card-actions class="px-0 py-2">
               <v-btn
                 prepend-icon="mdi-thumb-up"
-                variant="tonal"
+                :variant="isLiked ? 'flat' : 'tonal'"
                 color="primary"
-                :disabled="isLiked"
+                @click="likeVideo"
               >
                 {{ videoData.likeCount }}
               </v-btn>
@@ -152,6 +157,7 @@
 import TimeUtil from '@/utils/time-util.vue'
 import PlayerVideo from '@/components/player/PlayerVideo.vue'
 import Comment from '@/views/comment/VideoComment.vue'
+import { useUserStore } from '@/stores/userStore'
 export default {
   name: 'VideoView',
   components: {
@@ -168,6 +174,12 @@ export default {
       colsWidth: 8,
       isLiked: false,
       isDisliked: false,
+      userInfo: useUserStore(),
+      snackbar: {
+        show: false,
+        text: '',
+        color: 'success',
+      },
     }
   },
   created() {
@@ -201,6 +213,7 @@ export default {
           // 假设数据中包含点赞和点踩数量，如果没有则使用默认值
           this.likeCount = json.data.likeCount || 0
           this.dislikeCount = json.data.dislikeCount || 0
+          this.checkLike()
         } else {
           // TODO 显示 404
           this.$router.push('/')
@@ -209,11 +222,44 @@ export default {
     },
     // 点赞功能
     likeVideo() {
-      // TODO 待实现
+      // 如果用户未登录
+      if (this.userInfo.userData == null) {
+        this.showMessage('请先登录后再点赞', 'warning')
+        return
+      }
+      this.httpPost(`/like/toggle?likeObjId=${this.id}&type=0`, {}, (json) => {
+        if (json.status === 200) {
+          // 更新点赞状态
+          this.isLiked = json.data.like
+          // 更新点赞数量
+          this.videoData.likeCount += json.data.like ? 1 : -1
+          // 显示消息提示
+          this.showMessage(json.data.info, 'success')
+        } else {
+          this.showMessage(json.data.info || '操作失败', 'error')
+        }
+      })
+    },
+    checkLike() {
+      if (this.userInfo.userData == null) {
+        this.isLiked = false
+        return
+      }
+      this.httpGet(`/like/status?likeObjId=${this.id}&type=0`, (json) => {
+        if (json.status === 200) {
+          this.isLiked = json.data
+        }
+      })
     },
     // 点踩功能
     dislikeVideo() {
       // TODO 待实现
+    },
+    // 显示消息提示
+    showMessage(text, color = 'success') {
+      this.snackbar.text = text
+      this.snackbar.color = color
+      this.snackbar.show = true
     },
   },
 }

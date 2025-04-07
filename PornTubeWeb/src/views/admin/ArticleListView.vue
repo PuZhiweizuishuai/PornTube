@@ -15,8 +15,15 @@
         </v-btn>
       </v-toolbar>
 
-      <v-tabs v-model="activeTab" color="primary" align-tabs="center" class="mb-4">
+      <v-tabs
+        v-model="activeTab"
+        color="primary"
+        align-tabs="center"
+        class="mb-4"
+        @click="filteredArticles"
+      >
         <v-tab value="all">所有稿件</v-tab>
+        <v-tab value="delete">已删除</v-tab>
         <!-- <v-tab value="passed">已通过</v-tab>
         <v-tab value="pending">待审核</v-tab>
         <v-tab value="rejected">未通过</v-tab> -->
@@ -26,8 +33,8 @@
         <v-data-table-server
           :headers="headers"
           :itemsLength="totalCount"
-          :items="filteredArticles"
           :items-per-page="pageSize"
+          :items="articles"
           v-model:page="page"
           :loading="loading"
           hover
@@ -115,6 +122,9 @@
             <v-chip :color="getStatusColor(item.examineStatus)" size="small" class="text-white">
               {{ getStatusText(item.examineStatus) }}
             </v-chip>
+            <v-chip v-if="item.status === 1" color="error" size="small" class="text-white mt-1">
+              已删除
+            </v-chip>
             <div
               v-if="item.examineStatus !== 1 && item.examineMessage"
               class="mt-2 text-caption text-red"
@@ -156,16 +166,16 @@
                 </template>
               </v-tooltip>
 
-              <v-tooltip location="top" text="删除">
+              <v-tooltip :location="top" :text="item.status === 1 ? '恢复' : '删除'">
                 <template #activator="{ props }">
                   <v-btn
                     v-bind="props"
                     icon
                     size="small"
-                    color="error"
-                    @click="confirmDelete(item)"
+                    :color="item.status === 1 ? 'success' : 'error'"
+                    @click="item.status === 1 ? confirmRestore(item) : confirmDelete(item)"
                   >
-                    <v-icon>mdi-delete</v-icon>
+                    <v-icon>{{ item.status === 1 ? 'mdi-restore' : 'mdi-delete' }}</v-icon>
                   </v-btn>
                 </template>
               </v-tooltip>
@@ -258,6 +268,21 @@
       </v-card>
     </v-dialog>
 
+    <!-- 恢复确认对话框 -->
+    <v-dialog v-model="restoreDialog" max-width="400">
+      <v-card>
+        <v-card-title class="text-h5">确认恢复</v-card-title>
+        <v-card-text>
+          您确定要恢复视频 <strong>{{ selectedItem?.title }}</strong> 吗？
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="grey" variant="text" @click="restoreDialog = false">取消</v-btn>
+          <v-btn color="success" variant="elevated" @click="restoreItem">恢复</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <!-- 消息提示 -->
     <v-snackbar v-model="showMessage" :timeout="3000" location="top" :color="messageType">
       {{ message }}
@@ -285,6 +310,7 @@ export default {
       messageType: 'info',
       examineDialog: false,
       deleteDialog: false,
+      restoreDialog: false,
       selectedItem: null,
       selectedStatus: null,
       showRejectionOptions: false,
@@ -306,29 +332,20 @@ export default {
       ],
     }
   },
-  computed: {
-    filteredArticles() {
-      if (this.activeTab === 'all') {
-        return this.articles
-      } else if (this.activeTab === 'passed') {
-        return this.articles.filter((item) => item.examineStatus === 1)
-      } else if (this.activeTab === 'pending') {
-        return this.articles.filter((item) => item.examineStatus === 0)
-      } else {
-        return this.articles.filter((item) => item.examineStatus === 2)
-      }
-    },
-  },
+  computed: {},
   mounted() {
     this.getList()
     this.getCategoryList()
     this.getExamineItems()
   },
   methods: {
+    filteredArticles() {
+      this.getList()
+    },
     getList() {
       this.loading = true
       this.httpGet(
-        `/studio/article/list?limit=${this.pageSize}&page=${this.page}&type=admin`,
+        `/studio/article/list?limit=${this.pageSize}&page=${this.page}&type=admin&active=${this.activeTab}`,
         (json) => {
           this.loading = false
           if (json && json.data) {
@@ -394,21 +411,22 @@ export default {
     deleteItem() {
       if (!this.selectedItem) return
 
-      // 这里应添加实际的删除API调用
-      // this.httpPost('/admin/article/delete', { id: this.selectedItem.id }, (json) => {
-      //   if (json.status === 200) {
-      //     this.showNotification('删除成功', 'success')
-      //     this.getList()
-      //   } else {
-      //     this.showNotification('删除失败: ' + json.message, 'error')
-      //   }
-      // })
-
-      // 模拟删除成功
-      this.showNotification('删除成功', 'success')
-      this.articles = this.articles.filter((item) => item.id !== this.selectedItem.id)
-      this.deleteDialog = false
-      this.selectedItem = null
+      this.httpPost('/studio/article/delete', this.selectedItem, (json) => {
+        if (json.data == 0) {
+          this.showNotification('删除成功', 'success')
+          this.articles = this.articles.filter((item) => item.id !== this.selectedItem.id)
+          this.deleteDialog = false
+          this.selectedItem = null
+        } else if (json.data == 1) {
+          this.showNotification('没有权限', 'success')
+          this.deleteDialog = false
+          this.selectedItem = null
+        } else {
+          this.showNotification('已经删除', 'success')
+          this.deleteDialog = false
+          this.selectedItem = null
+        }
+      })
     },
     handleExamineStatusChange(value) {
       this.showRejectionOptions = value === '不通过'
@@ -503,6 +521,24 @@ export default {
       this.message = message
       this.messageType = type
       this.showMessage = true
+    },
+    confirmRestore(item) {
+      this.selectedItem = item
+      this.restoreDialog = true
+    },
+    restoreItem() {
+      if (!this.selectedItem) return
+
+      this.httpPost('/admin/article/restore', this.selectedItem, (json) => {
+        if (json.data === true) {
+          this.showNotification('恢复成功', 'success')
+          this.getList()
+        } else {
+          this.showNotification('恢复失败: ' + json.message, 'error')
+        }
+        this.restoreDialog = false
+        this.selectedItem = null
+      })
     },
   },
 }

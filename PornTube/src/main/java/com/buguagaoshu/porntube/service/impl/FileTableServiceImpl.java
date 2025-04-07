@@ -42,6 +42,13 @@ public class FileTableServiceImpl extends ServiceImpl<FileTableDao, FileTableEnt
     }
 
     @Override
+    public List<FileTableEntity> findArticle(long id) {
+        QueryWrapper<FileTableEntity> wrapper = new QueryWrapper<>();
+        wrapper.eq("article_id", id);
+        return this.list(wrapper);
+    }
+
+    @Override
     public FileTableEntity findFileByFilename(String fileName) {
         QueryWrapper<FileTableEntity> wrapper = new QueryWrapper<>();
         wrapper.eq("file_new_name", fileName);

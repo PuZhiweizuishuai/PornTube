@@ -68,15 +68,17 @@
               <v-btn
                 v-bind="props"
                 size="small"
-                variant="text"
-                color="green"
+                :variant="isLiked ? 'flat' : 'text'"
+                :color="isLiked ? 'success' : 'green'"
                 @click="like()"
                 icon="mdi-thumb-up"
                 class="mr-1"
               ></v-btn>
             </template>
           </v-tooltip>
-          <span class="text-body-2">{{ comment.likeCount }}</span>
+          <span class="text-body-2" :class="{ 'text-success': isLiked }">{{
+            comment.likeCount
+          }}</span>
         </div>
       </v-col>
     </v-row>
@@ -103,6 +105,7 @@ import ShowMarkdown from '@/components/vditor/ShowMarkdown.vue'
 import TimeUtil from '@/utils/time-util.vue'
 import SecondComment from '@/components/card/comment/SecondComment.vue'
 import { UAParser } from 'ua-parser-js'
+import { useUserStore } from '@/stores/userStore'
 export default {
   name: 'CommentCard',
   components: {
@@ -138,9 +141,13 @@ export default {
       secondCommendKey: 0,
       showMessage: false,
       message: '',
+      isLiked: false,
+      userInfo: useUserStore(),
     }
   },
-  created() {},
+  created() {
+    this.checkLike()
+  },
   methods: {
     parserUa() {
       const ua = new UAParser(this.comment.ua)
@@ -151,22 +158,37 @@ export default {
       this.showSecond = true
     },
     like() {
-      // const likeInfo = {
-      //   targetId: this.comment.id,
-      //   targetType: 1,
-      //   type: 0
-      // }
-      // this.httpPost('/click/like', likeInfo, (json) => {
-      //   if (json.status === 200) {
-      //     this.message = '点赞成功'
-      //     this.comment.likeCount = this.comment.likeCount + 1
-      //     this.showMessage = true
-      //   } else {
-      //     this.message = json.message
-      //     this.comment.likeCount = this.comment.likeCount - 1
-      //     this.showMessage = true
-      //   }
-      // })
+      // 如果用户未登录
+      if (this.userInfo.userData == null) {
+        this.showMessage = true
+        this.message = '请先登录后再点赞'
+        return
+      }
+      this.httpPost(`/like/toggle?likeObjId=${this.comment.id}&type=1`, {}, (json) => {
+        if (json.status === 200) {
+          // 更新点赞状态
+          this.isLiked = json.data.like
+          // 更新点赞数量
+          this.comment.likeCount += json.data.like ? 1 : -1
+          // 显示消息提示
+          this.message = json.data.info
+          this.showMessage = true
+        } else {
+          this.message = json.data.info || '操作失败'
+          this.showMessage = true
+        }
+      })
+    },
+    checkLike() {
+      if (this.userInfo.userData == null) {
+        this.isLiked = false
+        return
+      }
+      this.httpGet(`/like/status?likeObjId=${this.comment.id}&type=1`, (json) => {
+        if (json.status === 200) {
+          this.isLiked = json.data
+        }
+      })
     },
   },
 }

@@ -25,6 +25,8 @@ public interface FileTableService extends IService<FileTableEntity> {
      * */
     List<FileTableEntity> findArticleVideo(long id);
 
+    List<FileTableEntity> findArticle(long id);
+
 
     FileTableEntity findFileByFilename(String fileName);
 
