@@ -8,6 +8,7 @@
         <result property="id" column="id"/>
         <result property="articeId" column="artice_id"/>
         <result property="userId" column="user_id"/>
+        <result property="favoritesLabelId" column="favorites_label_id"/>
         <result property="createTime" column="create_time"/>
     </resultMap>
 

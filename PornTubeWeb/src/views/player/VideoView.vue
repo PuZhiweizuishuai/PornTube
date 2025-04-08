@@ -46,8 +46,19 @@
                 {{ videoData.dislikeCount }}
               </v-btn>
               <v-btn prepend-icon="mdi-share" variant="tonal"> 分享 </v-btn>
-              <v-btn prepend-icon="mdi-content-save" variant="tonal"> 收藏 </v-btn>
+              <v-btn
+                prepend-icon="mdi-content-save"
+                color="orange-lighten-2"
+                :variant="isFavorited ? 'flat' : 'tonal'"
+                @click="favoritesClick"
+              >
+                <span v-if="isFavorited">取消收藏</span>
+                <span v-else>收藏</span>
+              </v-btn>
               <v-spacer></v-spacer>
+              <v-chip variant="outlined" color="orange-lighten-2" class="mr-2">
+                {{ videoData.favoriteCount }} 次收藏
+              </v-chip>
               <v-chip variant="outlined" color="blue" class="mr-2">
                 {{ videoData.viewCount }} 次观看
               </v-chip>
@@ -174,6 +185,7 @@ export default {
       colsWidth: 8,
       isLiked: false,
       isDisliked: false,
+      isFavorited: false,
       userInfo: useUserStore(),
       snackbar: {
         show: false,
@@ -214,6 +226,7 @@ export default {
           this.likeCount = json.data.likeCount || 0
           this.dislikeCount = json.data.dislikeCount || 0
           this.checkLike()
+          this.checkFavorites()
         } else {
           // TODO 显示 404
           this.$router.push('/')
@@ -237,6 +250,34 @@ export default {
           this.showMessage(json.data.info, 'success')
         } else {
           this.showMessage(json.data.info || '操作失败', 'error')
+        }
+      })
+    },
+    favoritesClick() {
+      if (this.userInfo.userData == null) {
+        this.showMessage('请先登录后再收藏', 'warning')
+        return
+      }
+      this.httpPost('/favorites/toggle', { articeId: this.id }, (json) => {
+        if (json.data.id != null) {
+          this.showMessage('收藏成功！', 'success')
+          this.isFavorited = true
+          this.videoData.favoriteCount += 1
+        } else {
+          this.showMessage('取消收藏成功！', 'info')
+          this.isFavorited = false
+          this.videoData.favoriteCount -= 1
+        }
+      })
+    },
+    checkFavorites() {
+      if (this.userInfo.userData == null) {
+        this.isFavorited = false
+        return
+      }
+      this.httpGet(`/favorites/check?articleId=${this.id}`, (json) => {
+        if (json.status === 200) {
+          this.isFavorited = json.data
         }
       })
     },

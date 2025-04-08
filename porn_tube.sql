@@ -148,11 +148,27 @@ CREATE TABLE `favorites_table`  (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `artice_id` bigint NOT NULL,
   `user_id` bigint NOT NULL,
+  `favorites_label_id` bigint,  
   `create_time` bigint NOT NULL,
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `find_like_by_user`(`user_id`) USING BTREE,
   INDEX `find_like_bu_artice`(`artice_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '收藏夹' ROW_FORMAT = DYNAMIC;
+
+
+-- ----------------------------
+-- 收藏夹，暂未实现
+-- ----------------------------
+DROP TABLE IF EXISTS `favorites_lable`;
+CREATE TABLE `favorites_label`  (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `name` bigint NOT NULL,
+  `user_id` bigint NOT NULL,  
+  `create_time` bigint NOT NULL,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `find_favorites_lable_by_user`(`user_id`) USING BTREE,
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '收藏夹' ROW_FORMAT = DYNAMIC;
+
 
 -- ----------------------------
 -- Table structure for file_table

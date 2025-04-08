@@ -193,7 +193,10 @@ export default {
     pageChange(page) {
       this.page = page
       this.geVideoList(this.type)
-      this.$vuetify.goTo(0)
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth',
+      })
     },
     setType(type) {
       this.type = type
@@ -202,7 +205,10 @@ export default {
         return
       }
       this.geVideoList()
-      this.$vuetify.goTo(0)
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth',
+      })
     },
     goTOVIP() {
       this.$router.push('/vip')

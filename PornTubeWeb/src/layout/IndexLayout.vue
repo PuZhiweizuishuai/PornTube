@@ -96,7 +96,7 @@ export default {
       { icon: 'mdi-trending-up', text: '时下流行', link: '/hot' },
       { icon: 'mdi-youtube-subscription', text: '订阅', link: '/subscribe' },
       { icon: 'mdi-history', text: '历史记录', link: '/history' },
-      { icon: 'mdi-playlist-play', text: '稍后再看', link: '/playlist' },
+      { icon: 'mdi-heart', text: '我的收藏', link: '/playlist' },
       // { icon: 'mdi-cog', text: '设置', link: '/settings' },
       { icon: 'mdi-help-circle', text: '关于', link: '/about' },
     ],

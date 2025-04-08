@@ -38,7 +38,8 @@
           :total-visible="7"
           v-model="page"
           :length="length"
-          @input="pageChange"
+          color="red"
+          @update:model-value="pageChange"
         />
       </v-row>
     </v-container>
@@ -66,7 +67,7 @@ export default {
     if (this.$route.query.page === undefined) {
       this.page = 1
     } else {
-      this.page = this.$route.query.page
+      this.page = parseInt(this.$route.query.page)
     }
     this.getCategory()
     this.getVideoList()
@@ -91,7 +92,10 @@ export default {
       this.page = value
       this.$router.push({ query: { page: this.page } })
       this.getVideoList()
-      this.$vuetify.goTo(0)
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth',
+      })
     },
   },
 }

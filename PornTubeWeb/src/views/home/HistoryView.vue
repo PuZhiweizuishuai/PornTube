@@ -24,7 +24,7 @@
           :total-visible="7"
           v-model="page"
           :length="length"
-          @input="pageChange"
+          @update:model-value="pageChange"
         />
       </v-row>
     </div>
@@ -44,12 +44,17 @@ export default {
     return {
       videoList: [],
       page: 1,
-      size: 20,
+      size: 10,
       length: 1,
       userInfo: useUserStore(),
     }
   },
   created() {
+    if (this.$route.query.page === undefined) {
+      this.page = 1
+    } else {
+      this.page = parseInt(this.$route.query.page)
+    }
     if (this.userInfo.userData != null) {
       this.init()
     }
@@ -64,8 +69,12 @@ export default {
     },
     pageChange(page) {
       this.page = page
+      this.$router.push({ query: { page: page } })
       this.init(this.type)
-      this.$vuetify.goTo(0)
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth',
+      })
     },
   },
 }

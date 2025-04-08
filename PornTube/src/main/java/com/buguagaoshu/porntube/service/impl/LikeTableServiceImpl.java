@@ -19,6 +19,7 @@ import com.buguagaoshu.porntube.utils.Query;
 import com.buguagaoshu.porntube.dao.LikeTableDao;
 import com.buguagaoshu.porntube.entity.LikeTableEntity;
 import com.buguagaoshu.porntube.service.LikeTableService;
+import org.springframework.transaction.annotation.Transactional;
 
 
 @Service("likeTableService")
@@ -40,6 +41,7 @@ public class LikeTableServiceImpl extends ServiceImpl<LikeTableDao, LikeTableEnt
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Map<String, Object> toggleLike(Long likeObjId, Integer type, Long userId) {
         // 检查点赞目标是否存在
         Map<String, Object> map = new HashMap<>();
@@ -77,8 +79,6 @@ public class LikeTableServiceImpl extends ServiceImpl<LikeTableDao, LikeTableEnt
             }
 
             map.put("info", "已经点过赞了");
-            map.put("like", true);
-            return map;
         } else {
             // 未点赞，执行点赞操作
             LikeTableEntity likeTableEntity = new LikeTableEntity();
@@ -97,9 +97,9 @@ public class LikeTableServiceImpl extends ServiceImpl<LikeTableDao, LikeTableEnt
             }
 
             map.put("info", "点赞成功！");
-            map.put("like", true);
-            return map;
         }
+        map.put("like", true);
+        return map;
     }
 
     @Override

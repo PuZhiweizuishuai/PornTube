@@ -93,6 +93,9 @@ public class UserController {
     }
 
 
+    /**
+     * 管理员读取用户列表
+     * */
     @GetMapping("/api/admin/user/list")
     public ResponseDetails userList(@RequestParam Map<String, Object> params) {
         return ResponseDetails.ok().put("data", userService.userList(params));

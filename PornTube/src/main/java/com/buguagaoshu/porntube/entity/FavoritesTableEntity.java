@@ -32,6 +32,9 @@ public class FavoritesTableEntity {
 	 */
 	private Long userId;
 
+
+	private Long favoritesLabelId;
+
 	/**
 	 * 
 	 */
