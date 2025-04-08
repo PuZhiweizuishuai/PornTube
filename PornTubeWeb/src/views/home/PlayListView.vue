@@ -85,7 +85,9 @@ export default {
     } else {
       this.page = parseInt(this.$route.query.page)
     }
-    this.getFavoriteList()
+    if (this.userInfo.userData != null) {
+      this.getFavoriteList()
+    }
   },
   methods: {
     async getFavoriteList() {
