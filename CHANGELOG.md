@@ -1,5 +1,9 @@
 # 更新日志
 
+## 2025-04-13
+
+修改项目名称为 TikTube，规避风险
+
 ## 2025-04-08
 
 favorites_table 表新增 favorites_label_id 字段，用来关联收藏夹

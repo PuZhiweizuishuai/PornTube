@@ -1,1 +1,0 @@
-import{_ as t,c as n,w as s,r,o as a,e as c}from"./index-TiTfTDly.js";const _={};function p(i,e,f,d,l,u){const o=r("v-container");return a(),n(o,{fluid:""},{default:s(()=>e[0]||(e[0]=[c(" 粉丝管理 ")])),_:1})}const x=t(_,[["render",p]]);export{x as default};

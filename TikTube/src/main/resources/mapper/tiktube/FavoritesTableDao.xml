@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.buguagaoshu.tiktube.dao.FavoritesTableDao">
+
+	<!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.buguagaoshu.tiktube.entity.FavoritesTableEntity" id="favoritesTableMap">
+        <result property="id" column="id"/>
+        <result property="articeId" column="artice_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="favoritesLabelId" column="favorites_label_id"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+
+
+</mapper>

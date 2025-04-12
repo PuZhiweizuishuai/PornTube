@@ -1,0 +1,41 @@
+{
+  "name": "tiktubeweb",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --fix",
+    "format": "prettier --write src/"
+  },
+  "dependencies": {
+    "artplayer": "^5.2.2",
+    "artplayer-plugin-danmuku": "^5.1.5",
+    "filepond": "^4.32.7",
+    "filepond-plugin-file-validate-type": "^1.2.9",
+    "filepond-plugin-image-preview": "^4.6.12",
+    "pinia": "^3.0.1",
+    "qrcode": "^1.5.4",
+    "ua-parser-js": "^2.0.3",
+    "vditor": "^3.10.9",
+    "vue": "^3.5.13",
+    "vue-filepond": "^7.0.4",
+    "vue-router": "^4.5.0",
+    "vuetify": "^3.8.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.22.0",
+    "@mdi/font": "^7.4.47",
+    "@vitejs/plugin-vue": "^5.2.3",
+    "@vitejs/plugin-vue-jsx": "^4.1.2",
+    "@vue/eslint-config-prettier": "^10.2.0",
+    "eslint": "^9.22.0",
+    "eslint-plugin-vue": "~10.0.0",
+    "globals": "^16.0.0",
+    "prettier": "3.5.3",
+    "vite": "^6.2.4",
+    "vite-plugin-vue-devtools": "^7.7.2"
+  }
+}

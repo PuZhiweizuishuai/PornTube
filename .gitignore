@@ -8,6 +8,10 @@ target/
 /PornTube/file
 /PornTube/log
 /PornTube/.mvn
+
+/TikTube/file
+/TikTube/log
+/TikTube/.mvn
 ### STS ###
 .apt_generated
 .classpath

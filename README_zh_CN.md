@@ -6,7 +6,7 @@
     <a href="/README.md">English</a>
 </div>
 
-# PornTube 一个能发弹幕的简单的视频网站
+# TikTube 一个能发弹幕的简单的视频网站
 
 
 ## 截图
@@ -48,6 +48,8 @@
 
 一个简单的视频网站
 
+网站名称是 TikTok 与 YouTube 的缝合，Logo 为豆包 AI 生成
+
 主要界面参考了 [Youtube](https://www.youtube.com/)，部分功能借鉴了 [哔哩哔哩](https://www.bilibili.com/)
 
 后端 Spring Boot， MySQL
@@ -68,7 +70,7 @@
 
 还剩一些细节功能在逐渐优化中
 
-web 文件夹是旧版前端界面，请使用 PornTubeWeb 下的前端项目编译新版前端界面
+请使用 TikTubeWeb 下的前端项目编译新版前端界面
 
 为了使用与部署方便，唯一外部依赖只有数据库
 
@@ -77,25 +79,25 @@ web 文件夹是旧版前端界面，请使用 PornTubeWeb 下的前端项目编
 
 **运行环境: Java17+, Node 20+, Maven 3.9+， MySQL 8.0+**
 
-使用 porn_tube.sql 创建数据库，配置数据库地址
+使用 tik_tube.sql 创建数据库，配置数据库地址
 
 **运行后端服务**
 
 ```bash
-cd PornTube
+cd TikTube
 mvn clean package
 ```
 
 **之后**
 
 ```bash
-java -jar target/porntube-*-SNAPSHOT
+java -jar target/tiktube-*-SNAPSHOT
 ```
 
 **运行前端服务**
 
 ```bash
-cd PornTubeWeb
+cd TikTubeWeb
 npm install
 ```
 
@@ -126,8 +128,3 @@ http://127.0.0.1:5173
 [更新日志](/CHANGELOG.md)
 
 
-## 免责声明
-
-本项目的名称与 Logo 设计灵感来源于某知名网站，仅为趣味性参考，严禁将本项目用于任何非法用途。
-
-若用户擅自使用本项目搭建与某知名网站功能相似的平台，由此产生的一切责任与后果均与开发者无关，开发者概不负责。

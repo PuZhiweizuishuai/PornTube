@@ -1,1 +1,0 @@
-import{_ as t,c as n,w as a,r,o as s,e as c}from"./index-TiTfTDly.js";const _={};function p(f,e,i,d,l,u){const o=r("v-container");return s(),n(o,{fluid:""},{default:a(()=>e[0]||(e[0]=[c(" 数据分析 ")])),_:1})}const x=t(_,[["render",p]]);export{x as default};

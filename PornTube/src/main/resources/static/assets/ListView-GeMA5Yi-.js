@@ -1,1 +1,0 @@
-import{_ as o,c as n,w as s,r,o as a,e as c}from"./index-TiTfTDly.js";const _={};function i(p,e,f,d,l,u){const t=r("v-container");return a(),n(t,{fluid:""},{default:s(()=>e[0]||(e[0]=[c(" 稿件列表 ")])),_:1})}const x=o(_,[["render",i]]);export{x as default};
