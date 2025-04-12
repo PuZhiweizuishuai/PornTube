@@ -10,7 +10,7 @@
 
 <br/>
 
-# TikTube
+# TikTube A simple video website with a bullet chat (danmaku) feature
 
 
 ## introduction 
@@ -38,7 +38,7 @@ Most core features have been implemented, including:
 
 Some minor features are still being optimized.  
 
-The "web" folder contains the legacy frontend interface. Please compile the new frontend interface using the project under "PornTubeWeb".  
+Please compile the new frontend interface using the project under "TikTubeWeb".  
 
 For ease of use and deployment, the only external dependency is the database.  
 
@@ -64,7 +64,7 @@ java -jar target/tiktube-*-SNAPSHOT
 **Run front end server**
 
 ```bash
-cd TikTubeeWeb
+cd TikTubeWeb
 npm install
 ```
 
@@ -135,4 +135,8 @@ If you encounter the error `ESLint is not a constructor`, add `lintOnSave: false
 [CHANGELOG](/CHANGELOG.md)
 
 
+## Other Links
 
+GitHub：https://github.com/PuZhiweizuishuai/TikTube
+
+Gitee: https://gitee.com/puzhiweizuishuai/VideoWeb

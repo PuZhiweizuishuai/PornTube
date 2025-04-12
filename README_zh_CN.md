@@ -128,3 +128,8 @@ http://127.0.0.1:5173
 [更新日志](/CHANGELOG.md)
 
 
+## 其它地址
+
+GitHub：https://github.com/PuZhiweizuishuai/TikTube
+
+码云: https://gitee.com/puzhiweizuishuai/VideoWeb
