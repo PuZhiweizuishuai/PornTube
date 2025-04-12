@@ -5,7 +5,7 @@
 <br/>
 
 <div align="center">
-    <a href="https://github.com/PuZhiweizuishuai/PornTube/blob/master/README_zh_CN.md">简体中文</a>
+    <a href="/README_zh_CN.md">简体中文</a>
 </div>
 
 <br/>
@@ -51,21 +51,36 @@
 
 ## introduction 
 
-A simple video website
+Here's the English translation of your project description:
 
-Interface design reference Youtube
+A Simple Video Website  
 
-Adopted Spring Boot， Vue， vuetifyjs
+The main interface is inspired by [YouTube](https://www.youtube.com/), with some features borrowed from [Bilibili](https://www.bilibili.com/).  
 
-Still in development. But most of the gong'n has been done.
+Backend: Spring Boot, MySQL
 
-for example, Video upload, danmaku, historical records, Auto generate cover image, etc.
+Frontend: Vue, Vuetifyjs  
 
-The web folder contains the legacy frontend interface. Please compile the new frontend interface using the project under PornTubeWeb.
+Most core features have been implemented, including:  
+- Video upload  
+- Danmaku (commenting overlay)  
+- Video playback  
+- Watch history  
+- Favorites  
+- Comments  
+- Likes  
+- Automatic thumbnail generation  
+- Data management  
+
+Some minor features are still being optimized.  
+
+The "web" folder contains the legacy frontend interface. Please compile the new frontend interface using the project under "PornTubeWeb".  
+
+For ease of use and deployment, the only external dependency is the database.  
 
 ## Quick start
 
-**Run Environment: Java17, Node 20, Maven 3.9**
+**Run Environment: Java17+, Node 20+, Maven 3.9+，MySQL 8.0+**
 
 Creating a database, Configuring Database Addresses
 

@@ -2,6 +2,10 @@
     <img src="/img/logo.png" alt="logo" title="logo" width="50%" style="text-align:center;">
 </div>
 
+<div align="center">
+    <a href="/README.md">English</a>
+</div>
+
 # PornTube 一个能发弹幕的简单的视频网站
 
 
@@ -44,20 +48,34 @@
 
 一个简单的视频网站
 
-主要界面参考了Youtube，部分功能借鉴了B站
+主要界面参考了 [Youtube](https://www.youtube.com/)，部分功能借鉴了 [哔哩哔哩](https://www.bilibili.com/)
 
-后端 Spring Boot， Mysql，前端 Vue， Vuetifyjs
+后端 Spring Boot， MySQL
 
-正在不断更新开发中，已经完成部分功能
+前端 Vue， Vuetifyjs
 
-比如视频投稿，发送弹幕，视频播放，播放历史, 自动生成封面图等
+已经完成大部分功能，比如：
+
+- 视频投稿
+- 弹幕
+- 视频播放
+- 播放历史
+- 收藏
+- 评论
+- 点赞
+- 自动生成封面图
+- 数据管理等
+
+还剩一些细节功能在逐渐优化中
 
 web 文件夹是旧版前端界面，请使用 PornTubeWeb 下的前端项目编译新版前端界面
+
+为了使用与部署方便，唯一外部依赖只有数据库
 
 
 ## 快速运行
 
-**运行环境: Java17, Node 20, Maven 3.9**
+**运行环境: Java17+, Node 20+, Maven 3.9+， MySQL 8.0+**
 
 使用 porn_tube.sql 创建数据库，配置数据库地址
 
