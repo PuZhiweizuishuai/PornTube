@@ -99,20 +99,24 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
      * 为文章添加用户信息
      */
     public PageUtils addUserInfo(IPage<ArticleEntity> page) {
-        Set<Long> userIdList = page.getRecords().stream().map(ArticleEntity::getUserId).collect(Collectors.toSet());
+        List<ArticleViewData> articleViewData = addUserInfo(page.getRecords());
+        return new PageUtils(createArticleViewData(articleViewData, page));
+    }
+
+    public List<ArticleViewData> addUserInfo(List<ArticleEntity> articleEntityList) {
+        Set<Long> userIdList = articleEntityList.stream().map(ArticleEntity::getUserId).collect(Collectors.toSet());
         if (userIdList.isEmpty()) {
             return null;
         }
         Map<Long, UserEntity> userEntityMap = userService.userMapList(userIdList);
         List<ArticleViewData> articleViewData = new ArrayList<>();
-        
-        page.getRecords().forEach(a -> {
+        articleEntityList.forEach(a -> {
             ArticleViewData viewData = new ArticleViewData();
             UserEntity userEntity = userEntityMap.get(a.getUserId());
             BeanUtils.copyProperties(a, viewData);
             viewData.setUsername(userEntity.getUsername());
             viewData.setAvatarUrl(userEntity.getAvatarUrl());
-            
+
             // 添加分类信息
             CategoryEntity categoryEntity = categoryCache.getCategoryEntityMap().get(a.getCategory());
             viewData.setChildrenCategory(categoryEntity);
@@ -122,8 +126,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
             }
             articleViewData.add(viewData);
         });
-        
-        return new PageUtils(createArticleViewData(articleViewData, page));
+        return articleViewData;
     }
 
     @Override
@@ -409,15 +412,57 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         } else {
             articleEntity.setExamineStatus(ExamineTypeEnum.getStatus(examineDto.getType()));
         }
-
+        articleEntity.setUpdateTime(System.currentTimeMillis());
         articleEntity.setExamineUser(userId);
         articleEntity.setExamineMessage(examineDto.getMessage());
+
         this.updateById(articleEntity);
         
         // 更新用户提交计数
         userService.addSubmitCount(articleEntity.getUserId(), 1);
         
         return ReturnCodeEnum.SUCCESS;
+    }
+
+    @Override
+    public List<ArticleViewData> hotView(int num) {
+        // 获取当前时间
+        long currentTime = System.currentTimeMillis();
+        // 查询24小时内发布的帖子
+        long ago = currentTime - 86400000;
+        // 构造查询条件
+        QueryWrapper<ArticleEntity> wrapper = new QueryWrapper<>();
+        wrapper.eq("status", ArticleStatusEnum.NORMAL.getCode());
+        wrapper.eq("examine_status", ExamineTypeEnum.SUCCESS.getCode());
+        //
+        wrapper.gt("create_time", ago);
+        wrapper.orderByDesc("create_time");
+        // 查询24小时内发布的内容
+        List<ArticleEntity> list = this.list(wrapper);
+        // 如果 24 小时内发布的内容数量不够，则查询过去发布的 num 个内容
+        if (list.size() < num) {
+            QueryWrapper<ArticleEntity> wrapper2 = new QueryWrapper<>();
+            wrapper2.eq("status", ArticleStatusEnum.NORMAL.getCode());
+            wrapper2.eq("examine_status", ExamineTypeEnum.SUCCESS.getCode());
+            wrapper.orderByDesc("create_time");
+            wrapper2.last("LIMIT " + num);
+            list = this.list(wrapper2);
+        }
+        // 为获取的 list 列表增加用户信息
+        List<ArticleViewData> viewData = addUserInfo(list);
+        // 计算 sort 值, 播放量加权 1， 评论 2， 收藏 4， 弹幕 1.5, 点赞 2， 不喜欢 -2
+        for (ArticleViewData vd : viewData) {
+            double sort = vd.getViewCount()
+                    + vd.getCommentCount() * 2
+                    + vd.getFavoriteCount() * 4
+                    + vd.getDanmakuCount() * 1.5
+                    + vd.getLikeCount() * 2
+                    - vd.getDislikeCount() * 2;
+            vd.setSort(sort);
+        }
+        // 按照 sort 排序
+        viewData.sort((vd1, vd2) -> Double.compare(vd2.getSort(), vd1.getSort()));
+        return viewData;
     }
 
     @Override

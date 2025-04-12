@@ -7,6 +7,7 @@
 import Artplayer from 'artplayer'
 import artplayerPluginDanmuku from 'artplayer-plugin-danmuku'
 import { useUserStore } from '@/stores/userStore'
+
 export default {
   data() {
     return {

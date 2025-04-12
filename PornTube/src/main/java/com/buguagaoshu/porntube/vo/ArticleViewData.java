@@ -120,7 +120,7 @@ public class ArticleViewData {
      * */
     private Double frameRate;
 
-
+    private Double sort;
 
     private List<FileTableEntity> video;
 }

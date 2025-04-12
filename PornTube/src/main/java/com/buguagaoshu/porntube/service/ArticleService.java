@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -69,6 +70,12 @@ public interface ArticleService extends IService<ArticleEntity> {
      * 处理审核
      * */
     ReturnCodeEnum examine(ExamineDto examineDto, HttpServletRequest request);
+
+    /**
+     * 返回热门帖子
+     * @param num 生成热点视频的数量
+     * */
+    List<ArticleViewData> hotView(int num);
 
 
     /**

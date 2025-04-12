@@ -45,7 +45,9 @@
               >
                 {{ videoData.dislikeCount }}
               </v-btn>
-              <v-btn prepend-icon="mdi-share" variant="tonal"> 分享 </v-btn>
+              <v-btn prepend-icon="mdi-share" variant="tonal" @click="shareDialog = true">
+                分享
+              </v-btn>
               <v-btn
                 prepend-icon="mdi-content-save"
                 color="orange-lighten-2"
@@ -160,6 +162,11 @@
           </v-card>
         </v-col>
       </v-row>
+
+      <!-- 分享卡片弹窗 -->
+      <v-dialog v-model="shareDialog">
+        <ShareCard :article="{ id: id, title: videoData.title }" />
+      </v-dialog>
     </v-container>
   </div>
 </template>
@@ -169,11 +176,13 @@ import TimeUtil from '@/utils/time-util.vue'
 import PlayerVideo from '@/components/player/PlayerVideo.vue'
 import Comment from '@/views/comment/VideoComment.vue'
 import { useUserStore } from '@/stores/userStore'
+import ShareCard from '@/components/card/ShareCard.vue'
 export default {
   name: 'VideoView',
   components: {
     PlayerVideo,
     Comment,
+    ShareCard,
   },
   data() {
     return {
@@ -192,6 +201,7 @@ export default {
         text: '',
         color: 'success',
       },
+      shareDialog: false,
     }
   },
   created() {

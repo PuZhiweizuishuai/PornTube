@@ -2,17 +2,17 @@
   <v-container>
     <NotLoginCard v-if="userInfo.userData == null"></NotLoginCard>
     <div v-else>
-      <v-row>
+      <v-row align="center" class="mb-4">
         <v-col>
-          <h2>播放历史</h2>
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col>
-          <v-divider />
+          <h2 class="text-h5 font-weight-bold">
+            <v-icon icon="mdi-history" color="red" class="mr-2"></v-icon>
+            播放历史
+          </h2>
+          <p class="text-body-2 text-grey">你之前看过的内容</p>
         </v-col>
       </v-row>
 
+      <v-divider />
       <v-row>
         <v-col v-for="item in videoList" :key="item.id" cols="12">
           <HistoryCard :video="item" />

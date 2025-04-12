@@ -2,20 +2,20 @@
   <v-container>
     <NotLoginCard v-if="userInfo.userData == null"></NotLoginCard>
     <div v-else>
+      <v-row align="center" class="mb-4">
+        <v-col>
+          <h2 class="text-h5 font-weight-bold">
+            <v-icon icon="mdi-heart" color="red" class="mr-2"></v-icon>
+            收藏
+          </h2>
+          <p class="text-body-2 text-grey">
+            <v-chip color="primary" variant="tonal" size="small">
+              共 {{ totalItems }} 个视频
+            </v-chip>
+          </p>
+        </v-col>
+      </v-row>
       <!-- 页面标题 -->
-      <v-row align="center">
-        <v-col>
-          <h2>我的收藏</h2>
-        </v-col>
-        <v-col cols="auto">
-          <v-chip color="primary" variant="tonal" size="small"> 共 {{ totalItems }} 个视频 </v-chip>
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col>
-          <v-divider />
-        </v-col>
-      </v-row>
 
       <!-- 加载状态 -->
       <v-row v-if="loading" justify="center" class="mt-8">

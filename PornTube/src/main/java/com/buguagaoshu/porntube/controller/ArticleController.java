@@ -1,5 +1,6 @@
 package com.buguagaoshu.porntube.controller;
 
+import com.buguagaoshu.porntube.cache.HotCache;
 import com.buguagaoshu.porntube.dto.VideoArticleDto;
 import com.buguagaoshu.porntube.entity.ArticleEntity;
 import com.buguagaoshu.porntube.service.ArticleService;
@@ -29,6 +30,11 @@ public class ArticleController {
     @GetMapping("/api/article/home/list")
     public ResponseDetails homeList(@RequestParam Map<String, Object> params) {
         return ResponseDetails.ok().put("data", articleService.queryPage(params));
+    }
+
+    @GetMapping("/api/article/hot")
+    public ResponseDetails hot() {
+        return ResponseDetails.ok().put("data", HotCache.hotList);
     }
 
 
