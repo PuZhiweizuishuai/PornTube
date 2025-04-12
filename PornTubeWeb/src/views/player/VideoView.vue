@@ -164,7 +164,7 @@
       </v-row>
 
       <!-- 分享卡片弹窗 -->
-      <v-dialog v-model="shareDialog">
+      <v-dialog max-width="600" v-model="shareDialog">
         <ShareCard :article="{ id: id, title: videoData.title }" />
       </v-dialog>
     </v-container>

@@ -9,9 +9,9 @@
         <v-row>
           <v-col cols="5"> -->
       <v-text-field
-        density="compact"
+        density="comfortable"
         prepend-inner-icon="mdi-magnify"
-        variant="solo"
+        variant="solo-filled"
         flat
         hide-details
         single-line

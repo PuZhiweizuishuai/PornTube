@@ -124,7 +124,6 @@ public class FileController {
                                       HttpServletRequest request) {
         try {
             Path path = fileRepository.load(date + "/" + filename);
-            //Path path = fileRepository.load("2020-09-09/e8d2690873ed45eea2822654b4a80f34.mp4");
             Resource resource = new UrlResource(path.toUri());
             String contentType = request.getServletContext().getMimeType(resource.getFile().getAbsolutePath());
             HttpHeaders httpHeaders = new HttpHeaders();

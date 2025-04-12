@@ -350,7 +350,7 @@ CREATE TABLE `web_setting`  (
   `no_vip_view_count` int NOT NULL DEFAULT 5 COMMENT '非vip 每日观看次数',
   `logo_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT '/logo.png' COMMENT '网页logo地址',
   `open_invitation_register` int NOT NULL DEFAULT 1 COMMENT '是否开启邀请码注册 【0 关闭， 1开启】',
-  `webDescribe` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '网页简短的描述',
+  `web_describe` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '网页简短的描述',
   `open_upload_video_add_view_count` int NOT NULL DEFAULT 1 COMMENT '是否开启每日上传视频增加非会员观看次数 【0 关闭， 1开启】',
   `open_examine` int NOT NULL DEFAULT 1 COMMENT '是否开启视频，文章，图片审核 【0 关闭， 1 开启】',
   `id` int NOT NULL AUTO_INCREMENT,

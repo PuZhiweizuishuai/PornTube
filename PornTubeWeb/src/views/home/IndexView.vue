@@ -26,7 +26,7 @@
     </v-row>
     <v-col />
     <!-- 视频卡片 -->
-    <v-row no-gutters>
+    <v-row>
       <v-col v-for="item in videoList" :key="item.id">
         <VideoCared :video="item" />
       </v-col>

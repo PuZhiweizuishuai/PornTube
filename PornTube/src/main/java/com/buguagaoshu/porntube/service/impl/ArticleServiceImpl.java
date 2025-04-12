@@ -435,7 +435,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         wrapper.eq("status", ArticleStatusEnum.NORMAL.getCode());
         wrapper.eq("examine_status", ExamineTypeEnum.SUCCESS.getCode());
         //
-        wrapper.gt("create_time", ago);
+        wrapper.ge("create_time", ago);
         wrapper.orderByDesc("create_time");
         // 查询24小时内发布的内容
         List<ArticleEntity> list = this.list(wrapper);
