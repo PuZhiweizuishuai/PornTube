@@ -36,6 +36,7 @@ public class FileTableServiceImpl extends ServiceImpl<FileTableDao, FileTableEnt
         QueryWrapper<FileTableEntity> wrapper = new QueryWrapper<>();
         wrapper.eq("article_id", id);
         wrapper.eq("type", FileTypeEnum.VIDEO.getCode());
+        wrapper.eq("status", FileStatusEnum.USED.getCode());
         return this.list(wrapper);
     }
 
@@ -43,6 +44,7 @@ public class FileTableServiceImpl extends ServiceImpl<FileTableDao, FileTableEnt
     public List<FileTableEntity> findArticle(long id) {
         QueryWrapper<FileTableEntity> wrapper = new QueryWrapper<>();
         wrapper.eq("article_id", id);
+        wrapper.eq("status", FileStatusEnum.USED.getCode());
         return this.list(wrapper);
     }
 

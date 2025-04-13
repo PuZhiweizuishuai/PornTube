@@ -22,6 +22,8 @@ public class ArticleViewData {
      */
     private String imgUrl;
 
+    private Long imageId;
+
     /**
      * 标题
      */

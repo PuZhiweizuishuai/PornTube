@@ -12,13 +12,61 @@
 
           <!-- 上传视频区域 -->
           <v-container fluid>
-            <v-row>
+            <v-row v-if="showUploadFlie">
               <v-col cols="12">
                 <FilePondUpdate
                   ref="videoUploadTool"
                   @video="videoUploadSuccess"
                   @file-selected="fileAdd"
                 />
+              </v-col>
+            </v-row>
+
+            <!-- 编辑模式下显示已上传视频列表 -->
+            <v-row v-if="editCode && editCode !== -1 && article.video && showUploadFlie == false">
+              <v-col cols="12">
+                <v-card variant="outlined" class="pa-3 mb-4">
+                  <v-card-subtitle class="text-subtitle-1 font-weight-medium pb-2">
+                    <v-icon icon="mdi-video" class="mr-2" color="primary"></v-icon>
+                    已上传视频文件
+                  </v-card-subtitle>
+
+                  <v-list>
+                    <v-list-item>
+                      <template v-slot:prepend>
+                        <v-icon icon="mdi-video-box" color="primary"></v-icon>
+                      </template>
+
+                      <v-list-item-title class="text-body-1">
+                        {{ article.video.fileOriginalName || '视频文件' }}
+                      </v-list-item-title>
+
+                      <v-list-item-subtitle>
+                        <v-chip size="small" color="primary" class="mr-2">
+                          {{ (article.video.duration || 0).toFixed(1) }}秒
+                        </v-chip>
+                        <v-chip size="small" color="info" class="mr-2">
+                          {{ article.video.width || 0 }}x{{ article.video.height || 0 }}
+                        </v-chip>
+                        <v-chip size="small" color="success">
+                          {{ formatFileSize(article.video.size || 0) }}
+                        </v-chip>
+                      </v-list-item-subtitle>
+
+                      <template v-slot:append>
+                        <v-btn
+                          color="error"
+                          variant="text"
+                          size="small"
+                          prepend-icon="mdi-delete"
+                          @click="confirmDeleteVideo"
+                        >
+                          删除
+                        </v-btn>
+                      </template>
+                    </v-list-item>
+                  </v-list>
+                </v-card>
               </v-col>
             </v-row>
 
@@ -319,6 +367,8 @@ export default {
       isSubmitting: false,
       videoFile: null,
       showThumbnailCapture: false,
+      editCode: -1,
+      showUploadFlie: true,
     }
   },
   computed: {
@@ -334,8 +384,59 @@ export default {
   },
   created() {
     this.getCategory()
+    // 判断编辑状态
+    this.editCode = parseInt(this.$route.query.edit) || -1
+
+    if (this.editCode && this.editCode !== -1) {
+      this.editVideo()
+    }
   },
   methods: {
+    editVideo() {
+      this.httpGet(`/article/edit/${this.editCode}`, (json) => {
+        if (json.data != null) {
+          // 回显数据
+          this.showUploadFlie = false
+          const editData = json.data
+
+          // 基础信息回显
+          this.article.id = editData.id
+          this.article.title = editData.title
+          this.article.describe = editData.describes
+          this.article.imgUrl = editData.imgUrl
+          this.article.imageId = editData.imageId
+          this.article.tag = [...editData.tag]
+
+          // 处理视频数据
+          if (editData.video && editData.video.length > 0) {
+            this.article.video = editData.video[0]
+          }
+
+          // 处理分类数据
+          if (editData.fatherCategory) {
+            // 设置主分区
+            this.selectedMainCategory = editData.fatherCategory.name
+            this.nowCategory = editData.fatherCategory
+
+            // 加载子分区列表
+            this.getMainCategory(editData.fatherCategory.name)
+
+            // 设置子分区（延迟执行确保子分区列表已加载）
+            if (editData.childrenCategory) {
+              this.selectedSubCategory = editData.childrenCategory.name
+              this.article.category = editData.childrenCategory.id
+            } else {
+              this.article.category = editData.fatherCategory.id
+            }
+          }
+
+          this.showSuccessMessage('稿件数据加载成功，可以进行编辑')
+        } else {
+          this.showErrorMessage('无法加载稿件数据')
+          this.$router.push('/studio/upload')
+        }
+      })
+    },
     fileAdd(file) {
       console.log(file)
       // 保存视频文件供缩略图截取使用
@@ -405,11 +506,17 @@ export default {
 
       this.isSubmitting = true
 
-      this.httpPost('/article/video', this.article, (json) => {
+      // 根据是否为编辑模式选择不同的API端点
+      const apiEndpoint =
+        this.editCode && this.editCode !== -1 ? `/article/video/update` : '/article/video'
+
+      this.httpPost(apiEndpoint, this.article, (json) => {
         this.isSubmitting = false
 
         if (json.status === 200) {
-          this.showSuccessMessage('投稿成功，等待审核通过后你就可以看到你的视频了')
+          this.showSuccessMessage(
+            this.editCode !== -1 ? '更新成功' : '投稿成功，等待审核通过后你就可以看到你的视频了'
+          )
           this.$router.push('/studio')
         } else {
           this.showErrorMessage(json.message || '提交失败')
@@ -427,6 +534,42 @@ export default {
       this.message = msg
       this.messageType = 'error'
       this.showMessage = true
+    },
+
+    formatFileSize(bytes) {
+      if (bytes === 0) return '0 B'
+      const k = 1024
+      const sizes = ['B', 'KB', 'MB', 'GB']
+      const i = Math.floor(Math.log(bytes) / Math.log(k))
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+    },
+
+    confirmDeleteVideo() {
+      if (confirm('确定要删除当前视频吗？删除后需要重新上传视频文件。')) {
+        //this.deleteVideo()
+        this.showUploadFlie = true
+        this.article.video = {}
+      }
+    },
+
+    deleteVideo() {
+      // 保存视频ID用于后端删除
+      const videoId = this.article.video.id
+
+      // 清空前端视频数据
+      this.article.video = {}
+      this.videoFile = null
+
+      // 向后端发送删除请求
+      this.httpPost(`/article/video/delete/${videoId}`, {}, (json) => {
+        if (json.status === 200) {
+          this.showSuccessMessage('视频已删除，请重新上传视频文件')
+          // 重置FilePond
+          this.$refs.videoUploadTool.handleFilePondInit()
+        } else {
+          this.showErrorMessage(json.message || '删除视频失败')
+        }
+      })
     },
 
     setFile(value) {

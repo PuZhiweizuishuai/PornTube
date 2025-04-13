@@ -13,13 +13,15 @@ import java.util.List;
  */
 @Data
 public class VideoArticleDto {
+    private Long id;
+
     @NotBlank(message = "标题不能为空")
     private String title;
 
     @NotBlank(message = "封面图不能为空")
     private String imgUrl;
 
-    @NotNull(message = "封面ID不能为空")
+
     private Long imageId;
 
 

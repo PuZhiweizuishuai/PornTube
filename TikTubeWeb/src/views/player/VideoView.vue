@@ -39,9 +39,9 @@
               </v-btn>
               <v-btn
                 prepend-icon="mdi-thumb-down"
-                variant="tonal"
+                :variant="isDisliked ? 'flat' : 'tonal'"
                 color="error"
-                :disabled="isDisliked"
+                @click="dislikeVideo"
               >
                 {{ videoData.dislikeCount }}
               </v-btn>
@@ -236,6 +236,7 @@ export default {
           this.likeCount = json.data.likeCount || 0
           this.dislikeCount = json.data.dislikeCount || 0
           this.checkLike()
+          this.checkDislike()
           this.checkFavorites()
         } else {
           // TODO 显示 404
@@ -302,9 +303,35 @@ export default {
         }
       })
     },
+    checkDislike() {
+      if (this.userInfo.userData == null) {
+        this.isDisliked = false
+        return
+      }
+      this.httpGet(`/dislike/status?dislikeObjId=${this.id}&type=0`, (json) => {
+        if (json.status === 200) {
+          this.isDisliked = json.data
+        }
+      })
+    },
     // 点踩功能
     dislikeVideo() {
-      // TODO 待实现
+      if (this.userInfo.userData == null) {
+        this.showMessage('请先登录后再点赞', 'warning')
+        return
+      }
+      this.httpPost(`/dislike/toggle?dislikeObjId=${this.id}&type=0`, {}, (json) => {
+        if (json.status === 200) {
+          // 更新点赞状态
+          this.isDisliked = json.data.dislike
+          // 更新点赞数量
+          this.videoData.dislikeCount += json.data.dislike ? 1 : -1
+          // 显示消息提示
+          this.showMessage(json.data.info, 'success')
+        } else {
+          this.showMessage(json.data.info || '操作失败', 'error')
+        }
+      })
     },
     // 显示消息提示
     showMessage(text, color = 'success') {

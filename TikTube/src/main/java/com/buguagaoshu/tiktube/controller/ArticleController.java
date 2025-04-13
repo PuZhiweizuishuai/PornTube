@@ -51,11 +51,23 @@ public class ArticleController {
         return ResponseDetails.ok(articleService.saveVideo(videoArticleDto, request));
     }
 
+    @PostMapping("/api/article/video/update")
+    public ResponseDetails updateVideoPost(@Valid @RequestBody VideoArticleDto videoArticleDto,
+                                     HttpServletRequest request) {
+        return ResponseDetails.ok(articleService.updateVideo(videoArticleDto, request));
+    }
+
 
     @GetMapping("/api/article/video/{id}")
     public ResponseDetails getVideo(@PathVariable(value = "id") Long id,
                                     HttpServletRequest request) {
         return ResponseDetails.ok().put("data", articleService.getVideo(id, request));
+    }
+
+    @GetMapping("/api/article/edit/{id}")
+    public ResponseDetails getEditVide(@PathVariable(value = "id") Long id,
+                                       HttpServletRequest request) {
+        return ResponseDetails.ok().put("data", articleService.getEditInfo(id, request));
     }
 
 

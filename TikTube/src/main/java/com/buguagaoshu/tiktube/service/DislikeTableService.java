@@ -16,5 +16,12 @@ import java.util.Map;
 public interface DislikeTableService extends IService<DislikeTableEntity> {
 
     PageUtils queryPage(Map<String, Object> params);
+
+    /**
+     * type: 【0 帖子视频图片， 1 评论】
+     */
+    Map<String, Object> toggleDislike(Long dislikeObjId, Integer type, Long userId);
+
+    DislikeTableEntity checkDislike(Long dislikeObjId, Integer type, Long userId);
 }
 

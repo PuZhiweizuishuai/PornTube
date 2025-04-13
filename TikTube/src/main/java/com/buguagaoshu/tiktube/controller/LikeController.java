@@ -6,6 +6,7 @@ import com.buguagaoshu.tiktube.entity.LikeTableEntity;
 import com.buguagaoshu.tiktube.service.LikeTableService;
 import com.buguagaoshu.tiktube.utils.JwtUtil;
 
+import com.buguagaoshu.tiktube.valid.ListValue;
 import com.buguagaoshu.tiktube.vo.ResponseDetails;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,13 +32,16 @@ public class LikeController {
 
     /**
      * 点赞接口
+     *
      * @param likeObjId 点赞对象ID
-     * @param type 点赞类型 0:视频/图片/文章 1:评论
-     * @param request HTTP请求
+     * @param type      点赞类型 0:视频/图片/文章 1:评论
+     * @param request   HTTP请求
      * @return 操作结果
      */
     @PostMapping("/like/toggle")
-    public ResponseDetails toggleLike(@RequestParam Long likeObjId, @RequestParam Integer type, HttpServletRequest request) {
+    public ResponseDetails toggleLike(@RequestParam Long likeObjId,
+                                      @RequestParam @ListValue(value = {0, 1}) Integer type,
+                                      HttpServletRequest request) {
         // 获取当前用户ID
         Long userId = JwtUtil.getUserId(request);
         return ResponseDetails.ok().put("data", likeTableService.toggleLike(likeObjId, type, userId));
@@ -45,15 +49,14 @@ public class LikeController {
 
 
     @GetMapping("/like/status")
-    public ResponseDetails getLike(@RequestParam Long likeObjId, @RequestParam Integer type, HttpServletRequest request) {
+    public ResponseDetails getLike(@RequestParam Long likeObjId,
+                                   @RequestParam @ListValue(value = {0, 1}) Integer type,
+                                   HttpServletRequest request) {
         Long userId = JwtUtil.getUserId(request);
-        if (type == 0 || type == 1) {
-            LikeTableEntity likeTableEntity = likeTableService.checkLike(likeObjId, type, userId);
-            if (likeTableEntity != null) {
-                return ResponseDetails.ok().put("data", true);
-            }
-            return ResponseDetails.ok().put("data", false);
 
+        LikeTableEntity likeTableEntity = likeTableService.checkLike(likeObjId, type, userId);
+        if (likeTableEntity != null) {
+            return ResponseDetails.ok().put("data", true);
         }
         return ResponseDetails.ok().put("data", false);
     }

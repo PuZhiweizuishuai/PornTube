@@ -79,6 +79,22 @@
           <span class="text-body-2" :class="{ 'text-success': isLiked }">{{
             comment.likeCount
           }}</span>
+          <!-- <v-tooltip text="踩" location="top">
+            <template v-slot:activator="{ props }">
+              <v-btn
+                v-bind="props"
+                size="small"
+                :variant="isDisliked ? 'flat' : 'text'"
+                :color="isDisliked ? 'error' : 'red'"
+                @click="dislike()"
+                icon="mdi-thumb-down"
+                class="mr-1"
+              ></v-btn>
+            </template>
+          </v-tooltip>
+          <span class="text-body-2" :class="{ 'text-error': isDisliked }">{{
+            comment.dislikeCount
+          }}</span> -->
         </div>
       </v-col>
     </v-row>
@@ -143,6 +159,9 @@ export default {
       message: '',
       isLiked: false,
       userInfo: useUserStore(),
+      isDisliked: false,
+      likeCount: this.comment?.likeCount || 0,
+      dislikeCount: this.comment?.dislikeCount || 0,
     }
   },
   created() {
@@ -168,8 +187,8 @@ export default {
         if (json.status === 200) {
           // 更新点赞状态
           this.isLiked = json.data.like
-          // 更新点赞数量
           this.comment.likeCount += json.data.like ? 1 : -1
+
           // 显示消息提示
           this.message = json.data.info
           this.showMessage = true
@@ -187,6 +206,35 @@ export default {
       this.httpGet(`/like/status?likeObjId=${this.comment.id}&type=1`, (json) => {
         if (json.status === 200) {
           this.isLiked = json.data
+        }
+      })
+
+      // // 检查踩状态
+      // this.httpGet(`/dislike/status?dislikeObjId=${this.comment.id}&type=1`, (json) => {
+      //   if (json.status === 200) {
+      //     this.isDisliked = json.data
+      //   }
+      // })
+    },
+    dislike() {
+      // 如果用户未登录
+      if (this.userInfo.userData == null) {
+        this.showMessage = true
+        this.message = '请先登录后再点踩'
+        return
+      }
+      this.httpPost(`/dislike/toggle?dislikeObjId=${this.comment.id}&type=1`, {}, (json) => {
+        if (json.status === 200) {
+          // 更新点踩状态
+          this.isDisliked = json.data.dislike
+          this.dislikeCount = this.comment.dislikeCount + (json.data.dislike ? 1 : -1)
+
+          // 显示消息提示
+          this.message = json.data.info
+          this.showMessage = true
+        } else {
+          this.message = json.data.info || '操作失败'
+          this.showMessage = true
         }
       })
     },

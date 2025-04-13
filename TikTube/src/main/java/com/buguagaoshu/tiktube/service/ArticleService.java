@@ -103,6 +103,14 @@ public interface ArticleService extends IService<ArticleEntity> {
     PageUtils nowCategory(Map<String, Object> params, Integer id);
 
 
+    ArticleViewData getEditInfo(Long id, HttpServletRequest request);
+
+
+    /**
+     * 更新视频
+     * */
+    ReturnCodeEnum updateVideo(VideoArticleDto videoArticleDto, HttpServletRequest request);
+
 
     /**
      * 恢复视频

@@ -76,6 +76,20 @@
             </template>
           </v-tooltip>
           <span class="text-body-2" :class="{ 'text-success': isLiked }">{{ likeCount }}</span>
+          <!-- <v-tooltip text="踩" location="top">
+            <template v-slot:activator="{ props }">
+              <v-btn
+                v-bind="props"
+                size="small"
+                :variant="isDisliked ? 'flat' : 'text'"
+                :color="isDisliked ? 'error' : 'red'"
+                @click="dislike()"
+                icon="mdi-thumb-down"
+                class="mr-1"
+              ></v-btn>
+            </template>
+          </v-tooltip>
+          <span class="text-body-2" :class="{ 'text-error': isDisliked }">{{ dislikeCount }}</span> -->
         </div>
       </v-col>
     </v-row>
@@ -120,6 +134,8 @@ export default {
       likeCount: this.comment?.likeCount || 0,
       isLiked: false,
       userInfo: useUserStore(),
+      dislikeCount: this.comment?.dislikeCount || 0,
+      isDisliked: false,
     }
   },
   created() {
@@ -144,6 +160,24 @@ export default {
         if (json.status === 200) {
           this.isLiked = json.data.like
           this.likeCount += json.data.like ? 1 : -1
+          this.message = json.data.info
+          this.showMessage = true
+        } else {
+          this.message = json.data.info || '操作失败'
+          this.showMessage = true
+        }
+      })
+    },
+    dislike() {
+      if (this.userInfo.userData == null) {
+        this.showMessage = true
+        this.message = '请先登录后再点赞'
+        return
+      }
+      this.httpPost(`/dislike/toggle?dislikeObjId=${this.comment.id}&type=1`, {}, (json) => {
+        if (json.status === 200) {
+          this.isDisliked = json.data.dislike
+          this.dislikeCount += json.data.dislike ? 1 : -1
           this.message = json.data.info
           this.showMessage = true
         } else {
