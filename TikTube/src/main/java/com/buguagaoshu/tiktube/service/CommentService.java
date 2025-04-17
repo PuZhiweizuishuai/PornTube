@@ -26,7 +26,24 @@ public interface CommentService extends IService<CommentEntity> {
     CommentEntity saveComment(CommentVo commentVo, HttpServletRequest request);
 
 
+    /**
+     * 获取稿件评论列表
+     * */
     PageUtils commentList(Map<String, Object> params, long articleId, long fatherId, int type, Integer sort);
+
+
+    /**
+     * 展示所有评论列表
+     * */
+    PageUtils getAllComment(Map<String, Object> params);
+
+
+    /**
+     * 切换评论状态
+     * */
+    boolean toggleCommentStatus(long id);
+
+
 
     void addCount(String col, long commentId, long count);
 }

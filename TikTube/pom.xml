@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.buguagaoshu</groupId>
     <artifactId>tiktube</artifactId>
-    <version>0.1.5-SNAPSHOT</version>
+    <version>0.1.5</version>
     <name>PornTube</name>
     <description>一个模仿YouTube的能发弹幕的视频网站</description>
 

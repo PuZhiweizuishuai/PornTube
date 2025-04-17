@@ -74,7 +74,9 @@
 
     <v-main>
       <!--  fluid-->
-      <router-view />
+      <router-view v-slot="{ Component }">
+        <component :is="Component" ref="childRef" />
+      </router-view>
     </v-main>
   </div>
 </template>

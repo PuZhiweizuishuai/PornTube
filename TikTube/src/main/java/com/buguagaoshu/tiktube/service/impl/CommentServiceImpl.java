@@ -2,6 +2,7 @@ package com.buguagaoshu.tiktube.service.impl;
 
 import com.buguagaoshu.tiktube.entity.ArticleEntity;
 import com.buguagaoshu.tiktube.entity.UserEntity;
+import com.buguagaoshu.tiktube.enums.ArticleStatusEnum;
 import com.buguagaoshu.tiktube.enums.CommentType;
 import com.buguagaoshu.tiktube.enums.SortType;
 import com.buguagaoshu.tiktube.model.CustomPage;
@@ -140,7 +141,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, CommentEntity> i
         QueryWrapper<CommentEntity> wrapper = new QueryWrapper<>();
         wrapper.eq("article_id", articleId);
         wrapper.eq("type", type);
-        wrapper.eq("status", 0);
+        wrapper.eq("status", ArticleStatusEnum.NORMAL.getCode());
         if (type == CommentType.SECOND_COMMENT) {
             wrapper.eq("comment_id", fatherId);
         }
@@ -181,6 +182,66 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, CommentEntity> i
         );
         return new PageUtils(commentWithUserVoIPage);
     }
+
+    @Override
+    public PageUtils getAllComment(Map<String, Object> params) {
+        QueryWrapper<CommentEntity> wrapper = new QueryWrapper<>();
+        String userId = (String) params.get("userId");
+        String articleId = (String) params.get("articleId");
+        String status = (String) params.get("status");
+
+        if (userId != null) {
+            wrapper.eq("user_id", userId);
+        }
+        if (articleId != null) {
+            wrapper.eq("article_id", articleId);
+        }
+        if (status != null) {
+            wrapper.eq("status", status);
+        }
+        IPage<CommentEntity> page = this.page(
+                new Query<CommentEntity>().getPage(params),
+                wrapper
+        );
+
+        return new PageUtils(page);
+    }
+
+    @Override
+    public boolean toggleCommentStatus(long id) {
+        CommentEntity comment = this.getById(id);
+        if (comment == null) {
+            return false;
+        }
+        // 正常状态
+        if (comment.getStatus().equals(ArticleStatusEnum.NORMAL.getCode())) {
+            // 删除评论
+            comment.setStatus(ArticleStatusEnum.DELETE.getCode());
+            articleService.addCount("comment_count", comment.getArticleId(), -1L);
+            commentCountController(comment, -1L);
+        } else {
+            // 恢复评论
+            comment.setStatus(ArticleStatusEnum.NORMAL.getCode());
+            articleService.addCount("comment_count", comment.getArticleId(), 1L);
+            commentCountController(comment, 1L);
+        }
+        this.updateById(comment);
+
+        return true;
+    }
+
+    public void commentCountController(CommentEntity comment, long count) {
+        if (comment.getType().equals(CommentType.SECOND_COMMENT)) {
+            // 更新父级评论数量与目标评论数量
+            if (comment.getParentCommentId().equals(comment.getCommentId())) {
+                addCount("comment_count", comment.getCommentId(), count);
+            } else {
+                addCount("comment_count", comment.getCommentId(), count);
+                addCount("comment_count", comment.getParentCommentId(), count);
+            }
+        }
+    }
+
 
     @Override
     public void addCount(String col, long commentId, long count) {

@@ -22,6 +22,7 @@ public class VideoArticleDto {
     private String imgUrl;
 
 
+    @NotNull(message = "封面ID不能为空")
     private Long imageId;
 
 

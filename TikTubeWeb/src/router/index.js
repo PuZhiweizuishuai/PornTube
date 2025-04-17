@@ -1,8 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeLayout from '../layout/IndexLayout.vue'
-
+import checkPower from '@/utils/check-power.vue'
 // 默认网站名称
-const DEFAULT_TITLE = 'PornTube'
+const DEFAULT_TITLE = 'TikTube'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -213,6 +213,26 @@ const router = createRouter({
             requireAuth: true,
             requireAdmin: true
           }
+        },
+        {
+          path: '/admin/danmuku',
+          name: 'Danmuku', 
+          component: () => import('@/views/admin/DanmukuControlView.vue'),
+          meta: {
+            title: '弹幕管理',
+            requireAuth: true,
+            requireAdmin: true
+          }
+        },
+        {
+          path: '/admin/comment',
+          name: 'Comment',
+          component: () => import('@/views/admin/CommentControlView.vue'),
+          meta: {
+            title: '评论管理',
+            requireAuth: true,
+            requireAdmin: true
+          }
         }
       ]
     },
@@ -258,11 +278,21 @@ router.beforeEach((to, from, next) => {
   // 判断页面是否需要登录权限
   if (to.meta.requireAuth) {
     // 判断用户是否已登录，通过localStorage直接判断
-    const userData = localStorage.getItem('user')
+    const userData = JSON.parse(localStorage.getItem('user'))
     
     if (userData && userData !== 'undefined' && userData !== '') {
       // 已登录，允许访问
-      next()
+      if (to.meta.requireAdmin) {
+        if (checkPower.checkPower(userData) === "admin") {
+          next()
+        } else {
+          next({
+            path: '/',
+          })
+        }
+      } else {
+        next()
+      }
     } else {
       // 未登录，重定向到登录页面
       next({

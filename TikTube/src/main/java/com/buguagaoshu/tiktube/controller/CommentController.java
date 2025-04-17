@@ -40,4 +40,16 @@ public class CommentController {
                                        HttpServletRequest request) {
         return ResponseDetails.ok().put("data", commentService.queryPage(params, request));
     }
+
+
+    @GetMapping("/api/admin/comment/list")
+    public ResponseDetails getAllComment(@RequestParam Map<String, Object> params) {
+        return ResponseDetails.ok().put("data", commentService.getAllComment(params));
+    }
+
+
+    @PostMapping("/api/admin/comment/toggle")
+    public ResponseDetails toggleComment(@RequestBody CommentEntity commentEntity) {
+        return ResponseDetails.ok().put("data", commentService.toggleCommentStatus(commentEntity.getId()));
+    }
 }
