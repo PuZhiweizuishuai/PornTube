@@ -1,6 +1,5 @@
 package com.buguagaoshu.tiktube.service.impl;
 
-import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.buguagaoshu.tiktube.cache.CategoryCache;
 import com.buguagaoshu.tiktube.cache.WebSettingCache;
 import com.buguagaoshu.tiktube.config.WebConstant;
@@ -20,10 +19,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -48,6 +44,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
     private static final String TAG = "ArticleServiceImpl";
     private static final int MAX_TITLE_LENGTH = 50;
     private static final int MAX_DESCRIBE_LENGTH = 200;
+    private static final int ONE_DAY_MILLIS = 86400000;
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final CategoryCache categoryCache;
@@ -103,7 +100,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
      */
     private QueryWrapper<ArticleEntity> createQueryWrapper(Map<String, Object> conditions, boolean orderByDesc) {
         QueryWrapper<ArticleEntity> wrapper = new QueryWrapper<>();
-        conditions.forEach((key, value) -> wrapper.eq(key, value));
+        conditions.forEach(wrapper::eq);
         
         if (orderByDesc) {
             wrapper.orderByDesc("create_time");
@@ -125,20 +122,23 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
             return new ArrayList<>();
         }
         
-        // 收集所有用户ID
+        // 收集所有用户ID - 使用HashSet提高去重效率
         Set<Long> userIdList = articleEntityList.stream()
             .map(ArticleEntity::getUserId)
-            .collect(Collectors.toSet());
+            .collect(Collectors.toCollection(HashSet::new));
             
         if (userIdList.isEmpty()) {
             return new ArrayList<>();
         }
         
-        // 批量获取用户信息
+        // 批量获取用户信息 - 一次性查询所有用户数据
         Map<Long, UserEntity> userEntityMap = userService.userMapList(userIdList);
         
-        // 构建视图数据
-        return articleEntityList.stream().map(a -> {
+        // 获取所有分类的缓存以减少重复查询
+        Map<Integer, CategoryEntity> categoryMap = categoryCache.getCategoryEntityMap();
+        
+        // 使用并行流处理提高性能，适合数据量大的情况
+        return articleEntityList.parallelStream().map(a -> {
             ArticleViewData viewData = new ArticleViewData();
             UserEntity userEntity = userEntityMap.get(a.getUserId());
             
@@ -151,25 +151,19 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
                 viewData.setAvatarUrl(userEntity.getAvatarUrl());
             }
 
-            // 添加分类信息
-            addCategoryInfo(viewData, a.getCategory());
+            // 添加分类信息，使用缓存减少对CategoryCache的重复访问
+            Integer categoryId = a.getCategory();
+            CategoryEntity categoryEntity = categoryMap.get(categoryId);
+            if (categoryEntity != null) {
+                viewData.setChildrenCategory(categoryEntity);
+                if (categoryEntity.getFatherId() != 0) {
+                    CategoryEntity f = categoryMap.get(categoryEntity.getFatherId());
+                    viewData.setFatherCategory(f);
+                }
+            }
             
             return viewData;
         }).collect(Collectors.toList());
-    }
-
-    /**
-     * 添加分类信息到视图数据
-     */
-    private void addCategoryInfo(ArticleViewData viewData, Integer categoryId) {
-        CategoryEntity categoryEntity = categoryCache.getCategoryEntityMap().get(categoryId);
-        if (categoryEntity != null) {
-            viewData.setChildrenCategory(categoryEntity);
-            if (categoryEntity.getFatherId() != 0) {
-                CategoryEntity f = categoryCache.getCategoryEntityMap().get(categoryEntity.getFatherId());
-                viewData.setFatherCategory(f);
-            }
-        }
     }
 
     @Override
@@ -178,18 +172,30 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         long userId = JwtUtil.getUserId(request);
         
         // 参数验证
-        // 单独验证封面ID
         if (videoArticleDto.getImageId() == null) {
             return ReturnCodeEnum.DATA_VALID_EXCEPTION;
         }
-        ReturnCodeEnum validationResult = validateVideoArticleDto(videoArticleDto, userId);
+        ReturnCodeEnum validationResult = validateVideoArticleDto(videoArticleDto);
         if (validationResult != ReturnCodeEnum.SUCCESS) {
             return validationResult;
         }
         
-        // 获取文件实体
-        FileTableEntity imageFile = fileTableService.getById(videoArticleDto.getImageId());
-        FileTableEntity videoFile = fileTableService.getById(videoArticleDto.getVideo().getId());
+        // 批量获取文件实体以减少数据库查询
+        List<Long> fileIds = new ArrayList<>(2);
+        fileIds.add(videoArticleDto.getImageId());
+        fileIds.add(videoArticleDto.getVideo().getId());
+        List<FileTableEntity> files = fileTableService.listByIds(fileIds);
+        
+        if (files.size() != 2) {
+            return ReturnCodeEnum.DATA_VALID_EXCEPTION;
+        }
+        
+        // 将文件按ID分类
+        Map<Long, FileTableEntity> fileMap = files.stream()
+            .collect(Collectors.toMap(FileTableEntity::getId, file -> file));
+        
+        FileTableEntity imageFile = fileMap.get(videoArticleDto.getImageId());
+        FileTableEntity videoFile = fileMap.get(videoArticleDto.getVideo().getId());
         
         // 验证文件所有权
         if (!validateFileOwnership(imageFile, videoFile, userId)) {
@@ -204,7 +210,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         // 保存文章
         this.save(articleEntity);
         
-        // 更新文件状态
+        // 在同一事务中更新文件状态
         updateFileStatus(articleEntity.getId(), imageFile, videoFile);
         
         return ReturnCodeEnum.SUCCESS;
@@ -213,7 +219,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
     /**
      * 验证视频文章DTO
      */
-    private ReturnCodeEnum validateVideoArticleDto(VideoArticleDto dto, long userId) {
+    private ReturnCodeEnum validateVideoArticleDto(VideoArticleDto dto) {
         // 标题验证
         if (dto.getTitle().length() > MAX_TITLE_LENGTH) {
             return ReturnCodeEnum.TITLE_TO_LONG;
@@ -261,7 +267,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         }
         
         // 参数验证
-        ReturnCodeEnum validationResult = validateVideoArticleDto(videoArticleDto, userId);
+        ReturnCodeEnum validationResult = validateVideoArticleDto(videoArticleDto);
         if (validationResult != ReturnCodeEnum.SUCCESS) {
             return validationResult;
         }
@@ -328,19 +334,31 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         // 读取原始与稿件相关联的文件
         List<FileTableEntity> fileTableServiceArticle = fileTableService.findArticle(articleId);
         
-        // 将文件分类，便于处理
+        if (fileTableServiceArticle.isEmpty()) {
+            // 如果没有找到关联文件，直接设置新文件状态
+            List<FileTableEntity> updateFileList = new ArrayList<>(2);
+            updateFileAssociation(newImageFile, articleId, FileStatusEnum.USED.getCode(), updateFileList);
+            updateFileAssociation(newVideoFile, articleId, FileStatusEnum.USED.getCode(), updateFileList);
+            fileTableService.updateBatchById(updateFileList);
+            return;
+        }
+        
+        // 将文件分类并创建ID到文件的映射，提高后续查找效率
         Map<Integer, List<FileTableEntity>> fileTypeMap = fileTableServiceArticle.stream()
                 .collect(Collectors.groupingBy(FileTableEntity::getType));
+                
+        Map<Long, FileTableEntity> fileIdMap = fileTableServiceArticle.stream()
+                .collect(Collectors.toMap(FileTableEntity::getId, file -> file, (f1, f2) -> f1));
         
         List<FileTableEntity> updateFileList = new ArrayList<>();
         
         // 处理视频文件变化
-        updateVideoFileStatus(originalVideo, newVideoFile, fileTypeMap, articleId, updateFileList);
+        updateVideoFileStatus(originalVideo, newVideoFile, fileIdMap, articleId, updateFileList);
         
         // 处理图片文件变化
-        updateImageFileStatus(originalVideo, newImageFile, fileTypeMap, articleId, updateFileList);
+        updateImageFileStatus(originalVideo, newImageFile, fileTypeMap, fileIdMap, articleId, updateFileList);
 
-        // 更新修改的文件
+        // 仅当有更新时才执行批量更新操作
         if (!updateFileList.isEmpty()) {
             log.info("更新文章ID: {}，更新文件数量: {}", articleId, updateFileList.size());
             fileTableService.updateBatchById(updateFileList);
@@ -351,25 +369,30 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
      * 更新视频文件状态
      */
     private void updateVideoFileStatus(ArticleViewData originalVideo, FileTableEntity newVideoFile,
-                                      Map<Integer, List<FileTableEntity>> fileTypeMap, 
+                                       Map<Long, FileTableEntity> fileIdMap,
                                       Long articleId, List<FileTableEntity> updateFileList) {
-        // 获取原始视频文件列表
-        List<FileTableEntity> originalVideoFiles = fileTypeMap.getOrDefault(FileTypeEnum.VIDEO.getCode(), new ArrayList<>());
-        
+        // 检查原始视频信息
         if (originalVideo.getVideo() != null && !originalVideo.getVideo().isEmpty()) {
-            Long originalVideoId = originalVideo.getVideo().get(0).getId();
+            // 获取原始视频ID
+            Long originalVideoId = originalVideo.getVideo().stream()
+                .filter(v -> v.getType().equals(FileTypeEnum.VIDEO.getCode()))
+                .map(FileTableEntity::getId)
+                .findFirst()
+                .orElse(null);
             
             // 检查视频是否变化
-            if (!originalVideoId.equals(newVideoFile.getId())) {
+            if (originalVideoId != null && !originalVideoId.equals(newVideoFile.getId())) {
                 // 新视频关联到文章
                 updateFileAssociation(newVideoFile, articleId, FileStatusEnum.USED.getCode(), updateFileList);
                 
-                // 找到原始视频并修改状态
-                originalVideoFiles.stream()
-                    .filter(video -> video.getId().equals(originalVideoId))
-                    .findFirst()
-                    .ifPresent(video -> updateFileAssociation(
-                        video, articleId, FileStatusEnum.NOT_USE_FILE.getCode(), updateFileList));
+                // 找到原始视频并修改状态，使用Map直接查找提高效率
+                FileTableEntity originalV = fileIdMap.get(originalVideoId);
+                if (originalV != null) {
+                    updateFileAssociation(originalV, articleId, FileStatusEnum.NOT_USE_FILE.getCode(), updateFileList);
+                }
+            } else if (originalVideoId == null) {
+                // 如果找不到原始视频ID，关联新视频
+                updateFileAssociation(newVideoFile, articleId, FileStatusEnum.USED.getCode(), updateFileList);
             }
         } else {
             // 如果原视频列表为空，确保新视频关联到文章
@@ -382,28 +405,30 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
      */
     private void updateImageFileStatus(ArticleViewData originalVideo, FileTableEntity newImageFile,
                                      Map<Integer, List<FileTableEntity>> fileTypeMap,
+                                     Map<Long, FileTableEntity> fileIdMap,
                                      Long articleId, List<FileTableEntity> updateFileList) {
-        // 获取原始图片文件列表 - 需要包含普通图片(PHOTO)和视频封面图片(VIDEO_PHOTO)
-        List<FileTableEntity> originalImageFiles = new ArrayList<>();
-        originalImageFiles.addAll(fileTypeMap.getOrDefault(FileTypeEnum.PHOTO.getCode(), new ArrayList<>()));
-        originalImageFiles.addAll(fileTypeMap.getOrDefault(FileTypeEnum.VIDEO_PHOTO.getCode(), new ArrayList<>()));
+        // 获取原始图片URL
+        String originalImageUrl = originalVideo.getImgUrl();
         
-        // 查找与当前文章URL匹配的原始图片文件
-        FileTableEntity oldImageFile = originalImageFiles.stream()
-            .filter(img -> img.getFileUrl().equals(originalVideo.getImgUrl()))
-            .findFirst()
-            .orElse(null);
-        
-        // 检查图片是否变化
-        boolean imageChanged = oldImageFile == null || !oldImageFile.getId().equals(newImageFile.getId());
-        
-        if (imageChanged) {
-            // 新图片关联到文章
+        // 检查新图片是否与原图片不同
+        if (!newImageFile.getFileUrl().equals(originalImageUrl)) {
+            // 关联新图片
             updateFileAssociation(newImageFile, articleId, FileStatusEnum.USED.getCode(), updateFileList);
             
-            // 如果找到原始图片，将其状态修改为未使用
-            if (oldImageFile != null) {
-                updateFileAssociation(oldImageFile, articleId, FileStatusEnum.NOT_USE_FILE.getCode(), updateFileList);
+            // 查找与原图片URL匹配的文件并更新状态
+            fileTypeMap.values().stream()
+                .flatMap(List::stream)
+                .filter(file -> file.getFileUrl().equals(originalImageUrl))
+                .findFirst()
+                .ifPresent(file -> updateFileAssociation(file, articleId, FileStatusEnum.NOT_USE_FILE.getCode(), updateFileList));
+        } else if (!Objects.equals(newImageFile.getId(), originalVideo.getImageId())) {
+            // 如果URL相同但ID不同，确保新图片被正确关联
+            updateFileAssociation(newImageFile, articleId, FileStatusEnum.USED.getCode(), updateFileList);
+            
+            // 如果原图片ID存在于映射中，更新其状态
+            FileTableEntity oldImage = fileIdMap.get(originalVideo.getImageId());
+            if (oldImage != null) {
+                updateFileAssociation(oldImage, articleId, FileStatusEnum.NOT_USE_FILE.getCode(), updateFileList);
             }
         }
     }
@@ -459,13 +484,20 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
      * 更新文件状态
      */
     private void updateFileStatus(Long articleId, FileTableEntity imageFile, FileTableEntity videoFile) {
+        // 创建要更新的文件列表
         List<FileTableEntity> files = new ArrayList<>(2);
         
-        // 设置文件关联和状态
-        updateFileAssociation(videoFile, articleId, FileStatusEnum.USED.getCode(), files);
-        updateFileAssociation(imageFile, articleId, FileStatusEnum.USED.getCode(), files);
+        // 设置视频文件状态
+        videoFile.setArticleId(articleId);
+        videoFile.setStatus(FileStatusEnum.USED.getCode());
+        files.add(videoFile);
         
-        // 批量更新
+        // 设置图片文件状态
+        imageFile.setArticleId(articleId);
+        imageFile.setStatus(FileStatusEnum.USED.getCode());
+        files.add(imageFile);
+        
+        // 批量更新以减少数据库交互次数
         fileTableService.updateBatchById(files);
     }
 
@@ -523,16 +555,20 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         
         // 添加作者信息
         UserEntity author = userService.getById(article.getUserId());
-        viewData.setUsername(author.getUsername());
-        viewData.setFollowCount(author.getFollowCount());
-        viewData.setAvatarUrl(author.getAvatarUrl());
-        viewData.setIntroduction(author.getIntroduction());
+        if (author != null) {
+            viewData.setUsername(author.getUsername());
+            viewData.setFollowCount(author.getFollowCount());
+            viewData.setAvatarUrl(author.getAvatarUrl());
+            viewData.setIntroduction(author.getIntroduction());
+        }
         viewData.setDanmakuCount(article.getDanmakuCount());
 
-        // 添加视频信息
+        // 批量获取视频信息
         List<FileTableEntity> videos = fileTableService.findArticle(article.getId());
         long time = System.currentTimeMillis();
-        for (FileTableEntity video : videos) {
+        
+        // 并行处理文件列表以生成加密密钥
+        videos.parallelStream().forEach(video -> {
             video.setKey(AesUtil.encrypt(
                     userId + "#" + video.getId() + "#" + (time + WebConstant.KEY_EXPIRY_DATE) + "#" + video.getFileNewName(),
                     WebConstant.AES_KEY
@@ -540,12 +576,14 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
             if (video.getType().equals(FileTypeEnum.PHOTO.getCode()) || video.getType().equals(FileTypeEnum.VIDEO_PHOTO.getCode())) {
                 viewData.setImageId(video.getId());
             }
-        }
+        });
         viewData.setVideo(videos);
 
         // 添加标签
         try {
-            viewData.setTag((List<String>) OBJECT_MAPPER.readValue(article.getTag(), List.class));
+            if (StringUtils.hasText(article.getTag())) {
+                viewData.setTag((List<String>) OBJECT_MAPPER.readValue(article.getTag(), List.class));
+            }
         } catch (JsonProcessingException e) {
             log.warn("视频id为 {} 的投稿反序列化标签时出现异常", article.getId());
         }
@@ -678,16 +716,36 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         // 获取当前时间
         long currentTime = System.currentTimeMillis();
         // 24小时前的时间戳
-        long ago = currentTime - 86400000;
-        
+        long ago = currentTime - ONE_DAY_MILLIS;
+
         // 直接从数据库获取已经计算好热度值并排序的文章列表
         List<ArticleEntity> list = this.baseMapper.findHotArticlesWithScore(ago, num);
-        
+
         // 如果24小时内的文章不足，获取最新发布的num条内容计算热度
         if (list.size() < num) {
-            list = this.baseMapper.findLatestArticlesWithScore(num);
+            // 构造查询条件
+            Map<String, Object> conditions = Map.of(
+                    "status", ArticleStatusEnum.NORMAL.getCode(),
+                    "examine_status", ExamineTypeEnum.SUCCESS.getCode()
+            );
+            QueryWrapper<ArticleEntity> wrapper = createQueryWrapper(conditions, true);
+            wrapper.last("LIMIT " + num);
+            list = this.list(wrapper);
+            // 计算 sort 值, 播放量加权 1， 评论 2， 收藏 4， 弹幕 1.5, 点赞 2， 不喜欢 -2
+            for (ArticleEntity vd : list) {
+                double sort = vd.getViewCount()
+                        + vd.getCommentCount() * 2
+                        + vd.getFavoriteCount() * 4
+                        + vd.getDanmakuCount() * 1.5
+                        + vd.getLikeCount() * 2
+                        - vd.getDislikeCount() * 2;
+                vd.setSort(sort);
+            }
+
+            // 按照 sort 排序
+            list.sort((vd1, vd2) -> Double.compare(vd2.getSort(), vd1.getSort()));
         }
-        
+
         // 为获取的列表增加用户信息
         return addUserInfo(list);
     }
@@ -794,6 +852,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
             return new PageUtils(null);
         }
 
+        // 构建查询条件
         QueryWrapper<ArticleEntity> wrapper = new QueryWrapper<>();
         wrapper.eq("status", ArticleStatusEnum.NORMAL.getCode());
         wrapper.eq("examine_status", ExamineTypeEnum.SUCCESS.getCode());
@@ -801,11 +860,19 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         // 根据父分类或子分类筛选
         applyCategoryFilter(wrapper, categoryEntity);
         
+        // 使用排序和分页优化数据库查询
         wrapper.orderByDesc("create_time");
+        
+        // 执行分页查询
         IPage<ArticleEntity> page = this.page(
                 new Query<ArticleEntity>().getPage(params),
                 wrapper
         );
+        
+        // 处理查询结果，添加用户信息
+        if (page.getRecords().isEmpty()) {
+            return new PageUtils(page);
+        }
         
         return addUserInfo(page);
     }
@@ -816,16 +883,19 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
     private void applyCategoryFilter(QueryWrapper<ArticleEntity> wrapper, CategoryEntity categoryEntity) {
         if (categoryEntity.getFatherId() == 0) {
             // 获取所有子分类ID
-            categoryEntity = categoryCache.getCategoryMapWithChildren().get(categoryEntity.getId());
-            List<Integer> childCategoryIds = categoryEntity.getChildren().stream()
-                .map(CategoryEntity::getId)
-                .collect(Collectors.toList());
-            
-            if (childCategoryIds.isEmpty()) {
-                childCategoryIds.add(categoryEntity.getId());
+            CategoryEntity categoryWithChildren = categoryCache.getCategoryMapWithChildren().get(categoryEntity.getId());
+            if (categoryWithChildren != null && categoryWithChildren.getChildren() != null && !categoryWithChildren.getChildren().isEmpty()) {
+                // 使用流操作直接收集所有子分类ID
+                List<Integer> childCategoryIds = categoryWithChildren.getChildren().stream()
+                    .map(CategoryEntity::getId)
+                    .collect(Collectors.toList());
+                wrapper.in("category", childCategoryIds);
+            } else {
+                // 如果没有子分类，直接使用当前分类ID
+                wrapper.eq("category", categoryEntity.getId());
             }
-            wrapper.in("category", childCategoryIds);
         } else {
+            // 如果是子分类，直接使用当前分类ID
             wrapper.eq("category", categoryEntity.getId());
         }
     }
@@ -889,17 +959,44 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
             return new ArrayList<>();
         }
         
-        List<ArticleViewData> articleViewData = new ArrayList<>();
-        for (ArticleEntity article : page.getRecords()) {
-            ArticleViewData viewData = new ArticleViewData();
-            BeanUtils.copyProperties(article, viewData);
-            
-            // 添加分类信息
-            addCategoryInfo(viewData, article.getCategory());
-            
-            articleViewData.add(viewData);
-        }
+        // 获取分类缓存，避免重复查询
+        Map<Integer, CategoryEntity> categoryMap = categoryCache.getCategoryEntityMap();
         
-        return articleViewData;
+        // 使用并行流处理转换，提高大数据量处理效率
+        return page.getRecords().parallelStream()
+            .map(article -> {
+                ArticleViewData viewData = new ArticleViewData();
+                BeanUtils.copyProperties(article, viewData);
+                
+                // 添加分类信息
+                Integer categoryId = article.getCategory();
+                CategoryEntity categoryEntity = categoryMap.get(categoryId);
+                if (categoryEntity != null) {
+                    viewData.setChildrenCategory(categoryEntity);
+                    if (categoryEntity.getFatherId() != 0) {
+                        CategoryEntity f = categoryMap.get(categoryEntity.getFatherId());
+                        viewData.setFatherCategory(f);
+                    }
+                }
+                
+                return viewData;
+            })
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * 添加分类信息到视图数据
+     */
+    private void addCategoryInfo(ArticleViewData viewData, Integer categoryId) {
+        // 由于addUserInfo方法已集成类别信息的添加，此方法仅用于其他地方的单独调用
+        Map<Integer, CategoryEntity> categoryMap = categoryCache.getCategoryEntityMap();
+        CategoryEntity categoryEntity = categoryMap.get(categoryId);
+        if (categoryEntity != null) {
+            viewData.setChildrenCategory(categoryEntity);
+            if (categoryEntity.getFatherId() != 0) {
+                CategoryEntity f = categoryMap.get(categoryEntity.getFatherId());
+                viewData.setFatherCategory(f);
+            }
+        }
     }
 }

@@ -58,4 +58,7 @@ public class WebConstant {
 
 
     public final static String SYSTEM_CREATE_SCREENSHOT = "系统生成截图";
+
+
+    public final static int HOT_NUM = 100;
 }

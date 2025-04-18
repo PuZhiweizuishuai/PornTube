@@ -1,6 +1,7 @@
 package com.buguagaoshu.tiktube.schedule;
 
 import com.buguagaoshu.tiktube.cache.HotCache;
+import com.buguagaoshu.tiktube.config.WebConstant;
 import com.buguagaoshu.tiktube.service.ArticleService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,8 +16,6 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class HotTasks {
-    private final int HOT_NUM = 50;
-
     private final ArticleService articleService;
 
     @Autowired
@@ -30,7 +29,7 @@ public class HotTasks {
     @Scheduled(fixedRate = 3600000)
     public void deleteFile() {
         log.info("开始计算当前热门内容......");
-        HotCache.hotList = articleService.hotView(HOT_NUM);
+        HotCache.hotList = articleService.hotView(WebConstant.HOT_NUM);
         log.info("热门内容计算完成。");
     }
 }
