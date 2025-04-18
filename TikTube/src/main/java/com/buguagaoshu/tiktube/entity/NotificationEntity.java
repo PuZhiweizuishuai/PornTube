@@ -35,6 +35,13 @@ public class NotificationEntity {
 	 */
 	private Long outerId;
 
+	private String title;
+
+	/**
+	 * html 类型的超链接信息
+	 * */
+	private String linkMessage;
+
 	/**
 	 * 评论内容
 	 */
@@ -46,7 +53,8 @@ public class NotificationEntity {
 	private Long commentId;
 
 	/**
-	 * 类型 【0 回复帖子， 1 回复评论，2 收到点赞  3 系统通知】
+	 * 类型 【0 回复帖子， 1 回复评论，2 收到点赞 】
+	 * 更多信息见 {@link  com.buguagaoshu.tiktube.enums.NotificationType} 枚举类
 	 */
 	private Integer type;
 
@@ -55,9 +63,10 @@ public class NotificationEntity {
 	 */
 	private Long createTime;
 
+	private Long readTime;
+
 	/**
 	 * 【0 未读， 1 已读】
 	 */
 	private Integer status;
-
 }

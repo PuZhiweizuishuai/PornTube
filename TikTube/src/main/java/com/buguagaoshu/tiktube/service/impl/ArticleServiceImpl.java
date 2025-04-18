@@ -117,7 +117,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
      */
     public PageUtils addUserInfo(IPage<ArticleEntity> page) {
         List<ArticleViewData> articleViewData = addUserInfo(page.getRecords());
-        return new PageUtils(createArticleViewData(articleViewData, page));
+        return new PageUtils(articleViewData, page.getTotal(), page.getSize(), page.getCurrent());
     }
 
     public List<ArticleViewData> addUserInfo(List<ArticleEntity> articleEntityList) {
@@ -586,8 +586,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
                 new Query<ArticleEntity>().getPage(params),
                 wrapper
         );
-
-        return new PageUtils(createArticleViewData(addArticleCategory(page), page));
+        return new PageUtils(addArticleCategory(page), page.getTotal(), page.getSize(), page.getCurrent());
     }
 
     @Override
@@ -633,8 +632,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
                 new Query<ArticleEntity>().getPage(params),
                 wrapper
         );
-        
-        return new PageUtils(createArticleViewData(addArticleCategory(page), page));
+        return new PageUtils(addArticleCategory(page), page.getTotal(), page.getSize(), page.getCurrent());
     }
 
     @Override
@@ -652,6 +650,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         
         // 更新审核状态
         updateExamineStatus(articleEntity, examineDto, userId);
+        articleEntity.setUpdateTime(System.currentTimeMillis());
         this.updateById(articleEntity);
         
         // 更新用户提交计数
@@ -676,65 +675,21 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
 
     @Override
     public List<ArticleViewData> hotView(int num) {
-        List<ArticleEntity> list = findHotArticles(num);
-        
-        // 为获取的 list 列表增加用户信息
-        List<ArticleViewData> viewData = addUserInfo(list);
-        
-        // 计算热度值并排序
-        calculateHotScore(viewData);
-        
-        return viewData;
-    }
-    
-    /**
-     * 查找热门文章
-     */
-    private List<ArticleEntity> findHotArticles(int num) {
         // 获取当前时间
         long currentTime = System.currentTimeMillis();
-        // 查询24小时内发布的帖子
+        // 24小时前的时间戳
         long ago = currentTime - 86400000;
         
-        // 构造查询条件
-        Map<String, Object> conditions = Map.of(
-            "status", ArticleStatusEnum.NORMAL.getCode(),
-            "examine_status", ExamineTypeEnum.SUCCESS.getCode()
-        );
+        // 直接从数据库获取已经计算好热度值并排序的文章列表
+        List<ArticleEntity> list = this.baseMapper.findHotArticlesWithScore(ago, num);
         
-        QueryWrapper<ArticleEntity> wrapper = createQueryWrapper(conditions, true);
-        wrapper.ge("create_time", ago);
-        
-        // 查询24小时内发布的内容
-        List<ArticleEntity> list = this.list(wrapper);
-        
-        // 如果 24 小时内发布的内容数量不够，则查询过去发布的 num 个内容
+        // 如果24小时内的文章不足，获取最新发布的num条内容计算热度
         if (list.size() < num) {
-            wrapper = createQueryWrapper(conditions, true);
-            wrapper.last("LIMIT " + num);
-            list = this.list(wrapper);
+            list = this.baseMapper.findLatestArticlesWithScore(num);
         }
         
-        return list;
-    }
-    
-    /**
-     * 计算热度分数并排序
-     */
-    private void calculateHotScore(List<ArticleViewData> viewData) {
-        // 计算 sort 值, 播放量加权 1， 评论 2， 收藏 4， 弹幕 1.5, 点赞 2， 不喜欢 -2
-        for (ArticleViewData vd : viewData) {
-            double sort = vd.getViewCount()
-                    + vd.getCommentCount() * 2
-                    + vd.getFavoriteCount() * 4
-                    + vd.getDanmakuCount() * 1.5
-                    + vd.getLikeCount() * 2
-                    - vd.getDislikeCount() * 2;
-            vd.setSort(sort);
-        }
-        
-        // 按照 sort 排序
-        viewData.sort((vd1, vd2) -> Double.compare(vd2.getSort(), vd1.getSort()));
+        // 为获取的列表增加用户信息
+        return addUserInfo(list);
     }
 
     @Override
@@ -925,58 +880,6 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         this.baseMapper.addCount(col, articleId, count);
     }
 
-    /**
-     * 创建文章视图数据分页对象
-     */
-    public IPage<ArticleViewData> createArticleViewData(List<ArticleViewData> articleViewData,
-                                                        IPage<ArticleEntity> page) {
-        return new IPage<ArticleViewData>() {
-            @Override
-            public List<OrderItem> orders() {
-                return null;
-            }
-
-            @Override
-            public List<ArticleViewData> getRecords() {
-                return articleViewData;
-            }
-
-            @Override
-            public IPage<ArticleViewData> setRecords(List<ArticleViewData> records) {
-                return null;
-            }
-
-            @Override
-            public long getTotal() {
-                return page.getTotal();
-            }
-
-            @Override
-            public IPage<ArticleViewData> setTotal(long total) {
-                return null;
-            }
-
-            @Override
-            public long getSize() {
-                return page.getSize();
-            }
-
-            @Override
-            public IPage<ArticleViewData> setSize(long size) {
-                return null;
-            }
-
-            @Override
-            public long getCurrent() {
-                return page.getCurrent();
-            }
-
-            @Override
-            public IPage<ArticleViewData> setCurrent(long current) {
-                return null;
-            }
-        };
-    }
 
     /**
      * 为文章添加分类信息

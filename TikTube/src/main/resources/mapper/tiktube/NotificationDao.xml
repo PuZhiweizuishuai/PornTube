@@ -9,10 +9,13 @@
         <result property="notifier" column="notifier"/>
         <result property="receiver" column="receiver"/>
         <result property="outerId" column="outer_id"/>
+        <result property="title" column="title"/>
+        <result property="linkMessage" column="link_message" />
         <result property="commentContent" column="comment_content"/>
         <result property="commentId" column="comment_id"/>
         <result property="type" column="type"/>
         <result property="createTime" column="create_time"/>
+        <result property="readTime" column="read_time"/>
         <result property="status" column="status"/>
     </resultMap>
 

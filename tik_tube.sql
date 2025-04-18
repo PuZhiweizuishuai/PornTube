@@ -258,15 +258,22 @@ CREATE TABLE `notification`  (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `notifier` bigint NOT NULL COMMENT '通知发送人ID',
   `receiver` bigint NOT NULL COMMENT '通知接收人ID',
+  `title` varchar(999) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci COMMENT '标题',
   `outer_id` bigint NOT NULL COMMENT '外部ID，如主帖子ID',
+  `link_message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '消息链接',
   `comment_content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '评论内容',
   `comment_id` bigint NULL DEFAULT -1 COMMENT '评论目标ID',
   `type` int NOT NULL COMMENT '类型 【0 回复帖子， 1 回复评论，2 收到点赞  3 系统通知】',
   `create_time` bigint NOT NULL,
+  `read_time` bigint NOT NULL,
   `status` int NOT NULL DEFAULT 0 COMMENT '【0 未读， 1 已读】',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `find_notification_by_notifier`(`notifier`) USING BTREE,
-  INDEX `find_notification_by_receiver`(`receiver`) USING BTREE
+  INDEX `find_notification_by_notifier` (`notifier`) USING BTREE,
+  INDEX `find_notification_by_receiver` (`receiver`) USING BTREE,
+  INDEX `idx_receiver_status` (`receiver`, `status`) USING BTREE,
+  INDEX `idx_receiver_create_time` (`receiver`, `create_time`) USING BTREE,
+  INDEX `idx_outer_id` (`outer_id`) USING BTREE,
+  INDEX `idx_comment_id` (`comment_id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '通知表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------

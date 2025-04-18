@@ -44,5 +44,43 @@
         update article set danmaku_count = danmaku_count + #{count} where id = #{id}
     </update>
 
+    <select id="findHotArticlesWithScore" resultMap="articleMap">
+        SELECT *,
+               (
+                   view_count +
+                   comment_count * 2 +
+                   favorite_count * 4 +
+                   danmaku_count * 1.5 +
+                   like_count * 2 -
+                   dislike_count * 2
+               ) AS hot_score
+        FROM article
+        WHERE status = 0
+          AND examine_status = 1
+          <if test="startTime > 0">
+              AND update_time >= #{startTime}
+          </if>
+        ORDER BY hot_score DESC
+        <if test="limit > 0">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <select id="findLatestArticlesWithScore" resultMap="articleMap">
+        SELECT *,
+               (
+                   view_count +
+                   comment_count * 2 +
+                   favorite_count * 4 +
+                   danmaku_count * 1.5 +
+                   like_count * 2 -
+                   dislike_count * 2
+               ) AS hot_score
+        FROM article
+        WHERE status = 0
+          AND examine_status = 1
+        ORDER BY update_time DESC
+        LIMIT #{limit}
+    </select>
 
 </mapper>
