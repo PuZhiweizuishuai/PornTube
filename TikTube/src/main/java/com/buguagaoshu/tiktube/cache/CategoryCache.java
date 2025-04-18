@@ -41,4 +41,6 @@ public class CategoryCache {
     public void setCategoryEntityMap(Map<Integer, CategoryEntity> categoryEntityMap) {
         this.categoryEntityMap = categoryEntityMap;
     }
+
+
 }

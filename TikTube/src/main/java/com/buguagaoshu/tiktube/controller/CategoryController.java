@@ -3,13 +3,12 @@ package com.buguagaoshu.tiktube.controller;
 import com.buguagaoshu.tiktube.cache.CategoryCache;
 import com.buguagaoshu.tiktube.entity.CategoryEntity;
 import com.buguagaoshu.tiktube.service.ArticleService;
+import com.buguagaoshu.tiktube.service.CategoryService;
 import com.buguagaoshu.tiktube.vo.ResponseDetails;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -23,10 +22,15 @@ public class CategoryController {
 
     private final ArticleService articleService;
 
+    private final CategoryService categoryService;
+
     @Autowired
-    public CategoryController(CategoryCache categoryCache, ArticleService articleService) {
+    public CategoryController(CategoryCache categoryCache,
+                              ArticleService articleService,
+                              CategoryService categoryService) {
         this.categoryCache = categoryCache;
         this.articleService = articleService;
+        this.categoryService = categoryService;
     }
 
     @GetMapping("/api/category/list")
@@ -54,5 +58,27 @@ public class CategoryController {
                                        @PathVariable(value = "id") Integer id) {
 
         return ResponseDetails.ok().put("data", articleService.nowCategory(params, id));
+    }
+
+
+    @PostMapping("/api/admin/category/update")
+    public ResponseDetails updateCategory(@RequestBody CategoryEntity categoryEntity) {
+        return ResponseDetails.ok().put("data", categoryService.updateCategory(categoryEntity));
+    }
+
+
+    @PostMapping("/api/admin/category/save")
+    public ResponseDetails saveCategory(@RequestBody CategoryEntity categoryEntity) {
+        CategoryEntity category = categoryService.saveCategory(categoryEntity);
+        Map<String, Object> info = new HashMap<>();
+        info.put("info", "添加成功！");
+        info.put("data", category);
+        return ResponseDetails.ok().put("data", info);
+    }
+
+
+    @PostMapping("/api/admin/category/delete")
+    public ResponseDetails deleteCategory(@RequestBody CategoryEntity categoryEntity) {
+        return ResponseDetails.ok().put("data", categoryService.deleteCategory(categoryEntity.getId()));
     }
 }

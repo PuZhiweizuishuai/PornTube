@@ -39,6 +39,17 @@ public interface DanmakuService extends IService<DanmakuEntity> {
     ReturnCodeEnum saveArtDanmaku(ArtDanmakuDto danmakuDto, HttpServletRequest request);
 
 
+    /**
+     * 获取所有弹幕列表（管理员接口）
+     */
+    PageUtils getAllDanmaku(Map<String, Object> params);
+
+    /**
+     * 切换弹幕状态（管理员接口）
+     */
+    boolean toggleDanmakuStatus(long id);
+
+
     List<DanmakuEntity> artDanmakuList(Long id, Integer max);
 }
 

@@ -3,9 +3,11 @@ package com.buguagaoshu.tiktube.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.buguagaoshu.tiktube.dto.LoginDetails;
 import com.buguagaoshu.tiktube.dto.PasswordDto;
+import com.buguagaoshu.tiktube.entity.UserRoleEntity;
 import com.buguagaoshu.tiktube.enums.ReturnCodeEnum;
 import com.buguagaoshu.tiktube.utils.PageUtils;
 import com.buguagaoshu.tiktube.entity.UserEntity;
+import com.buguagaoshu.tiktube.vo.AdminAddUserData;
 import com.buguagaoshu.tiktube.vo.User;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -80,5 +82,16 @@ public interface UserService extends IService<UserEntity> {
      * 添加视频上传数
      * */
     void addSubmitCount(Long userId,  int count);
+
+
+    UserRoleEntity updateRole(UserRoleEntity userRole, HttpServletRequest request);
+
+    /**
+     * 管理员重置密码
+     * */
+    String resetPassword(UserEntity userEntity);
+
+
+    ReturnCodeEnum addUser(AdminAddUserData userEntity,  HttpServletRequest request);
 }
 

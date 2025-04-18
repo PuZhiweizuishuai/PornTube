@@ -199,6 +199,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, CommentEntity> i
         if (status != null) {
             wrapper.eq("status", status);
         }
+        wrapper.orderByDesc("update_time");
         IPage<CommentEntity> page = this.page(
                 new Query<CommentEntity>().getPage(params),
                 wrapper
@@ -208,11 +209,13 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, CommentEntity> i
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean toggleCommentStatus(long id) {
         CommentEntity comment = this.getById(id);
         if (comment == null) {
             return false;
         }
+        comment.setUpdateTime(System.currentTimeMillis());
         // 正常状态
         if (comment.getStatus().equals(ArticleStatusEnum.NORMAL.getCode())) {
             // 删除评论

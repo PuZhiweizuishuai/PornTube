@@ -117,6 +117,8 @@ CREATE TABLE `danmaku`  (
   `type` int NULL DEFAULT NULL COMMENT '类型',
   `author` bigint NOT NULL COMMENT '作者',
   `color_dec` bigint NOT NULL COMMENT '十进制颜色数据',
+  `status` int NULL DEFAULT 0 COMMENT '类型',
+  `create_time` bigint NOT NULL,
   `ua` varchar(999),
   `ip` varchar(255),
   `city` varchar(255),

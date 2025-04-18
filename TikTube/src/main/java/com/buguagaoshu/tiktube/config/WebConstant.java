@@ -1,5 +1,7 @@
 package com.buguagaoshu.tiktube.config;
 
+import java.util.UUID;
+
 /**
  * @author Pu Zhiwei {@literal puzhiweipuzhiwei@foxmail.com}
  * create          2020-09-11 14:48
@@ -12,14 +14,16 @@ public class WebConstant {
 
     /**
      * JWT 密钥
+     * TODO： 修改为随机生成
      * */
     public final static String SECRET_KEY = "adfads@44$q232343#";
 
 
     /**
      * AES 加密密钥
+     * 使用 UUID 每次启动随机生成
      * */
-    public final static String AES_KEY = "dfdsj#$^!##kjo()r458";
+    public final static String AES_KEY = UUID.randomUUID().toString();
 
 
     /**

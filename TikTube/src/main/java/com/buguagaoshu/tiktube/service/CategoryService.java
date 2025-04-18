@@ -23,5 +23,23 @@ public interface CategoryService extends IService<CategoryEntity> {
     List<CategoryEntity> listWithTree();
 
     Map<Integer, CategoryEntity> categoryEntityMap();
+
+
+    /**
+     * 删除分类
+     * */
+    Map<String, String> deleteCategory(Integer id);
+
+    /**
+     * 创建分类
+     * */
+    CategoryEntity saveCategory(CategoryEntity entity);
+
+
+    /**
+     * 修改分类
+     * */
+    Map<String, String> updateCategory(CategoryEntity entity);
+
 }
 

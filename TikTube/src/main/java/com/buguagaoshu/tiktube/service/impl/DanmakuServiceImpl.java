@@ -3,12 +3,12 @@ package com.buguagaoshu.tiktube.service.impl;
 import com.buguagaoshu.tiktube.dto.ArtDanmakuDto;
 import com.buguagaoshu.tiktube.dto.DanmakuDto;
 import com.buguagaoshu.tiktube.entity.FileTableEntity;
+import com.buguagaoshu.tiktube.enums.ArticleStatusEnum;
 import com.buguagaoshu.tiktube.enums.ReturnCodeEnum;
 import com.buguagaoshu.tiktube.exception.UserNotLoginException;
 import com.buguagaoshu.tiktube.service.ArticleService;
 import com.buguagaoshu.tiktube.service.FileTableService;
-import com.buguagaoshu.tiktube.utils.DanmakuUtils;
-import com.buguagaoshu.tiktube.utils.JwtUtil;
+import com.buguagaoshu.tiktube.utils.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -17,8 +17,6 @@ import java.util.*;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.buguagaoshu.tiktube.utils.PageUtils;
-import com.buguagaoshu.tiktube.utils.Query;
 
 
 import com.buguagaoshu.tiktube.dao.DanmakuDao;
@@ -26,6 +24,7 @@ import com.buguagaoshu.tiktube.entity.DanmakuEntity;
 import com.buguagaoshu.tiktube.service.DanmakuService;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * @author Pu Zhiwei
@@ -120,6 +119,7 @@ public class DanmakuServiceImpl extends ServiceImpl<DanmakuDao, DanmakuEntity> i
      * 区别在于 dplayer 的 mode 为 type
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public ReturnCodeEnum saveArtDanmaku(ArtDanmakuDto danmakuDto, HttpServletRequest request) {
         long userId = -1;
         try {
@@ -136,12 +136,14 @@ public class DanmakuServiceImpl extends ServiceImpl<DanmakuDao, DanmakuEntity> i
 
         DanmakuEntity danmakuEntity = new DanmakuEntity();
         danmakuEntity.setAuthor(userId);
-
+        danmakuEntity.setCreateTime(System.currentTimeMillis());
         danmakuEntity.setVideoId(danmakuDto.getId());
         danmakuEntity.setText(danmakuDto.getText());
         danmakuEntity.setColor(danmakuDto.getColor());
         danmakuEntity.setTime(danmakuDto.getTime());
         danmakuEntity.setType(danmakuDto.getType());
+        danmakuEntity.setIp(IpUtil.getIpAddr(request));
+        danmakuEntity.setUa(IpUtil.getUa(request));
         // TODO 升级完成后这部分可以删除
         // 去掉开头的 # 符号
         String cleanHex = danmakuDto.getColor().replace("#", "");
@@ -151,6 +153,53 @@ public class DanmakuServiceImpl extends ServiceImpl<DanmakuDao, DanmakuEntity> i
         // TODO 加入缓存，提升效率
         articleService.addDanmakuCount(fileTableEntity.getArticleId(), 1L);
         return ReturnCodeEnum.SUCCESS;
+    }
+
+    @Override
+    public PageUtils getAllDanmaku(Map<String, Object> params) {
+        QueryWrapper<DanmakuEntity> wrapper = new QueryWrapper<>();
+        String userId = (String) params.get("userId");
+        String videoId = (String) params.get("videoId");
+        String status = (String) params.get("status");
+
+        if (userId != null) {
+            wrapper.eq("author", userId);
+        }
+        if (videoId != null) {
+            wrapper.eq("video_id", videoId);
+        }
+        if (status != null) {
+            wrapper.eq("status", status);
+        }
+        wrapper.orderByDesc("create_time");
+
+        IPage<DanmakuEntity> page = this.page(
+                new Query<DanmakuEntity>().getPage(params),
+                wrapper
+        );
+
+        return new PageUtils(page);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean toggleDanmakuStatus(long id) {
+        DanmakuEntity danmaku = this.getById(id);
+        if (danmaku == null) {
+            return false;
+        }
+        FileTableEntity fileTableEntity = fileTableService.getById(danmaku.getVideoId());
+        // 切换状态：正常 <-> 删除
+        if (danmaku.getStatus().equals(ArticleStatusEnum.NORMAL.getCode())) {
+            danmaku.setStatus(ArticleStatusEnum.DELETE.getCode());
+            articleService.addDanmakuCount(fileTableEntity.getArticleId(), -1L);
+        } else {
+            danmaku.setStatus(ArticleStatusEnum.NORMAL.getCode());
+            articleService.addDanmakuCount(fileTableEntity.getArticleId(), 1L);
+        }
+
+        this.updateById(danmaku);
+        return true;
     }
 
     @Override

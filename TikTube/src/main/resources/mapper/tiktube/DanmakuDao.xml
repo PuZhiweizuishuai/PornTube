@@ -13,6 +13,8 @@
         <result property="type" column="type"/>
         <result property="author" column="author"/>
         <result property="colorDec" column="color_dec"/>
+        <result property="status" column="status"/>
+        <result property="createTime" column="create_time" />
         <result property="ua" column="ua"/>
         <result property="ip" column="ip"/>
         <result property="city" column="city"/>

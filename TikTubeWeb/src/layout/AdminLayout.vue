@@ -62,7 +62,7 @@
             </v-col>
           </v-row>
         </router-link>
-        <v-list>
+        <v-list class="flex-grow-1 overflow-y-auto">
           <v-list-item
             v-for="item in items"
             :key="item.text"

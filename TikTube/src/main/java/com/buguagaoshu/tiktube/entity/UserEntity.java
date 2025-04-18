@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import jakarta.validation.constraints.Email;
@@ -31,6 +33,7 @@ public class UserEntity {
 	 * 用户名
 	 */
 	@NotBlank(message = "用户名不能为空")
+	@Size(min = 3, max = 50, message = "用户名长度必须在 3 到 50 个字符之间")
 	private String username;
 
 	/**
@@ -38,17 +41,20 @@ public class UserEntity {
 	 */
 	@Email(message = "邮箱格式不正确")
 	@NotBlank(message = "邮箱不能为空")
+	@Size(min = 1, max = 200, message = "邮箱过长")
 	private String mail;
 
 	/**
 	 * 密码
 	 */
 	@NotBlank(message = "密码不能为空")
+	@Size(min = 6, max = 50, message = "密码长度不能小于6位")
 	private String password;
 
 	/**
 	 * 手机号
 	 */
+	@Size(min = 6, max = 50, message = "电话长度错误")
 	private String phone;
 
 	/**

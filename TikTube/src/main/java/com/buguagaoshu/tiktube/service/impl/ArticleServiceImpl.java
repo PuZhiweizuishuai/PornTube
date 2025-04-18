@@ -866,9 +866,10 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
                 .map(CategoryEntity::getId)
                 .collect(Collectors.toList());
             
-            if (!childCategoryIds.isEmpty()) {
-                wrapper.in("category", childCategoryIds);
+            if (childCategoryIds.isEmpty()) {
+                childCategoryIds.add(categoryEntity.getId());
             }
+            wrapper.in("category", childCategoryIds);
         } else {
             wrapper.eq("category", categoryEntity.getId());
         }

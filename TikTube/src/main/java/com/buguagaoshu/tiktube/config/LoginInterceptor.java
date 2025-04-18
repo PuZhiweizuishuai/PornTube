@@ -4,6 +4,7 @@ import com.buguagaoshu.tiktube.entity.UserRoleEntity;
 import com.buguagaoshu.tiktube.enums.RoleTypeEnum;
 import com.buguagaoshu.tiktube.service.UserRoleService;
 import com.buguagaoshu.tiktube.utils.JwtUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.Cookie;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +14,11 @@ import org.springframework.web.util.WebUtils;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import java.io.PrintWriter;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Pu Zhiwei {@literal puzhiweipuzhiwei@foxmail.com}
@@ -65,6 +71,18 @@ public class LoginInterceptor implements HandlerInterceptor {
             //request.setAttribute(WebConstant.ROLE_KEY, role);
             return true;
         }
+        response.setContentType("application/json;charset=UTF-8");
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // 401 状态码
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("status", 0);
+        result.put("message", "登录过期或未登录");
+        result.put("timestamp", LocalDateTime.now().toString());
+
+        PrintWriter writer = response.getWriter();
+        writer.write(new ObjectMapper().writeValueAsString(result));
+        writer.flush();
+        writer.close();
         return false;
     }
 }

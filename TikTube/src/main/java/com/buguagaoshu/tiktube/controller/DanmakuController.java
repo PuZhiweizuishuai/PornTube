@@ -3,6 +3,7 @@ package com.buguagaoshu.tiktube.controller;
 import com.buguagaoshu.tiktube.config.DPlayerConstants;
 import com.buguagaoshu.tiktube.dto.ArtDanmakuDto;
 import com.buguagaoshu.tiktube.dto.DanmakuDto;
+import com.buguagaoshu.tiktube.entity.DanmakuEntity;
 import com.buguagaoshu.tiktube.enums.ReturnCodeEnum;
 import com.buguagaoshu.tiktube.service.DanmakuService;
 import com.buguagaoshu.tiktube.vo.ResponseDetails;
@@ -11,6 +12,8 @@ import org.springframework.web.bind.annotation.*;
 
 
 import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.Map;
 
 
 /**
@@ -60,6 +63,23 @@ public class DanmakuController {
             return ResponseDetails.ok(codeEnum).put("code", 1);
         }
         return ResponseDetails.ok(codeEnum).put("code", 0);
+    }
+
+    /**
+     * 获取所有弹幕列表（管理员接口）
+     */
+    @GetMapping("/api/admin/danmaku/list")
+    public ResponseDetails getAllDanmaku(@RequestParam Map<String, Object> params) {
+        return ResponseDetails.ok().put("data", danmakuService.getAllDanmaku(params));
+    }
+
+
+    /**
+     * 切换弹幕状态（管理员接口）
+     */
+    @PostMapping("/api/admin/danmaku/toggle")
+    public ResponseDetails toggleDanmakuStatus(@RequestBody DanmakuEntity danmakuEntity) {
+        return ResponseDetails.ok().put("data", danmakuService.toggleDanmakuStatus(danmakuEntity.getId()));
     }
 
 }

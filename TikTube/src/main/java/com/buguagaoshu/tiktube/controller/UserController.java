@@ -4,7 +4,9 @@ import com.buguagaoshu.tiktube.config.WebConstant;
 import com.buguagaoshu.tiktube.dto.LoginDetails;
 import com.buguagaoshu.tiktube.dto.PasswordDto;
 import com.buguagaoshu.tiktube.entity.UserEntity;
+import com.buguagaoshu.tiktube.entity.UserRoleEntity;
 import com.buguagaoshu.tiktube.service.UserService;
+import com.buguagaoshu.tiktube.vo.AdminAddUserData;
 import com.buguagaoshu.tiktube.vo.ResponseDetails;
 import com.buguagaoshu.tiktube.vo.User;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -98,4 +100,23 @@ public class UserController {
     public ResponseDetails userList(@RequestParam Map<String, Object> params) {
         return ResponseDetails.ok().put("data", userService.userList(params));
     }
+
+    @PostMapping("/api/admin/user/update/role")
+    public ResponseDetails updateUserRole(@RequestBody UserRoleEntity userRole,
+                                          HttpServletRequest request) {
+        return ResponseDetails.ok().put("data", userService.updateRole(userRole, request));
+    }
+
+    @PostMapping("/api/admin/user/update/pwd")
+    public ResponseDetails resetPassword(@RequestBody UserEntity userEntity) {
+        return ResponseDetails.ok().put("data", userService.resetPassword(userEntity));
+    }
+
+    @PostMapping("/api/admin/user/add")
+    public ResponseDetails adminAddUser(@RequestBody AdminAddUserData adminAddUserData,
+                                        HttpServletRequest request) {
+        return ResponseDetails.ok(userService.addUser(adminAddUserData, request));
+    }
+
+
 }

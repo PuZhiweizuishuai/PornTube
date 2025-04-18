@@ -828,7 +828,7 @@ export default {
 
       // 构建更新数据
       const roleData = {
-        userId: this.selectedUser.id,
+        userid: this.selectedUser.id,
         role: this.selectedRole,
       }
 
@@ -849,16 +849,16 @@ export default {
 
       // 发送更新请求
       this.updateRoleLoading = true
-      // 这里是模拟请求，实际项目中应替换为真实的API调用
-      // this.httpPost('/admin/user/update-role', roleData, (res) => {})
-
-      setTimeout(() => {
-        // 模拟请求成功
+      this.httpPost('/admin/user/update/role', roleData, (json) => {
+        if (json.data != null) {
+          this.showSnackbar('用户角色更新成功')
+          this.fetchUsers() // 刷新列表
+        } else {
+          this.showSnackbar('用户角色更新失败', 'error')
+        }
         this.updateRoleLoading = false
         this.roleDialog = false
-        this.showSnackbar('用户角色更新成功')
-        this.fetchUsers() // 刷新列表
-      }, 500)
+      })
     },
     openResetPasswordDialog(user) {
       this.selectedUser = user
@@ -869,25 +869,15 @@ export default {
       if (!this.selectedUser) return
 
       this.resetLoading = true
-      // 实际项目应该使用API调用
-      // this.httpPost('/admin/user/reset-password', {userId: this.selectedUser.id}, (res) => {})
-
-      // 模拟API响应
-      setTimeout(() => {
+      this.httpPost('/admin/user/update/pwd', { id: this.selectedUser.id }, (json) => {
+        if (json.data != '') {
+          this.newPassword = json.data
+          this.showSnackbar('密码重置成功', 'success')
+        } else {
+          this.showSnackbar('密码重置失败', 'error')
+        }
         this.resetLoading = false
-        // 模拟生成一个随机密码
-        this.newPassword = this.generateRandomPassword(12)
-        this.showSnackbar('密码重置成功', 'success')
-      }, 800)
-    },
-    generateRandomPassword(length) {
-      const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*'
-      let password = ''
-      for (let i = 0; i < length; i++) {
-        const randomIndex = Math.floor(Math.random() * charset.length)
-        password += charset[randomIndex]
-      }
-      return password
+      })
     },
     copyToClipboard(text) {
       navigator.clipboard.writeText(text).then(
@@ -969,17 +959,17 @@ export default {
         userData.vipStopTime = new Date(this.newUser.endDate).getTime()
       }
 
-      this.addUserLoading = true
-      // 实际项目应该使用API调用
-      // this.httpPost('/admin/user/add', userData, (res) => {})
+      //this.addUserLoading = true
 
-      // 模拟API响应
-      setTimeout(() => {
-        this.addUserLoading = false
-        this.addUserDialog = false
-        this.showSnackbar('用户创建成功')
-        this.fetchUsers() // 刷新列表
-      }, 800)
+      this.httpPost('/admin/user/add', userData, (json) => {
+        if (json.status == 200) {
+          this.showSnackbar('用户创建成功')
+          this.fetchUsers() // 刷新列表
+          this.addUserDialog = false
+        } else {
+          this.showSnackbar(json.message, 'error')
+        }
+      })
     },
     showSnackbar(text, color = 'success') {
       this.snackbarText = text

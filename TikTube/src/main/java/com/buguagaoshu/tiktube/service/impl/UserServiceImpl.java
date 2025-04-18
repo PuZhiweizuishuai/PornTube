@@ -11,15 +11,13 @@ import com.buguagaoshu.tiktube.enums.RoleTypeEnum;
 import com.buguagaoshu.tiktube.exception.UserNotFoundException;
 import com.buguagaoshu.tiktube.service.*;
 import com.buguagaoshu.tiktube.utils.*;
+import com.buguagaoshu.tiktube.vo.AdminAddUserData;
 import com.buguagaoshu.tiktube.vo.User;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -168,7 +166,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public ReturnCodeEnum register(UserEntity userEntity, HttpServletRequest request) {
         // 验证码校验
         verifyCodeService.verify(request.getSession().getId(), userEntity.getVerifyCode());
@@ -269,6 +267,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public ReturnCodeEnum updatePassword(PasswordDto passwordDto,
                                          HttpServletRequest request,
                                          HttpServletResponse response) {
@@ -337,6 +336,78 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
     @Override
     public void addSubmitCount(Long userId, int count) {
         this.baseMapper.addSubmitCount(userId, count);
+    }
+
+    @Override
+    public UserRoleEntity updateRole(UserRoleEntity userRole, HttpServletRequest request) {
+        long userId = JwtUtil.getUserId(request);
+        UserRoleEntity roleEntity = userRoleService.findByUserId(userRole.getUserid());
+        if (roleEntity == null) {
+            return null;
+        }
+        if (RoleTypeEnum.check(userRole.getRole())) {
+            userRole.setId(roleEntity.getId());
+            userRole.setUpdateTime(System.currentTimeMillis());
+            userRole.setModified(userId);
+            userRoleService.updateById(userRole);
+            return userRole;
+        }
+        return null;
+    }
+
+    @Override
+    public String resetPassword(UserEntity userEntity) {
+        // 查找用户
+        UserEntity user = this.getById(userEntity.getId());
+        if (user == null) {
+            return "";
+        }
+        String newPwd = UUID.randomUUID().toString()
+                .replace("-", "")
+                .substring(0, 10);
+        user.setPassword(PasswordUtil.encode(newPwd));
+        this.updateById(user);
+        return newPwd;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ReturnCodeEnum addUser(AdminAddUserData userEntity, HttpServletRequest request) {
+        long adminID = JwtUtil.getUserId(request);
+        long time = System.currentTimeMillis();
+        if (!RoleTypeEnum.check(userEntity.getRole())) {
+            return ReturnCodeEnum.DATA_VALID_EXCEPTION;
+        }
+        UserEntity sys = findUserByEmail(userEntity.getMail());
+        // 检验手机号邮箱是否已被使用
+        if (sys != null) {
+            return ReturnCodeEnum.USER_EMAIL_ALREADY_EXISTS;
+        }
+        if (userEntity.getPhone() != null && VerifyFieldUtil.phoneNumber(userEntity.getPhone())) {
+            sys = findUserByPhone(userEntity.getPhone());
+            if (sys != null) {
+                return ReturnCodeEnum.USER_PHONE_ALREADY_EXISTS;
+            }
+        }
+        UserEntity user = new UserEntity();
+        user.setPhone(userEntity.getPhone());
+        user.setMail(userEntity.getMail());
+        user.setCreateTime(time);
+        user.setUsername(userEntity.getUsername());
+        user.setPassword(PasswordUtil.encode(userEntity.getPassword()));
+        user.setAvatarUrl("/images/head.png");
+        user.setTopImgUrl("/images/top.png");
+        save(user);
+        UserRoleEntity userRoleEntity = new UserRoleEntity();
+        userRoleEntity.setModified(adminID);
+        userRoleEntity.setCreateTime(time);
+        userRoleEntity.setUpdateTime(time);
+        userRoleEntity.setUserid(user.getId());
+        userRoleEntity.setRole(userEntity.getRole());
+        userRoleEntity.setVipStartTime(userEntity.getVipStartTime());
+        userRoleEntity.setVipStopTime(userEntity.getVipStopTime());
+        userRoleService.save(userRoleEntity);
+        return ReturnCodeEnum.SUCCESS;
     }
 
 

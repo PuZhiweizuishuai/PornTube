@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 
 import java.util.List;
 
+import com.buguagaoshu.tiktube.valid.ListValue;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
@@ -31,6 +32,7 @@ public class CategoryEntity {
 	/**
 	 * 分区级别【1 一级分区， 2 二级分区】
 	 */
+	@ListValue(value = {1,2}, message = "此数值必须为1或者2")
 	private Integer type;
 
 	/**

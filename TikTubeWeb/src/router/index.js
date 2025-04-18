@@ -26,7 +26,7 @@ const router = createRouter({
         },
         {
           path: '/v/:id',
-          name: 'Category',
+          name: 'CategoryView',
           component: () => import('@/views/category/CategoryView.vue'),
           meta: { title: '分区' }
         },
@@ -230,6 +230,16 @@ const router = createRouter({
           component: () => import('@/views/admin/CommentControlView.vue'),
           meta: {
             title: '评论管理',
+            requireAuth: true,
+            requireAdmin: true
+          }
+        },
+        {
+          path: '/admin/category',
+          name: 'Category',
+          component: () => import('@/views/admin/CategoryController.vue'),
+          meta: {
+            title: '分类管理',
             requireAuth: true,
             requireAdmin: true
           }

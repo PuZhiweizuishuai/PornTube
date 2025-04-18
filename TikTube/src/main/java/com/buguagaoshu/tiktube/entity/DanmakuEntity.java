@@ -52,6 +52,9 @@ public class DanmakuEntity {
 	 * */
 	private Long colorDec;
 
+	private Integer status;
+
+	private long createTime;
 
 	private String ip;
 

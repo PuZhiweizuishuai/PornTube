@@ -580,7 +580,7 @@ export default {
 }
 </script>
 
-<style>
+<style scoped>
 .v-data-table-server th {
   font-weight: 600 !important;
   background-color: #f5f5f5;
