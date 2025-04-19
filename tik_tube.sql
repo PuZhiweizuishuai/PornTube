@@ -323,6 +323,7 @@ CREATE TABLE `user`  (
   `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '密码',
   `phone` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '手机号',
   `create_time` bigint NOT NULL COMMENT '创建时间',
+  `last_publish_time` bigint NOT NULL COMMENT '上次投稿时间',
   `submit_count` bigint NOT NULL DEFAULT 0 COMMENT '提交视频，图片，文章数',
   `follow_count` bigint NOT NULL DEFAULT 0 COMMENT '关注数',
   `fans_count` bigint NOT NULL DEFAULT 0 COMMENT '粉丝数',
@@ -349,6 +350,21 @@ CREATE TABLE `user_role`  (
   `modified` bigint NOT NULL COMMENT '修改人',
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for follow
+-- ----------------------------
+DROP TABLE IF EXISTS `follow`;
+CREATE TABLE `follow`  (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `follow_user` bigint NOT NULL COMMENT '关注的用户ID',
+  `create_user` bigint NOT NULL COMMENT '创建关注的用户ID',
+  `create_time` bigint NULL DEFAULT NULL COMMENT '关注时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `find_follow_user`(`follow_user`) USING BTREE,
+  INDEX `find_create_user`(`create_user`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+
 
 -- ----------------------------
 -- Table structure for web_setting

@@ -14,6 +14,7 @@ import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 视频，图片，文章 发帖表
@@ -50,6 +51,12 @@ public interface ArticleService extends IService<ArticleEntity> {
      * @return 分页结果
      * */
     PageUtils userArticleList(Map<String, Object> params, Long id, Integer type);
+
+
+    /**
+     * 获取关注用户的稿件
+     * */
+    PageUtils fallowUserArticleList(Map<String, Object> params, Set<Long> userIds);
 
 
     /**

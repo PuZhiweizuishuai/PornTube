@@ -92,6 +92,11 @@ public class UserEntity {
 	 */
 	private String topImgUrl;
 
+	/**
+	 * 上次投稿时间
+	 * */
+	private Long lastPublishTime;
+
 
 	@NotBlank(message = "验证码不为空")
 	@TableField(exist = false)
@@ -100,4 +105,16 @@ public class UserEntity {
 
 	@TableField(exist = false)
 	private String invitationCode;
+
+	@TableField(exist = false)
+	private boolean friend;
+
+
+	public void clean() {
+		this.password = null;
+		this.phone = null;
+		this.mail = null;
+		this.invitationCode = null;
+		this.verifyCode = null;
+	}
 }

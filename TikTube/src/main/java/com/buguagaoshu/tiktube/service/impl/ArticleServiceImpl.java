@@ -209,10 +209,10 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         ArticleEntity articleEntity = buildArticleEntity(videoArticleDto, userId, imageFile, videoFile);
         articleEntity.setIp(IpUtil.getIpAddr(request));
         articleEntity.setUa(IpUtil.getUa(request));
-        
+
         // 保存文章
         this.save(articleEntity);
-        
+        userService.updateLastPublishTime(System.currentTimeMillis(), userId);
         // 在同一事务中更新文件状态
         updateFileStatus(articleEntity.getId(), imageFile, videoFile);
         
@@ -561,6 +561,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         if (author != null) {
             viewData.setUsername(author.getUsername());
             viewData.setFollowCount(author.getFollowCount());
+            viewData.setFansCount(author.getFansCount());
             viewData.setAvatarUrl(author.getAvatarUrl());
             viewData.setIntroduction(author.getIntroduction());
         }
@@ -628,6 +629,20 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
                 wrapper
         );
         return new PageUtils(addArticleCategory(page), page.getTotal(), page.getSize(), page.getCurrent());
+    }
+
+    @Override
+    public PageUtils fallowUserArticleList(Map<String, Object> params, Set<Long> userIds) {
+        QueryWrapper<ArticleEntity> wrapper = new QueryWrapper<>();
+        wrapper.eq("status", ArticleStatusEnum.NORMAL.getCode());
+        wrapper.eq("examine_status", ExamineTypeEnum.SUCCESS.getCode());
+        wrapper.in("user_id", userIds);
+        wrapper.orderByDesc("update_time");
+        IPage<ArticleEntity> page = this.page(
+                new Query<ArticleEntity>().getPage(params),
+                wrapper
+        );
+        return addUserInfo(page);
     }
 
     @Override

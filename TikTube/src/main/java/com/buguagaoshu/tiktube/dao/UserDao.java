@@ -15,4 +15,10 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface UserDao extends BaseMapper<UserEntity> {
 	void addSubmitCount(@Param("userId") long userId, @Param("count") int count);
+
+
+	void addCount(@Param("col") String col, @Param("userId") long userId, @Param("count") int count);
+
+
+	void updateLastPublishTime(@Param("time") long time, @Param("userId") long userId);
 }

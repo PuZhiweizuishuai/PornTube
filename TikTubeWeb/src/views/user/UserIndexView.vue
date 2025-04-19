@@ -41,7 +41,14 @@
                   <div class="text-subtitle-1 mr-3">
                     粉丝: <span class="font-weight-bold">{{ userInfo.fansCount }}</span>
                   </div>
-                  <v-btn color="primary" size="small" prepend-icon="mdi-account-plus"> 关注 </v-btn>
+                  <v-btn
+                    :color="isFollowed ? 'grey' : 'primary'"
+                    size="small"
+                    :prepend-icon="isFollowed ? 'mdi-account-check' : 'mdi-account-plus'"
+                    @click="toggleFollow"
+                  >
+                    {{ isFollowed ? '已关注' : '关注' }}
+                  </v-btn>
                 </div>
               </div>
             </div>
@@ -82,8 +89,13 @@
               <div class="text-subtitle-1 mr-4">
                 粉丝数： <span class="font-weight-bold">{{ userInfo.fansCount }}</span>
               </div>
-              <v-btn color="primary" variant="elevated" prepend-icon="mdi-account-plus">
-                关注他
+              <v-btn
+                :color="isFollowed ? 'grey' : 'primary'"
+                variant="elevated"
+                :prepend-icon="isFollowed ? 'mdi-account-check' : 'mdi-account-plus'"
+                @click="toggleFollow"
+              >
+                {{ isFollowed ? '已关注' : '关注他' }}
               </v-btn>
             </div>
           </v-card>
@@ -134,6 +146,14 @@
         />
       </v-row>
     </v-container>
+
+    <!-- 消息提示组件 -->
+    <v-snackbar v-model="snackbar.show" :color="snackbar.color" :timeout="3000" location="top">
+      {{ snackbar.text }}
+      <template v-slot:actions>
+        <v-btn variant="text" @click="snackbar.show = false">关闭</v-btn>
+      </template>
+    </v-snackbar>
   </v-container>
 </template>
 
@@ -161,6 +181,12 @@ export default {
       totalCount: 0,
       type: 0,
       loginUser: useUserStore().userData,
+      isFollowed: false, // 是否已关注
+      snackbar: {
+        show: false,
+        text: '',
+        color: 'success',
+      },
     }
   },
   created() {
@@ -168,15 +194,17 @@ export default {
     this.id = parseInt(this.$route.params.id)
     this.getUserInfo()
     this.geVideoList()
+    this.checkFollow()
   },
   methods: {
     getUserInfo() {
       this.httpGet(`/user/info/${this.id}`, (json) => {
+        if (json.data.id === -1) {
+          this.$router.push('/')
+          return
+        }
         this.userInfo = json.data
         document.title = useWebInfoStore().webInfo.name + ' - ' + json.data.username
-        if (json.data.id === -1) {
-          this.$router.push('/404')
-        }
       })
     },
     geVideoList() {
@@ -189,6 +217,73 @@ export default {
           this.totalCount = json.data.totalCount
         }
       )
+    },
+    followUser() {
+      if (!this.loginUser) {
+        this.showMessage('请先登录后再关注', 'error')
+        return
+      }
+      const data = {
+        followUser: this.id,
+        createUser: this.loginUser.id,
+      }
+      this.httpPost('/follow/add', data, (json) => {
+        if (json.data) {
+          this.isFollowed = true
+          this.userInfo.fansCount++
+          this.showMessage('关注成功', 'success')
+        } else {
+          this.showMessage('关注失败，请稍后重试', 'error')
+        }
+      })
+    },
+    delelteFollow() {
+      if (!this.loginUser) {
+        this.showMessage('请先登录', 'error')
+        return
+      }
+      const data = {
+        followUser: this.id,
+        createUser: this.loginUser.id,
+      }
+      this.httpPost('/follow/delete', data, (json) => {
+        if (json.data) {
+          this.isFollowed = false
+          this.userInfo.fansCount--
+          this.showMessage('已取消关注', 'info')
+        } else {
+          this.showMessage('取消关注失败，请稍后重试', 'error')
+        }
+      })
+    },
+    checkFollow() {
+      if (!this.loginUser) {
+        this.isFollowed = false
+        return
+      }
+
+      this.httpGet(`/follow/check?followId=${this.id}`, (json) => {
+        this.isFollowed = json.data
+      })
+    },
+    // 切换关注状态
+    toggleFollow() {
+      if (!this.loginUser) {
+        this.showMessage('请先登录后再关注', 'error')
+        return
+      }
+
+      if (this.isFollowed) {
+        this.delelteFollow()
+      } else {
+        this.followUser()
+      }
+    },
+    // 显示消息提示
+    showMessage(text, color = 'success') {
+      this.snackbar.text = text
+      this.snackbar.color = color
+      this.snackbar.show = true
     },
     pageChange(page) {
       this.page = page

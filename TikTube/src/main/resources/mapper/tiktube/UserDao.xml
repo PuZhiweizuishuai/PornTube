@@ -17,10 +17,15 @@
         <result property="avatarUrl" column="avatar_url"/>
         <result property="topImgUrl" column="top_img_url"/>
         <result property="introduction" column="introduction"/>
+        <result property="lastPublishTime" column="last_publish_time"/>
     </resultMap>
-    <insert id="addSubmitCount">
+    <update id="addSubmitCount">
          update user set submit_count = submit_count + #{count} where id = #{userId}
-    </insert>
-
-
+    </update>
+    <update id="addCount">
+        update user set ${col} = ${col} + #{count} where id = #{userId}
+    </update>
+    <update id="updateLastPublishTime">
+        update user set last_publish_time = ${time} where id = #{userId}
+    </update>
 </mapper>

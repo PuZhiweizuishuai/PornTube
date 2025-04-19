@@ -50,6 +50,11 @@ public class ArticleViewData {
     private Long favoriteCount;
 
     /**
+     * 粉丝数
+     */
+    private Long fansCount;
+
+    /**
      * 不喜欢次数
      */
     private Long dislikeCount;

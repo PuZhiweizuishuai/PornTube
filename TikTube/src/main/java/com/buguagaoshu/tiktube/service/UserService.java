@@ -93,5 +93,11 @@ public interface UserService extends IService<UserEntity> {
 
 
     ReturnCodeEnum addUser(AdminAddUserData userEntity,  HttpServletRequest request);
+
+
+    void addCount(String col, Long userId, int count);
+
+
+    void updateLastPublishTime(long time, long userId);
 }
 

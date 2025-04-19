@@ -27,6 +27,10 @@
 
 <img src="/img/history.png" title="历史记录" alt="历史记录">
 
+### 订阅
+
+<img src="/img/subscribe.png" title="订阅" alt="订阅">
+
 ### 用户主页
 
 <img src="/img/user.png" title="个人主页" alt="个人主页">
@@ -91,7 +95,7 @@ mvn clean package
 **之后**
 
 ```bash
-java -jar target/tiktube-*-SNAPSHOT
+java -jar target/tiktube-*
 ```
 
 **运行前端服务**

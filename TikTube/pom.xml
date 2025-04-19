@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.buguagaoshu</groupId>
     <artifactId>tiktube</artifactId>
-    <version>0.1.5</version>
+    <version>1.0.0-beta</version>
     <name>PornTube</name>
     <description>一个模仿YouTube的能发弹幕的视频网站</description>
 
@@ -18,7 +18,7 @@
         <java.version>17</java.version>
         <mybatis-plus.version>3.5.11</mybatis-plus.version>
         <jjwt.version>0.9.1</jjwt.version>
-        <javacv.version>1.5.7</javacv.version>
+        <javacv.version>1.5.11</javacv.version>
     </properties>
 
     <repositories>
@@ -59,13 +59,31 @@
         <dependency>
             <groupId>javax.xml.bind</groupId>
             <artifactId>jaxb-api</artifactId>
-            <version>2.3.0</version>
+            <version>2.3.1</version>
         </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt</artifactId>
             <version>${jjwt.version}</version>
         </dependency>
+<!--        尝试升级到最新版本 jjwt 但是出现了 jakarta.servlet.ServletException: Handler dispatch failed: java.lang.NoClassDefFoundError: 错误，等待解决后再升级-->
+<!--        <dependency>-->
+<!--            <groupId>io.jsonwebtoken</groupId>-->
+<!--            <artifactId>jjwt-api</artifactId>-->
+<!--            <version>${jjwt.version}</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>io.jsonwebtoken</groupId>-->
+<!--            <artifactId>jjwt-impl</artifactId>-->
+<!--            <version>${jjwt.version}</version>-->
+<!--&lt;!&ndash;            <scope>runtime</scope>&ndash;&gt;-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>io.jsonwebtoken</groupId>-->
+<!--            <artifactId>jjwt-jackson</artifactId>-->
+<!--            <version>${jjwt.version}</version>-->
+<!--&lt;!&ndash;            <scope>runtime</scope>&ndash;&gt;-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.bytedeco</groupId>
             <artifactId>javacv-platform</artifactId>

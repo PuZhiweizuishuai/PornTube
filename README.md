@@ -58,7 +58,7 @@ mvn clean package
 **Then**
 
 ```bash
-java -jar target/tiktube-*-SNAPSHOT
+java -jar target/tiktube-
 ```
 
 **Run front end server**
@@ -100,6 +100,10 @@ http://127.0.0.1:5173
 ### History
 
 <img src="/img/history.png" title="History" alt="History">
+
+### Subscribe
+
+<img src="/img/subscribe.png" title="Subscribe" alt="Subscribe">
 
 ### User Home
 

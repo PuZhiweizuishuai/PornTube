@@ -417,6 +417,16 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
         return ReturnCodeEnum.SUCCESS;
     }
 
+    @Override
+    public void addCount(String col, Long userId, int count) {
+        this.baseMapper.addCount(col, userId, count);
+    }
+
+    @Override
+    public void updateLastPublishTime(long time, long userId) {
+        this.baseMapper.updateLastPublishTime(time, userId);
+    }
+
 
     public UserEntity findUserByEmail(String email) {
         return this.getOne(new QueryWrapper<UserEntity>().eq("mail", email));

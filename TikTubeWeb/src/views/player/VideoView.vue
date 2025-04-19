@@ -108,9 +108,17 @@
                     <div class="text-caption text-grey">个性签名: {{ videoData.introduction }}</div>
                   </div>
                   <v-spacer></v-spacer>
-                  <v-btn variant="outlined" density="comfortable" color="primary" class="ml-2"
-                    >关注：{{ videoData.followCount }}</v-btn
+                  <v-btn
+                    v-if="videoData.userId !== userInfo.userData?.id"
+                    :color="isFollowed ? 'grey' : 'primary'"
+                    :variant="isFollowed ? 'flat' : 'outlined'"
+                    density="comfortable"
+                    class="ml-2"
+                    :prepend-icon="isFollowed ? 'mdi-account-check' : 'mdi-account-plus'"
+                    @click="toggleFollow"
                   >
+                    {{ videoData.fansCount }} {{ isFollowed ? '已关注' : '关注' }}
+                  </v-btn>
                 </div>
               </v-col>
             </v-row>
@@ -195,6 +203,7 @@ export default {
       isLiked: false,
       isDisliked: false,
       isFavorited: false,
+      isFollowed: false,
       userInfo: useUserStore(),
       snackbar: {
         show: false,
@@ -238,6 +247,7 @@ export default {
           this.checkLike()
           this.checkDislike()
           this.checkFavorites()
+          this.checkFollow()
         } else {
           // TODO 显示 404
           this.$router.push('/')
@@ -292,6 +302,79 @@ export default {
         }
       })
     },
+    // 关注功能
+    toggleFollow() {
+      if (this.userInfo.userData == null) {
+        this.showMessage('请先登录后再关注', 'warning')
+        return
+      }
+
+      if (this.isFollowed) {
+        this.unfollowUser()
+      } else {
+        this.followUser()
+      }
+    },
+
+    followUser() {
+      if (this.userInfo.userData == null) {
+        this.showMessage('请先登录后再关注', 'warning')
+        return
+      }
+
+      const data = {
+        followUser: this.videoData.userId,
+        createUser: this.userInfo.userData.id,
+      }
+
+      this.httpPost('/follow/add', data, (json) => {
+        if (json.data) {
+          this.isFollowed = true
+          if (this.videoData.fansCount !== undefined) {
+            this.videoData.fansCount += 1
+          }
+          this.showMessage('关注成功', 'success')
+        } else {
+          this.showMessage('关注失败，请稍后重试', 'error')
+        }
+      })
+    },
+
+    unfollowUser() {
+      if (this.userInfo.userData == null) {
+        this.showMessage('请先登录', 'warning')
+        return
+      }
+
+      const data = {
+        followUser: this.videoData.userId,
+        createUser: this.userInfo.userData.id,
+      }
+
+      this.httpPost('/follow/delete', data, (json) => {
+        if (json.data) {
+          this.isFollowed = false
+          if (this.videoData.fansCount !== undefined && this.videoData.fansCount > 0) {
+            this.videoData.fansCount -= 1
+          }
+          this.showMessage('已取消关注', 'info')
+        } else {
+          this.showMessage('取消关注失败，请稍后重试', 'error')
+        }
+      })
+    },
+
+    checkFollow() {
+      if (this.userInfo.userData == null || this.videoData.userId === this.userInfo.userData.id) {
+        this.isFollowed = false
+        return
+      }
+
+      this.httpGet(`/follow/check?followId=${this.videoData.userId}`, (json) => {
+        this.isFollowed = json.data
+      })
+    },
+
     checkLike() {
       if (this.userInfo.userData == null) {
         this.isLiked = false
