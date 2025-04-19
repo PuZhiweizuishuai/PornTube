@@ -37,7 +37,7 @@
             class="text-decoration-none"
             target="_blank"
           >
-            @{{ comment.username }}:
+            @{{ comment.parentUserName }}:
           </router-link>
         </div>
         <ShowMarkdown :markdown="comment.comment" :anchor="0" />

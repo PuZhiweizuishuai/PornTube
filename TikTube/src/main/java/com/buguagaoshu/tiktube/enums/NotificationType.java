@@ -34,4 +34,19 @@ public enum NotificationType {
     public String getMessage() {
         return message;
     }
+
+
+    public static String createExamineContent(String title, int type, String message) {
+        return "你发布的稿件《" +
+                title +
+                "》因为：" +
+                ExamineTypeEnum.getMsg(type) +
+                " 未通过审核，建议您：" +
+                message;
+    }
+
+
+    public static String createExamineLink(String title, Long id) {
+        return "<a href=\"/studio/upload?edit=" + id + "\">" + title + "</a>";
+    }
 }

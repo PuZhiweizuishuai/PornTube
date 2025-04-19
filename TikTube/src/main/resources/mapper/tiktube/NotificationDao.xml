@@ -9,9 +9,10 @@
         <result property="notifier" column="notifier"/>
         <result property="receiver" column="receiver"/>
         <result property="outerId" column="outer_id"/>
+        <result property="articleId" column="article_id"/>
         <result property="title" column="title"/>
         <result property="linkMessage" column="link_message" />
-        <result property="commentContent" column="comment_content"/>
+        <result property="content" column="content"/>
         <result property="commentId" column="comment_id"/>
         <result property="type" column="type"/>
         <result property="createTime" column="create_time"/>
@@ -19,5 +20,10 @@
         <result property="status" column="status"/>
     </resultMap>
 
+    <update id="updateAllNotificationStatus">
+        UPDATE notification
+        SET status = #{status}, read_time = #{readTime}
+        WHERE receiver = #{userId} AND status = 0
+    </update>
 
 </mapper>

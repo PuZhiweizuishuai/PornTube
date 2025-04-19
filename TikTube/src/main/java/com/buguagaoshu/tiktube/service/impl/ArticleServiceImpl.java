@@ -53,18 +53,21 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
     private final UserService userService;
     private final UserRoleService userRoleService;
     private PlayRecordingService playRecordingService;
+    private NotificationService notificationService;
 
     @Autowired
-    public ArticleServiceImpl(CategoryCache categoryCache, 
-                             WebSettingCache webSettingCache, 
-                             FileTableService fileTableService, 
-                             UserService userService, 
-                             UserRoleService userRoleService) {
+    public ArticleServiceImpl(CategoryCache categoryCache,
+                              WebSettingCache webSettingCache,
+                              FileTableService fileTableService,
+                              UserService userService,
+                              UserRoleService userRoleService,
+                              NotificationService notificationService) {
         this.categoryCache = categoryCache;
         this.webSettingCache = webSettingCache;
         this.fileTableService = fileTableService;
         this.userService = userService;
         this.userRoleService = userRoleService;
+        this.notificationService = notificationService;
     }
 
     @Autowired
@@ -530,7 +533,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         }
         
         // 如果不是管理员，且视频未通过审核
-        if (!isAdmin && articleEntity.getExamineStatus() != ExamineTypeEnum.SUCCESS.getCode()) {
+        if (!isAdmin && articleEntity.getExamineStatus() != ExamineTypeEnum.SUCCESS.getCode() && !articleEntity.getUserId().equals(articleEntity.getUserId())) {
             return createHiddenArticleView();
         }
         
@@ -674,10 +677,11 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public ReturnCodeEnum examine(ExamineDto examineDto, HttpServletRequest request) {
         ArticleEntity articleEntity = this.getById(examineDto.getVideoId());
         long userId = JwtUtil.getUserId(request);
-        
+        long time = System.currentTimeMillis();
         if (articleEntity == null) {
             return ReturnCodeEnum.NOO_FOUND;
         }
@@ -687,29 +691,36 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         }
         
         // 更新审核状态
-        updateExamineStatus(articleEntity, examineDto, userId);
-        articleEntity.setUpdateTime(System.currentTimeMillis());
+        if (examineDto.getResult()) {
+            // 审通过
+            articleEntity.setExamineStatus(ExamineTypeEnum.SUCCESS.getCode());
+            // 只有审核通过才增加投稿数量
+            userService.addSubmitCount(articleEntity.getUserId(), 1);
+        } else {
+            // 不通过
+            articleEntity.setExamineStatus(examineDto.getType());
+            notificationService.sendNotification(
+                    userId,
+                    articleEntity.getUserId(),
+                    articleEntity.getId(),
+                    articleEntity.getId(),
+                    -1,
+                    "稿件未通过审核",
+                    NotificationType.createExamineLink(articleEntity.getTitle(), articleEntity.getId()),
+                    NotificationType.createExamineContent(articleEntity.getTitle(), examineDto.getType(), examineDto.getMessage()),
+                    NotificationType.SYSTEM
+            );
+        }
+        articleEntity.setUpdateTime(time);
+        articleEntity.setExamineUser(userId);
+        articleEntity.setExamineMessage(examineDto.getMessage());
+
+
         this.updateById(articleEntity);
-        
-        // 更新用户提交计数
-        userService.addSubmitCount(articleEntity.getUserId(), 1);
-        
         return ReturnCodeEnum.SUCCESS;
     }
     
-    /**
-     * 更新文章审核状态
-     */
-    private void updateExamineStatus(ArticleEntity article, ExamineDto examineDto, long userId) {
-        if (examineDto.getResult()) {
-            article.setExamineStatus(ExamineTypeEnum.SUCCESS.getCode());
-        } else {
-            article.setExamineStatus(ExamineTypeEnum.getStatus(examineDto.getType()));
-        }
-        article.setUpdateTime(System.currentTimeMillis());
-        article.setExamineUser(userId);
-        article.setExamineMessage(examineDto.getMessage());
-    }
+
 
     @Override
     public List<ArticleViewData> hotView(int num) {

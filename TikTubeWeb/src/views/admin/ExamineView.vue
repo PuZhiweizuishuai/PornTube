@@ -153,9 +153,11 @@
                 <v-select
                   v-model="errorType"
                   :items="examineItem"
+                  item-title="message"
+                  item-value="code"
                   label="不通过原因"
                   variant="outlined"
-                  @update:model-value="getErrorString"
+                  @update:model-value="getErrorCode"
                 ></v-select>
               </v-col>
             </v-row>
@@ -197,7 +199,7 @@ export default {
     return {
       showMessage: false,
       message: '',
-      errorType: '',
+      errorType: 0,
       selectedStatus: null,
       examineMessage: '',
       examineStatus: ['通过', '不通过'],
@@ -258,11 +260,11 @@ export default {
     },
     resetForm() {
       this.selectedStatus = null
-      this.errorType = ''
+      this.errorType = 0
       this.examineMessage = ''
       this.showError = false
     },
-    getErrorString(value) {
+    getErrorCode(value) {
       this.errorType = value
     },
     getexamineStatus(value) {

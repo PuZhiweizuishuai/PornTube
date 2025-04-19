@@ -1,5 +1,6 @@
 package com.buguagaoshu.tiktube.dto;
 
+import com.buguagaoshu.tiktube.valid.ListValue;
 import lombok.Data;
 
 /**
@@ -16,7 +17,8 @@ public class ExamineDto {
     private Boolean result;
 
 
-    private String type;
+    @ListValue(value = {0,1,2,3,4,20})
+    private Integer type;
 
     private String message;
 }

@@ -32,7 +32,12 @@
       <!-- 通知 -->
       <v-tooltip location="bottom" text="通知">
         <template v-slot:activator="{ props }">
-          <v-btn v-bind="props" icon="mdi-bell"></v-btn>
+          <v-btn v-if="notificationCount > 0" v-bind="props" stacked @click="goToNotification()">
+            <v-badge color="error" :content="notificationCount">
+              <v-icon>mdi-bell</v-icon>
+            </v-badge>
+          </v-btn>
+          <v-btn v-else v-bind="props" icon="mdi-bell" @click="goToNotification()"></v-btn>
         </template>
       </v-tooltip>
       <AppBarHead v-if="userInfo.userData != null"></AppBarHead>
@@ -125,9 +130,11 @@ export default {
       { icon: 'mdi-account-multiple', text: '粉丝管理', link: '/studio/fans' },
     ],
     userInfo: useUserStore(),
+    notificationCount: 0,
   }),
   created() {
     this.webInfo = useWebInfoStore().webInfo
+    this.getNotificationCount()
   },
   methods: {
     onClick() {
@@ -141,6 +148,14 @@ export default {
     },
     goToPublish() {
       this.$router.push('/studio/upload')
+    },
+    goToNotification() {
+      this.$router.push('/notification')
+    },
+    getNotificationCount() {
+      this.httpGet('/notification/count', (json) => {
+        this.notificationCount = json.data
+      })
     },
   },
   watch: {

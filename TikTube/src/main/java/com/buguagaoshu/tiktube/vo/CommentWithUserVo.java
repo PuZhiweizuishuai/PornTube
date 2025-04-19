@@ -37,6 +37,8 @@ public class CommentWithUserVo {
      */
     private Long parentUserId;
 
+    private String parentUserName;
+
     /**
      * 喜欢数
      */

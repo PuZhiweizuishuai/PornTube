@@ -33,7 +33,9 @@ public enum ExamineTypeEnum {
     PENDING_REVIEW(0, "待审核"),
     SUCCESS(1, "审核通过！"),
     GOVERNMENT(2, "反动、色情、低俗、暴力、血腥、赌博等违法内容；"),
-    CULTS(3, "宣扬邪教、封建迷信；")
+    CULTS(3, "宣扬邪教、封建迷信；"),
+    DISTURBING_SOCIAL_ORDER(4, "扰乱社会秩序，破坏民族团结"),
+    OTHER(20, "其它原因")
     ;
 
     int code;
@@ -44,13 +46,13 @@ public enum ExamineTypeEnum {
         this.msg = msg;
     }
 
-    public static int getStatus(String msg) {
+    public static String getMsg(int code) {
         for (ExamineTypeEnum e : ExamineTypeEnum.values()) {
-            if (SUCCESS.getMsg().equals(msg)) {
-                return e.getCode();
+            if (e.getCode() == code) {
+                return e.getMsg();
             }
         }
-        return 0;
+        return "待审核";
     }
 
     public int getCode() {

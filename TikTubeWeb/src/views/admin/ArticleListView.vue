@@ -228,6 +228,8 @@
                 <v-select
                   v-model="rejectionType"
                   :items="examineItems"
+                  item-title="message"
+                  item-value="code"
                   label="不通过原因"
                   variant="outlined"
                 ></v-select>
@@ -314,7 +316,7 @@ export default {
       selectedItem: null,
       selectedStatus: null,
       showRejectionOptions: false,
-      rejectionType: '',
+      rejectionType: 0,
       examineMessage: '',
       examineStatus: ['通过', '不通过'],
       examineItems: [],
@@ -433,7 +435,7 @@ export default {
     },
     resetExamineForm() {
       this.selectedStatus = null
-      this.rejectionType = ''
+      this.rejectionType = 0
       this.examineMessage = ''
       this.showRejectionOptions = false
     },

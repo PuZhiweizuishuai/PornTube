@@ -31,21 +31,24 @@ public class NotificationEntity {
 	private Long receiver;
 
 	/**
-	 * 外部ID，如主帖子ID
+	 * 外部ID，如主帖子ID,评论ID
 	 */
 	private Long outerId;
+
+
+	private long articleId;
 
 	private String title;
 
 	/**
-	 * html 类型的超链接信息
+	 * 链接信息
 	 * */
 	private String linkMessage;
 
 	/**
-	 * 评论内容
+	 * 内容
 	 */
-	private String commentContent;
+	private String content;
 
 	/**
 	 * 评论目标ID

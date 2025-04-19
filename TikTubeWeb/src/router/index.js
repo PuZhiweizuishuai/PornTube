@@ -31,6 +31,15 @@ const router = createRouter({
           meta: { title: '分区' }
         },
         {
+          path: '/notification',
+          name: 'Notification',
+          component: () => import('@/views/notification/NotificationView.vue'),
+          meta: { 
+            title: '消息通知',
+            requireAuth: true
+          }
+        },
+        {
           path: '/user/setting',
           name: 'UserSetting',
           component: () => import('@/views/user/SettingView.vue'),

@@ -102,7 +102,7 @@
                 {{ getStatusText(item.examineStatus) }}
               </v-chip>
               <div
-                v-if="item.examineStatus !== 1 && item.examineMessage"
+                v-if="item.examineStatus !== 1 && item.examineStatus !== 0"
                 class="mt-2 text-caption text-red"
               >
                 {{ item.examineMessage }}

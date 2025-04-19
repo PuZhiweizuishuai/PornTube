@@ -13,7 +13,9 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Pu Zhiwei {@literal puzhiweipuzhiwei@foxmail.com}
@@ -33,9 +35,15 @@ public class ExamineController {
     @GetMapping("/api/examine/item")
     public ResponseDetails examineTypeItem() {
 
-        List<String> item = new ArrayList<>();
+        List<Map<String, Object>> item = new ArrayList<>();
         for (ExamineTypeEnum e : ExamineTypeEnum.values()) {
-            item.add(e.getMsg());
+            if (e.getCode() == ExamineTypeEnum.PENDING_REVIEW.getCode() || e.getCode() == ExamineTypeEnum.SUCCESS.getCode()) {
+                continue;
+            }
+            Map<String, Object> map = new HashMap<>();
+            map.put("code", e.getCode());
+            map.put("message", e.getMsg());
+            item.add(map);
         }
         return ResponseDetails.ok().put("data", item);
     }

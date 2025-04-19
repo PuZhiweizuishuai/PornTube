@@ -4,12 +4,13 @@ import com.buguagaoshu.tiktube.entity.ArticleEntity;
 import com.buguagaoshu.tiktube.entity.UserEntity;
 import com.buguagaoshu.tiktube.enums.ArticleStatusEnum;
 import com.buguagaoshu.tiktube.enums.CommentType;
+import com.buguagaoshu.tiktube.enums.NotificationType;
 import com.buguagaoshu.tiktube.enums.SortType;
 import com.buguagaoshu.tiktube.model.CustomPage;
 import com.buguagaoshu.tiktube.service.ArticleService;
+import com.buguagaoshu.tiktube.service.NotificationService;
 import com.buguagaoshu.tiktube.service.UserService;
-import com.buguagaoshu.tiktube.utils.IpUtil;
-import com.buguagaoshu.tiktube.utils.JwtUtil;
+import com.buguagaoshu.tiktube.utils.*;
 import com.buguagaoshu.tiktube.vo.CommentVo;
 import com.buguagaoshu.tiktube.vo.CommentWithUserVo;
 import org.springframework.beans.BeanUtils;
@@ -25,8 +26,6 @@ import java.util.stream.Collectors;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.buguagaoshu.tiktube.utils.PageUtils;
-import com.buguagaoshu.tiktube.utils.Query;
 
 import com.buguagaoshu.tiktube.dao.CommentDao;
 import com.buguagaoshu.tiktube.entity.CommentEntity;
@@ -43,10 +42,15 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, CommentEntity> i
 
     private final UserService userService;
 
+    private final NotificationService notificationService;
+
     @Autowired
-    public CommentServiceImpl(ArticleService articleService, UserService userService) {
+    public CommentServiceImpl(ArticleService articleService,
+                              UserService userService,
+                              NotificationService notificationService) {
         this.articleService = articleService;
         this.userService = userService;
+        this.notificationService = notificationService;
     }
 
 
@@ -71,6 +75,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, CommentEntity> i
         if (articleEntity == null) {
             return null;
         }
+        CommentEntity fatherComment = null;
         // 判断是否有权评论
         if (articleEntity.getExamineStatus() == 0
                 || articleEntity.getExamineStatus() == 2
@@ -93,7 +98,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, CommentEntity> i
                 return null;
             }
             // 获取父评论信息
-            CommentEntity fatherComment = this.getById(commentVo.getParentCommentId());
+            fatherComment = this.getById(commentVo.getParentCommentId());
             if (fatherComment == null) {
                 return null;
             }
@@ -132,7 +137,34 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, CommentEntity> i
         this.save(commentEntity);
         articleService.addCount("comment_count", articleEntity.getId(), 1L);
         // TODO 通知作者
-
+        // 一级评论只通知稿件作者，二级评论只通知评论作者
+        if (commentEntity.getType() == 1) {
+            notificationService.sendNotification(
+                    commentEntity.getUserId(),
+                    articleEntity.getUserId(),
+                    articleEntity.getId(),
+                    articleEntity.getId(),
+                    commentEntity.getId(),
+                    "稿件《" + articleEntity.getTitle() + "》收到新评论",
+                    "",
+                    commentEntity.getComment(),
+                    NotificationType.REPLY_POST
+            );
+        } else {
+            notificationService.sendNotification(
+                    commentEntity.getUserId(),
+                    commentEntity.getParentUserId(),
+                    // 二级评论中回复的评论ID
+                    commentEntity.getParentCommentId(),
+                    articleEntity.getId(),
+                    // 发送出的评论ID
+                    commentEntity.getId(),
+                    "你在稿件《" + articleEntity.getTitle() + "》下的评论：" + MyStringUtils.extractString(fatherComment.getComment(), 50) + "收到新回复了",
+                    "",
+                    commentEntity.getComment(),
+                    NotificationType.REPLY_COMMENT
+            );
+        }
         return commentEntity;
     }
 
@@ -156,10 +188,12 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, CommentEntity> i
                 new Query<CommentEntity>().getPage(params),
                 wrapper
         );
-        if (page.getRecords() == null || page.getRecords().size() == 0) {
+        if (page.getRecords() == null || page.getRecords().isEmpty()) {
             return new PageUtils(page);
         }
         Set<Long> userSet = page.getRecords().stream().map(CommentEntity::getUserId).collect(Collectors.toSet());
+        Set<Long> pUserSet = page.getRecords().stream().map(CommentEntity::getParentUserId).collect(Collectors.toSet());
+        userSet.addAll(pUserSet);
         Map<Long, UserEntity> userMap = userService.listByIds(userSet).stream().collect(Collectors.toMap(UserEntity::getId, u -> u));
 
         List<CommentWithUserVo> commentWithUserVoList = new ArrayList<>();
@@ -170,6 +204,10 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, CommentEntity> i
             BeanUtils.copyProperties(userMap.get(comment.getUserId()), commentWithUserVo);
             commentWithUserVo.setId(comment.getId());
             commentWithUserVo.setCreateTime(comment.getCreateTime());
+            UserEntity p = userMap.get(comment.getParentUserId());
+            if (p != null) {
+                commentWithUserVo.setParentUserName(p.getUsername());
+            }
             commentWithUserVoList.add(commentWithUserVo);
 
         }
