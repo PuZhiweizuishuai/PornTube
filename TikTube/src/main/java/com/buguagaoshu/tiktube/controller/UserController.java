@@ -5,7 +5,12 @@ import com.buguagaoshu.tiktube.dto.LoginDetails;
 import com.buguagaoshu.tiktube.dto.PasswordDto;
 import com.buguagaoshu.tiktube.entity.UserEntity;
 import com.buguagaoshu.tiktube.entity.UserRoleEntity;
+import com.buguagaoshu.tiktube.enums.NotificationType;
+import com.buguagaoshu.tiktube.enums.RoleTypeEnum;
+import com.buguagaoshu.tiktube.service.NotificationService;
 import com.buguagaoshu.tiktube.service.UserService;
+import com.buguagaoshu.tiktube.utils.JwtUtil;
+import com.buguagaoshu.tiktube.utils.MyStringUtils;
 import com.buguagaoshu.tiktube.vo.AdminAddUserData;
 import com.buguagaoshu.tiktube.vo.ResponseDetails;
 import com.buguagaoshu.tiktube.vo.User;
@@ -28,9 +33,12 @@ import java.util.Map;
 public class UserController {
     private final UserService userService;
 
+    private final NotificationService notificationService;
+
     @Autowired
-    public UserController(UserService userService) {
+    public UserController(UserService userService, NotificationService notificationService) {
         this.userService = userService;
+        this.notificationService = notificationService;
     }
 
 
@@ -104,7 +112,24 @@ public class UserController {
     @PostMapping("/api/admin/user/update/role")
     public ResponseDetails updateUserRole(@RequestBody UserRoleEntity userRole,
                                           HttpServletRequest request) {
-        return ResponseDetails.ok().put("data", userService.updateRole(userRole, request));
+        UserRoleEntity role = userService.updateRole(userRole, request);
+        if (role != null && role.getRole().equals(RoleTypeEnum.VIP.getRole())) {
+            notificationService.sendNotification(
+                    JwtUtil.getUserId(request),
+                    role.getUserid(),
+                    -1,
+                    -1,
+                    -1,
+                    "恭喜你，已经成为尊贵的 VPI 用户",
+                    "",
+                    "管理员已经将你设置为 VPI 用户，有效期为："
+                            + MyStringUtils.formatTime(userRole.getVipStartTime())
+                            + " - "
+                            + MyStringUtils.formatTime(userRole.getVipStopTime()),
+                    NotificationType.SYSTEM
+            );
+        }
+        return ResponseDetails.ok().put("data", userRole);
     }
 
     @PostMapping("/api/admin/user/update/pwd")

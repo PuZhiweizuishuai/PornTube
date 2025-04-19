@@ -50,7 +50,7 @@ public class DeleteTempFileTasks {
 
         while (true) {
             List<FileTableEntity> fileTableEntities = fileTableService.deprecatedFileList(endTime, count);
-            if (fileTableEntities.size() == 0) {
+            if (fileTableEntities.isEmpty()) {
                 break;
             }
             List<FileTableEntity> tempImg = new ArrayList<>();
@@ -68,5 +68,34 @@ public class DeleteTempFileTasks {
 
         log.info(" {} 之前的过期文件删除完成", SIMPLE_DATE_FORMAT.format(endTime));
         log.info("共删除 {} 条过期文件！", num);
+    }
+
+    public long handMovementDeleteFile() {
+        int count = 100;
+        long num = 0;
+        long time = System.currentTimeMillis();
+        log.info("开始删除 {} 之前的过期文件", SIMPLE_DATE_FORMAT.format(time));
+
+        while (true) {
+            List<FileTableEntity> fileTableEntities = fileTableService.deprecatedFileList(time, count);
+            if (fileTableEntities.isEmpty()) {
+                break;
+            }
+            List<FileTableEntity> tempImg = new ArrayList<>();
+            for (FileTableEntity file : fileTableEntities) {
+                repository.deleteFile(file);
+                file.setStatus(FileStatusEnum.DELETE.getCode());
+                if (WebConstant.SYSTEM_CREATE_SCREENSHOT.equals(file.getFileOriginalName())) {
+                    tempImg.add(file);
+                }
+                num += 1;
+            }
+            fileTableService.updateBatchById(fileTableEntities);
+            fileTableService.removeBatchByIds(tempImg);
+        }
+
+        log.info(" {} 之前的过期文件删除完成", SIMPLE_DATE_FORMAT.format(time));
+        log.info("共删除 {} 条过期文件！", num);
+        return num;
     }
 }

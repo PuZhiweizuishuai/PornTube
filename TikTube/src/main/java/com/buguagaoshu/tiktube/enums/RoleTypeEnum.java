@@ -33,4 +33,14 @@ public enum  RoleTypeEnum {
         return false;
     }
 
+    public static String getRoleMessage(String role) {
+        if (role.equals("ROLE_ADMIN")) {
+            return "管理员";
+        }
+        if (role.equals("ROLE_VIP")) {
+            return "VIP";
+        }
+        return "普通用户";
+    }
+
 }

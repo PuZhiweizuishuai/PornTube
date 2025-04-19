@@ -2,8 +2,8 @@
   <v-container fluid>
     <v-card>
       <v-card-title class="d-flex align-center justify-space-between">
-        <span>文件管理</span>
-        <v-text-field
+        <span>文件管理，当前共有：{{ totalItems }} 个文件</span>
+        <!-- <v-text-field
           v-model="search"
           append-icon="mdi-magnify"
           label="搜索"
@@ -12,7 +12,7 @@
           density="compact"
           class="ml-auto"
           style="max-width: 300px"
-        ></v-text-field>
+        ></v-text-field> -->
       </v-card-title>
 
       <v-data-table-server
@@ -219,19 +219,19 @@ export default {
     return {
       // 表格数据
       headers: [
-        { title: 'ID', key: 'id', sortable: true },
-        { title: '文件名', key: 'fileOriginalName', sortable: true },
+        { title: 'ID', key: 'id', sortable: false },
+        { title: '文件名', key: 'fileOriginalName', sortable: false },
         { title: '文件URL', key: 'fileUrl', sortable: false },
-        { title: '文件大小', key: 'size', sortable: true },
-        { title: '上传时间', key: 'uploadTime', sortable: true },
-        { title: '上传用户ID', key: 'uploadUserId', sortable: true },
-        { title: '文件类型', key: 'type', sortable: true },
-        { title: '状态', key: 'status', sortable: true },
+        { title: '文件大小', key: 'size', sortable: false },
+        { title: '上传时间', key: 'uploadTime', sortable: false },
+        { title: '上传用户ID', key: 'uploadUserId', sortable: false },
+        { title: '文件类型', key: 'type', sortable: false },
+        { title: '状态', key: 'status', sortable: false },
         { title: '操作', key: 'actions', sortable: false },
       ],
       items: [],
       loading: false,
-      itemsPerPage: 10,
+      itemsPerPage: 25,
       page: 1,
       totalItems: 0,
       search: '',

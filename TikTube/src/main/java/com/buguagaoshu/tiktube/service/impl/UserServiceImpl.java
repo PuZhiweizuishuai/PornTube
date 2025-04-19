@@ -6,6 +6,7 @@ import com.buguagaoshu.tiktube.dto.PasswordDto;
 import com.buguagaoshu.tiktube.entity.InvitationCodeEntity;
 import com.buguagaoshu.tiktube.entity.UserRoleEntity;
 import com.buguagaoshu.tiktube.enums.FileTypeEnum;
+import com.buguagaoshu.tiktube.enums.NotificationType;
 import com.buguagaoshu.tiktube.enums.ReturnCodeEnum;
 import com.buguagaoshu.tiktube.enums.RoleTypeEnum;
 import com.buguagaoshu.tiktube.exception.UserNotFoundException;
@@ -60,8 +61,13 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
 
     private final FileTableService fileTableService;
 
+
     @Autowired
-    public UserServiceImpl(UserRoleService userRoleService, VerifyCodeService verifyCodeService, LoginLogService loginLogService, InvitationCodeService invitationCodeService, FileTableService fileTableService) {
+    public UserServiceImpl(UserRoleService userRoleService,
+                           VerifyCodeService verifyCodeService,
+                           LoginLogService loginLogService,
+                           InvitationCodeService invitationCodeService,
+                           FileTableService fileTableService) {
         this.userRoleService = userRoleService;
         this.verifyCodeService = verifyCodeService;
         this.loginLogService = loginLogService;
@@ -82,7 +88,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
 
     /**
      * 返回用户列表
-     * */
+     */
     @Override
     public PageUtils userList(Map<String, Object> params) {
         QueryWrapper<UserEntity> wrapper = new QueryWrapper<>();
@@ -98,7 +104,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
 
         Map<Long, UserRoleEntity> userRoleEntityMap = userRoleService.listByUserId(userIdSet);
         List<User> userList = new ArrayList<>();
-        for (UserEntity user :  page.getRecords()) {
+        for (UserEntity user : page.getRecords()) {
             user.setPassword("");
             User vos = new User();
             BeanUtils.copyProperties(user, vos);
@@ -306,7 +312,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
         long userId = JwtUtil.getUserId(request);
 
         UserEntity userEntity = new UserEntity();
-        if (StringUtils.hasText(user.getUsername()) ) {
+        if (StringUtils.hasText(user.getUsername())) {
             if (user.getUsername().length() > 25) {
                 return ReturnCodeEnum.USER_NAME_TO_LONG;
             }
@@ -326,7 +332,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
             return ReturnCodeEnum.ADMIN_DONT_RENAME;
         }
         if ("admin".equals(user.getUsername()) && !sys.getUsername().equals("admin")) {
-            return  ReturnCodeEnum.DONT_USER_NAME;
+            return ReturnCodeEnum.DONT_USER_NAME;
         }
         userEntity.setId(userId);
         this.updateById(userEntity);
@@ -350,6 +356,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
             userRole.setUpdateTime(System.currentTimeMillis());
             userRole.setModified(userId);
             userRoleService.updateById(userRole);
+
             return userRole;
         }
         return null;
@@ -440,7 +447,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
 
     /**
      * 去除敏感信息
-     * */
+     */
     public void clean(UserEntity userEntity) {
         userEntity.setPassword("");
         userEntity.setMail("");
