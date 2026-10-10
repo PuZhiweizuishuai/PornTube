@@ -50,7 +50,7 @@
               variant="elevated"
               class="mr-2"
               @click="fetchOpinions"
-              :loading="loading"
+              :loading="table.loading"
             >
               <v-icon icon="mdi-magnify" class="mr-1"></v-icon>
               查询
@@ -59,7 +59,7 @@
               color="grey-darken-1"
               variant="elevated"
               @click="resetFilters"
-              :disabled="loading"
+              :disabled="table.loading"
             >
               <v-icon icon="mdi-refresh" class="mr-1"></v-icon>
               重置
@@ -71,16 +71,19 @@
 
     <!-- 数据表格 -->
     <v-card class="mx-auto w-100" elevation="2" rounded="lg">
-      <v-data-table-server
+      <!-- 表格 + 分页由通用组件承载，业务差异通过插槽透传 -->
+      <AdminDataTable
         :headers="headers"
-        :items="opinions"
-        :items-per-page="pageSize"
-        :items-length="totalCount"
-        :hide-default-footer="true"
-        :loading="loading"
-        class="elevation-0 rounded-lg"
-        mobile-breakpoint="md"
-        :hide-default-header="$vuetify.display.smAndDown"
+        :items="table.items"
+        :loading="table.loading"
+        :page="table.page"
+        :total-pages="table.totalPages"
+        :total-count="table.totalCount"
+        :page-size="table.pageSize"
+        empty-text="暂无举报数据"
+        show-refresh-on-empty
+        @update:page="table.load"
+        @refresh="table.refresh"
       >
         <!-- 举报类型 -->
         <template #[`item.type`]="{ item }">
@@ -158,17 +161,7 @@
             </v-btn>
           </div>
         </template>
-      </v-data-table-server>
-
-      <!-- 分页 -->
-      <div class="d-flex justify-center py-4">
-        <v-pagination
-          v-model="page"
-          :length="totalPages"
-          rounded="circle"
-          @update:model-value="fetchOpinions"
-        ></v-pagination>
-      </div>
+      </AdminDataTable>
     </v-card>
 
     <!-- 详情对话框 -->
@@ -315,7 +308,7 @@
       </v-card>
     </v-dialog>
 
-    <!-- 处理对话框 -->
+    <!-- 处理对话框：带 Vditor 富文本与申诉结果选择，保留原实现 -->
     <v-dialog v-model="handleDialog" width="60vh">
       <v-card>
         <v-card-title
@@ -378,40 +371,68 @@
       </v-card>
     </v-dialog>
 
-    <!-- 消息提示 -->
-    <v-snackbar v-model="showMessage" :timeout="3000" location="top" :color="messageType">
-      {{ message }}
-      <template #actions>
-        <v-btn color="white" variant="text" @click="showMessage = false">关闭</v-btn>
-      </template>
-    </v-snackbar>
+    <AppSnackbar :state="toast" />
   </v-container>
 </template>
 
 <script>
+import { ref } from 'vue'
 import Vditor from '@/components/vditor/VditorComponents.vue'
 import ShowMarkdown from '@/components/vditor/ShowMarkdown.vue'
+import AdminDataTable from '@/components/admin/AdminDataTable.vue'
+import AppSnackbar from '@/components/common/AppSnackbar.vue'
+import { useTable } from '@/composables/useTable'
+import { useMessage } from '@/composables/useMessage'
+import { formatDate } from '@/utils/format'
+import http from '@/api/index'
+
+/** 举报列表只精确到分钟，沿用原来的展示粒度 */
+const OPINION_DATE_OPTIONS = {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+}
+
 export default {
   name: 'OpinionView',
   components: {
     Vditor,
     ShowMarkdown,
+    AdminDataTable,
+    AppSnackbar,
+  },
+  setup() {
+    const { toast, showMessage } = useMessage()
+    const filterStatus = ref('')
+    const filterType = ref('')
+    const filterTarget = ref('')
+
+    // 分页、加载态、筛选联动全部由 useTable 承担
+    const table = useTable({
+      url: '/admin/opinion/list',
+      size: 10,
+      params: () => ({
+        status: filterStatus.value,
+        type: filterType.value,
+        target: filterTarget.value,
+      }),
+      onError: () => showMessage('获取举报列表失败', 'error'),
+    })
+
+    return {
+      toast,
+      showMessage,
+      filterStatus,
+      filterType,
+      filterTarget,
+      table,
+    }
   },
   data() {
     return {
-      // 表格数据
-      opinions: [],
-      loading: false,
-      page: 1,
-      pageSize: 10,
-      totalPages: 1,
-      totalCount: 0,
-
-      // 筛选条件
-      filterStatus: '',
-      filterType: '',
-      filterTarget: '',
-
       // 对话框控制
       detailDialog: false,
       handleDialog: false,
@@ -419,11 +440,6 @@ export default {
       handleStatus: 1,
       handleOpinion: '',
       submitting: false,
-
-      // 消息提示
-      showMessage: false,
-      message: '',
-      messageType: 'info',
 
       // 表格列配置
       headers: [
@@ -436,7 +452,13 @@ export default {
         { title: '举报时间', key: 'createTime', align: 'center', sortable: false, width: '160px' },
         { title: 'IP', key: 'ip', align: 'center', sortable: false, width: '160px' },
         { title: 'City', key: 'city', align: 'center', sortable: false, width: '160px' },
-        { title: '处理时间', key: 'opinionTime', align: 'center', sortable: false, width: '160px' },
+        {
+          title: '处理时间',
+          key: 'opinionTime',
+          align: 'center',
+          sortable: false,
+          width: '160px',
+        },
         { title: '操作', key: 'actions', align: 'center', sortable: false, width: '150px' },
       ],
 
@@ -478,65 +500,48 @@ export default {
       ],
     }
   },
-  created() {
-    this.fetchOpinions()
-  },
   methods: {
+    /**
+     * 统一的写操作：成功后自动刷新列表并提示
+     * @param {Promise} promise
+     * @param {string} successText
+     * @param {object} [opts]
+     *   isSuccess：受理接口返回 { status, message }，不带 data 信封
+     */
+    async doAction(promise, successText, opts = {}) {
+      const { isSuccess, errorText = '操作失败' } = opts
+      try {
+        const json = await promise
+        if (isSuccess ? isSuccess(json) : !!json?.data) {
+          this.showMessage(successText, 'success')
+          this.closeAllDialogs()
+          await this.table.refresh()
+        } else {
+          this.showMessage(json?.message || errorText, 'error')
+        }
+      } catch (error) {
+        this.showMessage(error?.message || errorText, 'error')
+      }
+    },
+    closeAllDialogs() {
+      this.handleDialog = false
+    },
     // 获取举报列表
     fetchOpinions() {
-      this.loading = true
-
-      const params = new URLSearchParams()
-      params.append('page', this.page)
-      params.append('limit', this.pageSize)
-
-      if (this.filterStatus) {
-        params.append('status', this.filterStatus)
-      }
-
-      if (this.filterType) {
-        params.append('type', this.filterType)
-      }
-
-      if (this.filterTarget) {
-        params.append('target', this.filterTarget)
-      }
-
-      this.httpGet(`/admin/opinion/list?${params.toString()}`, (json) => {
-        this.loading = false
-
-        if (json.status === 200) {
-          this.opinions = json.data.list || []
-          this.totalCount = json.data.totalCount || 0
-          this.totalPages = json.data.totalPages || 1
-        } else {
-          this.showErrorMessage(json.message || '获取举报列表失败')
-        }
-      })
+      return this.table.reload()
     },
-
-    // 处理表格选项变更
-    handleTableOptions(options) {
-      this.page = options.page
-      this.pageSize = options.itemsPerPage
-      this.fetchOpinions()
-    },
-
     // 重置筛选条件
     resetFilters() {
       this.filterStatus = ''
       this.filterType = ''
       this.filterTarget = ''
-      this.page = 1
-      this.fetchOpinions()
+      return this.table.reload()
     },
-
     // 查看详情
     viewDetail(item) {
       this.selectedOpinion = { ...item }
       this.detailDialog = true
     },
-
     // 处理举报
     handleOpinionFun(item, status) {
       this.selectedOpinion = { ...item }
@@ -552,12 +557,10 @@ export default {
         }
       })
     },
-
     // 判断是否为申诉类型
     isAppealType(type) {
       return type === 3 || type === 4 || type === 5
     },
-
     // 获取输入框提示文本
     getPlaceholderText() {
       if (!this.isAppealType(this.selectedOpinion.type)) {
@@ -572,16 +575,14 @@ export default {
         return '请输入申诉驳回的原因...'
       }
     },
-
     // 处理Vditor输入
     handleVditorInput(content) {
       this.handleOpinion = content
     },
-
     // 提交处理意见
-    submitHandleOpinion() {
+    async submitHandleOpinion() {
       if (!this.handleOpinion || this.handleOpinion.trim() === '') {
-        this.showErrorMessage('请填写处理意见')
+        this.showMessage('请填写处理意见', 'error')
         return
       }
 
@@ -598,79 +599,49 @@ export default {
         data.appealStatus = this.appealStatus
       }
 
-      this.httpPost('/admin/opinion/acceptance', data, (json) => {
-        this.submitting = false
+      let successMessage = this.handleStatus === 1 ? '举报已受理' : '举报已拒绝'
 
-        if (json.status === 200) {
-          let successMessage = this.handleStatus === 1 ? '举报已受理' : '举报已拒绝'
-
-          // 如果是申诉类型，显示对应的成功消息
-          if (this.isAppealType(this.selectedOpinion.type)) {
-            if (this.handleStatus === 1) {
-              successMessage = this.appealStatus === 0 ? '申诉已通过' : '申诉已驳回'
-            } else {
-              successMessage = '申诉已拒绝处理'
-            }
-          }
-
-          this.showSuccessMessage(successMessage)
-          this.handleDialog = false
-          this.fetchOpinions()
+      // 如果是申诉类型，显示对应的成功消息
+      if (this.isAppealType(this.selectedOpinion.type)) {
+        if (this.handleStatus === 1) {
+          successMessage = this.appealStatus === 0 ? '申诉已通过' : '申诉已驳回'
         } else {
-          this.showErrorMessage(json.message || '处理失败')
+          successMessage = '申诉已拒绝处理'
         }
-      })
-    },
+      }
 
+      try {
+        return await this.doAction(http.post('/admin/opinion/acceptance', data), successMessage, {
+          isSuccess: (json) => json?.status === 200,
+          errorText: '处理失败',
+        })
+      } finally {
+        this.submitting = false
+      }
+    },
     // 格式化时间
     formatTime(timestamp) {
-      if (!timestamp) return '无'
-
-      const date = new Date(timestamp)
-      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
-        date.getDate()
-      ).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(
-        date.getMinutes()
-      ).padStart(2, '0')}`
+      return formatDate(timestamp, OPINION_DATE_OPTIONS, '无')
     },
-
     // 获取类型文本
     getTypeText(type) {
       return this.typeMap[type]?.text || '未知类型'
     },
-
     // 获取类型颜色
     getTypeColor(type) {
       return this.typeMap[type]?.color || 'grey'
     },
-
     // 获取状态文本
     getStatusText(status) {
       return this.statusMap[status]?.text || '未知状态'
     },
-
     // 获取状态颜色
     getStatusColor(status) {
       return this.statusMap[status]?.color || 'grey'
     },
-
     // 获取状态图标
     getStatusIcon(status) {
       return this.statusMap[status]?.icon || 'mdi-help-circle'
-    },
-
-    // 显示成功消息
-    showSuccessMessage(msg) {
-      this.message = msg
-      this.messageType = 'success'
-      this.showMessage = true
-    },
-
-    // 显示错误消息
-    showErrorMessage(msg) {
-      this.message = msg
-      this.messageType = 'error'
-      this.showMessage = true
     },
   },
 }
@@ -679,5 +650,10 @@ export default {
 <style scoped>
 .text-pre-wrap {
   white-space: pre-wrap;
+}
+
+:deep(.v-data-table-server th) {
+  font-weight: 600 !important;
+  background-color: #f5f5f5;
 }
 </style>

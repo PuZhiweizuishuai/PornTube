@@ -28,6 +28,11 @@ public class CurrentLimitingMemoryRepositoryImpl implements APICurrentLimitingRe
      * value: 上次访问时间
      */
     private final Map<String, Long> visitRecords = new ConcurrentHashMap<>();
+
+    /**
+     * 记录条数上限，匿名接口以 IP 为 key 时可被伪造头无限撑大内存
+     */
+    private static final int MAX_RECORDS = 20000;
     
     @Override
     public boolean hasVisit(int type, long userId) {
@@ -43,18 +48,28 @@ public class CurrentLimitingMemoryRepositoryImpl implements APICurrentLimitingRe
 
     public boolean hasVisitByKey(String key) {
         long currentTime = System.currentTimeMillis() / 1000;
-
-        // 获取上次访问时间
-        Long lastVisitTime = visitRecords.get(key);
-
-        // 如果是首次访问或者已经超过限制时间，则允许访问
-        if (lastVisitTime == null || (currentTime - lastVisitTime) >= TIME_LIMIT) {
-            // 更新访问时间
-            visitRecords.put(key, currentTime);
-            return true;
+        // compute 保证「读取-判断-写入」对同一个 key 是原子操作，避免并发请求同时放行
+        boolean[] allowed = new boolean[1];
+        visitRecords.compute(key, (recordKey, lastVisitTime) -> {
+            boolean allow = lastVisitTime == null || (currentTime - lastVisitTime) >= TIME_LIMIT;
+            allowed[0] = allow;
+            // 被拒绝时不刷新上次访问时间，否则不断重试会把限制窗口一直往后推
+            return allow ? currentTime : lastVisitTime;
+        });
+        if (visitRecords.size() > MAX_RECORDS) {
+            purgeExpired(currentTime);
         }
-        visitRecords.put(key, currentTime);
-        return false;
+        return allowed[0];
+    }
+
+    /**
+     * 清理已过期的记录，清完仍然超限就整体清空——宁可短暂放宽限流也不能耗尽内存
+     */
+    private void purgeExpired(long currentTime) {
+        visitRecords.entrySet().removeIf(record -> (currentTime - record.getValue()) >= TIME_LIMIT);
+        if (visitRecords.size() > MAX_RECORDS) {
+            visitRecords.clear();
+        }
     }
 
     @Override

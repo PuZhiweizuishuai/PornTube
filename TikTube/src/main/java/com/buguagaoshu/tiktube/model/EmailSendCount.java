@@ -50,7 +50,6 @@ public class EmailSendCount {
     }
     
     public int getRemainingAttempts() {
-        // 如果已经限制，返回0
         if (isLimited()) {
             return 0;
         }
@@ -63,5 +62,13 @@ public class EmailSendCount {
         
         // 返回剩余次数
         return Math.max(0, MAX_EMAIL_SENDS - attempts);
+    }
+
+    /**
+     * 记录是否可以丢弃（限制窗口已过或没有任何发送记录）
+     */
+    public synchronized boolean isExpired() {
+        return firstAttemptTime == null
+                || firstAttemptTime.plusHours(LIMIT_HOURS).isBefore(LocalDateTime.now());
     }
 }

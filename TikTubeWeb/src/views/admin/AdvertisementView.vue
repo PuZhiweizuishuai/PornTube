@@ -27,7 +27,7 @@
         <v-row>
           <v-col cols="12" sm="5">
             <v-select
-              v-model="queryParams.type"
+              v-model="adType"
               :items="adTypeOptions"
               label="广告类型"
               variant="outlined"
@@ -39,7 +39,7 @@
           </v-col>
           <v-col cols="12" sm="5">
             <v-select
-              v-model="queryParams.status"
+              v-model="adStatus"
               :items="statusOptions"
               label="状态"
               variant="outlined"
@@ -65,15 +65,19 @@
 
       <!-- 数据表格 -->
       <v-card-text>
-        <v-data-table
+        <AdminDataTable
           :headers="headers"
-          :items="advertisements"
-          :loading="loading"
-          :hide-default-footer="true"
-          hover
-          class="elevation-0 rounded-lg"
+          :items="table.items"
+          :loading="table.loading"
+          :page="table.page"
+          :total-pages="table.totalPages"
+          :total-count="table.totalCount"
+          :page-size="table.pageSize"
           mobile-breakpoint="sm"
-          :hide-default-header="$vuetify.display.xs"
+          empty-text="暂无广告数据"
+          show-refresh-on-empty
+          @update:page="table.load"
+          @refresh="table.refresh"
         >
           <template #[`item.title`]="{ item }">
             <div class="d-flex flex-column">
@@ -176,20 +180,8 @@
               <v-btn color="primary" class="mt-4" @click="fetchAdvertisements">刷新数据</v-btn>
             </div>
           </template>
-        </v-data-table>
+        </AdminDataTable>
       </v-card-text>
-
-      <!-- 分页 -->
-      <div class="d-flex justify-center pa-4">
-        <v-pagination
-          v-model="queryParams.page"
-          :length="totalPage"
-          :total-visible="7"
-          @update:model-value="fetchAdvertisements"
-          rounded
-          density="comfortable"
-        ></v-pagination>
-      </div>
     </v-card>
 
     <!-- 新增/编辑对话框 -->
@@ -412,37 +404,65 @@
       </v-card>
     </v-dialog>
 
-    <!-- 消息提示 -->
-    <v-snackbar v-model="snackbar.show" :color="snackbar.color" :timeout="3000" location="top">
-      {{ snackbar.text }}
-      <template v-slot:actions>
-        <v-btn variant="text" color="white" @click="snackbar.show = false"> 关闭 </v-btn>
-      </template>
-    </v-snackbar>
+    <AppSnackbar :state="toast" />
   </v-container>
 </template>
 
 <script>
+import { ref } from 'vue'
+import AdminDataTable from '@/components/admin/AdminDataTable.vue'
+import AppSnackbar from '@/components/common/AppSnackbar.vue'
+import { useTable } from '@/composables/useTable'
+import { useMessage } from '@/composables/useMessage'
+import { formatDate, formatDateTimeInput } from '@/utils/format'
+import http from '@/api/index'
+
+/** 广告起止时间只精确到分钟，沿用原来的展示粒度 */
+const AD_DATE_OPTIONS = {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+}
+
 export default {
+  name: 'AdvertisementView',
+  components: {
+    AdminDataTable,
+    AppSnackbar,
+  },
+  setup() {
+    const { toast, showMessage } = useMessage()
+    const adType = ref(null)
+    const adStatus = ref(null)
+
+    // 分页、加载态、筛选联动全部由 useTable 承担
+    const table = useTable({
+      url: '/admin/ads/list',
+      size: 10,
+      params: () => ({
+        type: adType.value,
+        status: adStatus.value,
+      }),
+      onError: () => showMessage('获取广告列表失败', 'error'),
+    })
+
+    return {
+      toast,
+      showMessage,
+      adType,
+      adStatus,
+      table,
+      // 模板里直接使用的格式化函数
+      formatDateTimeInput,
+    }
+  },
   data() {
     return {
-      // 查询参数
-      queryParams: {
-        page: 1,
-        limit: 10,
-        type: null,
-        status: null,
-      },
-      // 广告列表
-      advertisements: [],
-      // 加载状态
-      loading: false,
       // 保存状态
       saving: false,
-      // 总页数
-      totalPage: 0,
-      // 总记录数
-      totalCount: 0,
       // 对话框显示状态
       dialog: false,
       // 预览对话框
@@ -495,55 +515,29 @@ export default {
         { title: '启用', value: 1 },
         { title: '禁用', value: 0 },
       ],
-      // 消息提示
-      snackbar: {
-        show: false,
-        text: '',
-        color: 'success',
-      },
     }
   },
-  created() {
-    // 初始加载数据
-    this.fetchAdvertisements()
-  },
   methods: {
+    /** 统一的写操作：成功后自动刷新列表并提示 */
+    async doAction(promise, successText, opts = {}) {
+      const { isSuccess, errorText = '操作失败', onSuccess } = opts
+      try {
+        const json = await promise
+        // 广告接口失败时也可能回 message:'成功'，这里统一以 status 为准
+        if (isSuccess ? isSuccess(json) : !!json?.data) {
+          if (typeof onSuccess === 'function') onSuccess(json)
+          this.showMessage(successText, 'success')
+          await this.table.refresh()
+        } else {
+          this.showMessage(json?.message || errorText, 'error')
+        }
+      } catch (error) {
+        this.showMessage(error?.message || errorText, 'error')
+      }
+    },
     // 获取广告列表
     fetchAdvertisements() {
-      this.loading = true
-
-      // 构建查询参数
-      const params = {
-        page: this.queryParams.page,
-        limit: this.queryParams.limit,
-      }
-
-      // 添加类型过滤
-      if (this.queryParams.type !== null) {
-        params.type = this.queryParams.type
-      }
-
-      // 添加状态过滤
-      if (this.queryParams.status !== null) {
-        params.status = this.queryParams.status
-      }
-
-      // 构建URL查询参数
-      const queryString = Object.entries(params)
-        .filter(([_, value]) => value !== null && value !== undefined)
-        .map(([key, value]) => `${key}=${value}`)
-        .join('&')
-
-      this.httpGet(`/admin/ads/list?${queryString}`, (json) => {
-        if (json.status === 200) {
-          this.advertisements = json.data.list
-          this.totalCount = json.data.totalCount
-          this.totalPage = json.data.totalPage
-        } else {
-          this.showMessage(json.message || '获取广告列表失败', 'error')
-        }
-        this.loading = false
-      })
+      return this.table.reload()
     },
 
     // 打开对话框
@@ -557,11 +551,11 @@ export default {
 
         // 转换时间戳为日期字符串
         if (this.currentAd.startTime) {
-          this.startTimeStr = this.formatDateTimeForInput(this.currentAd.startTime)
+          this.startTimeStr = formatDateTimeInput(this.currentAd.startTime)
         }
 
         if (this.currentAd.endTime) {
-          this.endTimeStr = this.formatDateTimeForInput(this.currentAd.endTime)
+          this.endTimeStr = formatDateTimeInput(this.currentAd.endTime)
         }
       } else {
         // 新增模式
@@ -572,8 +566,8 @@ export default {
         const tomorrow = new Date()
         tomorrow.setDate(now.getDate() + 7)
 
-        this.startTimeStr = this.formatDateTimeForInput(now.getTime())
-        this.endTimeStr = this.formatDateTimeForInput(tomorrow.getTime())
+        this.startTimeStr = formatDateTimeInput(now.getTime())
+        this.endTimeStr = formatDateTimeInput(tomorrow.getTime())
         this.currentAd.startTime = now.getTime()
         this.currentAd.endTime = tomorrow.getTime()
       }
@@ -612,9 +606,10 @@ export default {
     },
 
     // 保存广告
-    saveAdvertisement() {
+    async saveAdvertisement() {
       // 表单验证
-      if (!this.$refs.form.validate()) {
+      const { valid } = await this.$refs.form.validate()
+      if (!valid) {
         return
       }
 
@@ -632,16 +627,18 @@ export default {
       // 根据是否编辑模式选择接口
       const url = this.isEdit ? '/admin/ads/update' : '/admin/ads/save'
 
-      this.httpPost(url, this.currentAd, (json) => {
-        if (json.status === 200) {
-          this.showMessage(this.isEdit ? '更新成功' : '添加成功', 'success')
-          this.dialog = false
-          this.fetchAdvertisements()
-        } else {
-          this.showMessage(json.message || (this.isEdit ? '更新失败' : '添加失败'), 'error')
-        }
+      try {
+        await this.doAction(http.post(url, this.currentAd), this.isEdit ? '更新成功' : '添加成功', {
+          // 广告接口失败时也可能回 message:'成功'，这里统一以 status 为准
+          isSuccess: (json) => json?.status === 200,
+          errorText: this.isEdit ? '更新失败' : '添加失败',
+          onSuccess: () => {
+            this.dialog = false
+          },
+        })
+      } finally {
         this.saving = false
-      })
+      }
     },
 
     // 切换状态
@@ -655,15 +652,12 @@ export default {
         type: item.type,
       }
 
-      this.httpPost('/admin/ads/update', updateData, (json) => {
-        if (json.status === 200) {
-          this.showMessage(`${statusText}成功`, 'success')
-          // 更新本地数据
-          item.status = newStatus
-        } else {
-          this.showMessage(json.message || `${statusText}失败`, 'error')
-        }
-      })
+      return this.doAction(
+        http.post('/admin/ads/update', updateData),
+        `${statusText}成功`,
+        // 广告接口失败时也可能回 message:'成功'，这里统一以 status 为准
+        { isSuccess: (json) => json?.status === 200, errorText: `${statusText}失败` }
+      )
     },
 
     // 预览广告
@@ -674,30 +668,7 @@ export default {
 
     // 格式化时间
     formatTime(timestamp) {
-      if (!timestamp) return '未设置'
-
-      const date = new Date(timestamp)
-      return date.toLocaleString('zh-CN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-    },
-
-    // 格式化日期时间为输入框格式
-    formatDateTimeForInput(timestamp) {
-      if (!timestamp) return ''
-
-      const date = new Date(timestamp)
-      const year = date.getFullYear()
-      const month = String(date.getMonth() + 1).padStart(2, '0')
-      const day = String(date.getDate()).padStart(2, '0')
-      const hours = String(date.getHours()).padStart(2, '0')
-      const minutes = String(date.getMinutes()).padStart(2, '0')
-
-      return `${year}-${month}-${day}T${hours}:${minutes}`
+      return formatDate(timestamp, AD_DATE_OPTIONS, '未设置')
     },
 
     // 获取类型文本
@@ -723,13 +694,6 @@ export default {
           return 'grey'
       }
     },
-
-    // 显示消息
-    showMessage(text, color = 'success') {
-      this.snackbar.text = text
-      this.snackbar.color = color
-      this.snackbar.show = true
-    },
   },
 }
 </script>
@@ -742,9 +706,5 @@ export default {
 .v-btn--size-small {
   text-transform: none;
   letter-spacing: normal;
-}
-
-.v-pagination {
-  margin-top: 8px;
 }
 </style>

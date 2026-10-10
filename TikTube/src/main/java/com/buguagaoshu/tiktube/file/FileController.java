@@ -8,6 +8,7 @@ import com.buguagaoshu.tiktube.repository.impl.FileRepositoryInOSS;
 import com.buguagaoshu.tiktube.service.ArticleService;
 import com.buguagaoshu.tiktube.service.FileTableService;
 import com.buguagaoshu.tiktube.utils.AesUtil;
+import com.buguagaoshu.tiktube.utils.FileUtils;
 import com.buguagaoshu.tiktube.utils.JwtUtil;
 import com.buguagaoshu.tiktube.vo.ResponseDetails;
 import com.buguagaoshu.tiktube.vo.VditorFiles;
@@ -127,6 +128,10 @@ public class FileController {
                                        @PathVariable(value = "filename") String filename,
                                        @RequestParam(value = "key", required = false) String key,
                                        HttpServletRequest request) {
+        // 路径片段校验，防止对象存储 key 被路径穿越篡改
+        if (!FileUtils.isSafeSegment(filename) || !FileUtils.isSafeRelativePath(year + "/" + month + "/" + day)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
         // 创建HttpHeaders对象
         HttpHeaders headers = new HttpHeaders();
         headers.add("Cache-Control", "max-age=86400");
@@ -201,6 +206,9 @@ public class FileController {
     }
 
     public ResponseEntity getFile(String date, String filename, String key, HttpServletRequest request) {
+        if (!FileUtils.isSafeSegment(filename) || !FileUtils.isSafeRelativePath(date)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
         try {
             Path path = fileRepository.load(date + "/" + filename);
             Resource resource = new UrlResource(path.toUri());
@@ -264,9 +272,9 @@ public class FileController {
                     .headers(httpHeaders)
                     .body(resource);
         } catch (Exception e) {
-            return ResponseEntity
-                    .status(HttpStatus.NOT_FOUND)
-                    .body(e.getMessage());
+            // 详细原因只记录日志，响应统一为 404，避免向客户端泄露内部路径、堆栈等信息
+            log.warn("读取文件 {} 失败: {}", date + "/" + filename, e.toString());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
     }
 }

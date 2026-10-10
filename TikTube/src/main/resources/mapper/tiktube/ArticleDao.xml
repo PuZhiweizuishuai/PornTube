@@ -39,6 +39,7 @@
         update article set view_count = view_count + #{count} where id = #{id}
     </update>
     
+    <!-- col 由服务层 SQLFilter.checkedCountColumn 白名单校验后才能拼接 -->
     <update id="addCount">
         update article set ${col} = ${col} + #{count} where id = #{id}
     </update>
@@ -47,7 +48,7 @@
         update article set danmaku_count = danmaku_count + #{count} where id = #{id}
     </update>
     
-    <!-- 批量更新文章计数的SQL - 优化版 -->
+    <!-- 批量更新文章计数的SQL - 优化版，col 只允许 SQLFilter.COUNT_COLUMNS 中的列名 -->
     <update id="batchUpdateCount">
         UPDATE article
         SET ${col} = CASE id

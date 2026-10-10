@@ -22,7 +22,7 @@
         <result property="position" column="position"/>
     </resultMap>
     
-    <!-- 批量更新广告浏览量 -->
+    <!-- 批量更新广告浏览量，col 只允许 SQLFilter.COUNT_COLUMNS 中的列名 -->
     <update id="batchUpdateCount">
         UPDATE advertisement_table
         SET ${col} = CASE id

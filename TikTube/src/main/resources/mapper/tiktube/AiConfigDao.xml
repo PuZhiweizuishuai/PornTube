@@ -21,6 +21,7 @@
         <result property="maxTokens" column="max_tokens"/>
     </resultMap>
 
+    <!-- col 只允许 SQLFilter.COUNT_COLUMNS 中的列名 -->
     <update id="batchUpdateCount">
         UPDATE ai_config
         SET ${col} = CASE id

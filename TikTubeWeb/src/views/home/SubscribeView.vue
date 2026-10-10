@@ -185,13 +185,13 @@
 
         <!-- 分页控件 -->
         <div v-if="videoList.length > 0 && totalPage > 1" class="d-flex justify-center mt-6 mb-4">
-          <v-pagination
+          <Pagination
             v-model="page"
             :length="totalPage"
             :total-visible="7"
             rounded="circle"
             @update:model-value="loadSubscribedVideos"
-          ></v-pagination>
+          />
         </div>
       </v-container>
     </div>
@@ -302,13 +302,13 @@
 
           <!-- 分页控件 - 全部用户弹窗 -->
           <div v-if="followUsersTotalPage > 1" class="d-flex justify-center mt-4">
-            <v-pagination
+            <Pagination
               v-model="followUsersPage"
               :length="followUsersTotalPage"
               :total-visible="7"
               rounded="circle"
               @update:model-value="loadAllFollowUsers"
-            ></v-pagination>
+            />
           </div>
         </v-card-text>
       </v-card>
@@ -320,10 +320,12 @@
 import NotLoginCard from '@/components/card/NotLoginCard.vue'
 import VideoCard from '@/components/card/VideoCard.vue'
 import { useUserStore } from '@/stores/userStore'
+import Pagination from '@/components/common/Pagination.vue'
 export default {
   components: {
     NotLoginCard,
     VideoCard,
+    Pagination,
   },
   data() {
     return {

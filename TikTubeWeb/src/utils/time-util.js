@@ -1,5 +1,8 @@
-<script>
-function renderTime(date) {
+/**
+ * 时间格式化工具
+ * 由 utils/time-util.vue 迁移而来（纯 JS，不再挂在 .vue 里）。
+ */
+export function renderTime(date) {
   if (date === '' || date == null) {
     return ''
   }
@@ -19,7 +22,7 @@ function renderTime(date) {
   )
 }
 
-function formateTimeToChinese(date) {
+export function formateTimeToChinese(date) {
   if (date === '' || date == null) {
     return ''
   }
@@ -38,17 +41,13 @@ function formateTimeToChinese(date) {
   )
 }
 
-function formateTime(strat, end) {
+export function formateTime(strat, end) {
   return formateTimeToChinese(strat) + ' ~ ' + formateTimeToChinese(end)
 }
 
-/**
-  视频发布时间距当前时间间隔
- */
-function timeToNowStrning(date) {
-  const now = new Date().getTime()
-  let t = now - date
-  t = Math.trunc(t / 1000)
+/** 距今多久：秒/分/时/天，超过 30 天回落到具体时间 */
+export function timeToNowStrning(date) {
+  let t = Math.trunc((new Date().getTime() - date) / 1000)
   if (t < 60) {
     return t + '秒前'
   }
@@ -67,19 +66,19 @@ function timeToNowStrning(date) {
   return renderTime(date)
 }
 
-function timeCover(data) {
+/** 秒 -> m:ss / h:mm:ss */
+export function timeCover(data) {
   if (data == null || data === '' || data === 'null') {
     return ''
   }
-  //
+  const second = parseInt(data % 60, 10)
   let minute = Math.floor(data / 60)
   if (minute >= 60) {
     const hour = Math.floor(minute / 60)
     minute = minute % 60
-    return hour + ':' + minute + ':' + parseInt(data % 60)
-  } else {
-    return minute + ':' + parseInt(data % 60)
+    return hour + ':' + minute + ':' + second
   }
+  return minute + ':' + second
 }
 
 export default {
@@ -89,4 +88,3 @@ export default {
   formateTime,
   timeCover,
 }
-</script>

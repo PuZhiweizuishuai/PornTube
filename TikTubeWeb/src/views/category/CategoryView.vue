@@ -68,13 +68,13 @@
     <!-- 分页部分 -->
     <v-container v-if="length > 1">
       <v-row justify="center">
-        <v-pagination
+        <Pagination
           v-model="page"
           :length="length"
           :total-visible="7"
           rounded
           @update:model-value="pageChange"
-        ></v-pagination>
+        />
       </v-row>
     </v-container>
   </v-container>
@@ -82,11 +82,13 @@
   
 <script>
 import VideoCared from '@/components/card/VideoCard.vue'
+import Pagination from '@/components/common/Pagination.vue'
 
 export default {
   name: 'CategoryView',
   components: {
     VideoCared,
+    Pagination,
   },
   data() {
     return {

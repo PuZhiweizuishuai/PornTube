@@ -129,12 +129,12 @@
 
           <template v-slot:bottom>
             <div class="text-center pt-2">
-              <v-pagination
+              <Pagination
                 v-model="page"
                 :length="length"
                 :total-visible="7"
                 rounded
-              ></v-pagination>
+              />
             </div>
           </template>
         </v-data-table-server>
@@ -203,10 +203,14 @@
 </template>
   
 <script>
-import TimeUtil from '@/utils/time-util.vue'
+import TimeUtil from '@/utils/time-util'
+import Pagination from '@/components/common/Pagination.vue'
 
 export default {
   name: 'ExamineView',
+  components: {
+    Pagination,
+  },
   data() {
     return {
       showMessage: false,

@@ -307,11 +307,7 @@ public class FileRepositoryImpl implements FileRepository {
 
     @Override
     public Path load(String filePath) throws FileNotFoundException {
-        Path path = location.resolve(filePath);
-        if (Files.notExists(path)) {
-            throw new FileNotFoundException("无法加载文件！文件 " + filePath + " 不存在！");
-        }
-        return path;
+        return FileUtils.resolveSafely(location, filePath);
     }
 
     @Override

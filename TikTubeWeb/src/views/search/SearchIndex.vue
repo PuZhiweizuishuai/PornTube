@@ -67,7 +67,7 @@
       </v-col>
     </v-row>
     <v-row justify="center">
-      <v-pagination
+      <Pagination
         rounded="circle"
         :total-visible="7"
         v-model="page"
@@ -145,13 +145,13 @@
 
           <!-- 分页控件 - 全部用户弹窗 -->
           <div v-if="userLength > 1" class="d-flex justify-center mt-4">
-            <v-pagination
+            <Pagination
               v-model="userPage"
               :length="userLength"
               :total-visible="7"
               rounded="circle"
               @update:model-value="loadAllUsers"
-            ></v-pagination>
+            />
           </div>
         </v-card-text>
       </v-card>
@@ -162,10 +162,12 @@
 <script>
 import VideoCared from '@/components/card/VideoCard.vue'
 import TextInfoCard from '@/components/card/TextInfoCard.vue'
+import Pagination from '@/components/common/Pagination.vue'
 export default {
   components: {
     VideoCared,
-    TextInfoCard
+    TextInfoCard,
+    Pagination
   },
   data() {
     return {

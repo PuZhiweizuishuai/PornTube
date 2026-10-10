@@ -352,25 +352,25 @@
     </v-dialog>
 
     <!-- 消息提示 -->
-    <v-snackbar v-model="showMessage" :color="messageType" location="top" rounded="pill">
-      {{ message }}
-      <template v-slot:actions>
-        <v-btn variant="text" @click="showMessage = false">关闭</v-btn>
-      </template>
-    </v-snackbar>
+    <!-- 消息提示统一由 useMessage + AppSnackbar 承载 -->
+    <AppSnackbar :state="toast" />
   </v-row>
 </template>
 
 <script>
 import { useUserStore } from '@/stores/userStore'
 import QRCode from 'qrcode'
+import AppSnackbar from '@/components/common/AppSnackbar.vue'
+import { useMessage } from '@/composables/useMessage'
 export default {
+  components: { AppSnackbar },
+  setup() {
+    const { toast, showSuccessMessage, showErrorMessage } = useMessage()
+    return { toast, showSuccessMessage, showErrorMessage }
+  },
   data() {
     return {
       userStore: useUserStore(),
-      showMessage: false,
-      message: '',
-      messageType: 'info',
       showQrDialog: false,
       showVerifyDialog: false,
       showRegenerateDialog: false,
@@ -586,19 +586,7 @@ export default {
       )
     },
 
-    // 显示成功消息
-    showSuccessMessage(msg) {
-      this.message = msg
-      this.messageType = 'success'
-      this.showMessage = true
-    },
-
-    // 显示错误消息
-    showErrorMessage(msg) {
-      this.message = msg
-      this.messageType = 'error'
-      this.showMessage = true
-    },
+    // 显示成功 / 失败消息的方法由 useMessage 提供（见 setup），此处不再重复实现
   },
 }
 </script>

@@ -1,3 +1,9 @@
+<!--
+  二级评论抽屉
+  原先 236 行把「编辑器 + 排序 tab + 列表 + 空态 + 分页 + 提交 + 本地插入」整套逻辑
+  与 views/comment/VideoComment.vue 各写一遍，现已统一到 useCommentList：
+  本文件只保留二级评论特有的「回复 @xx」占位符与滚动到编辑器行为。
+-->
 <template>
   <v-card flat>
     <div id="commentTop" ref="commentTop" />
@@ -16,12 +22,12 @@
           <SecondCommentVditor
             :key="secondCommentKey"
             ref="secondCommentView"
-            :idname="`second-comment-${father.id}`"
+            :idname="`second-comment-${father?.id}`"
             :placeholder="commentPlaceholder"
             @vditor-input="getSecondCommentText"
           />
           <div class="d-flex justify-end mt-3">
-            <v-btn color="success" @click="submit">提交评论</v-btn>
+            <v-btn color="success" :loading="comments.submitting" @click="submit">提交评论</v-btn>
           </div>
         </v-col>
       </v-row>
@@ -30,18 +36,18 @@
 
       <v-row>
         <v-col>
-          <v-tabs v-model="activeTab" color="primary" bg-color="transparent">
-            <v-tab value="1" @click="setSort(1)">时间倒序</v-tab>
-            <v-tab value="0" @click="setSort(0)">评论时间</v-tab>
-            <v-tab value="2" @click="setSort(2)">最多点赞</v-tab>
-            <v-tab value="3" @click="setSort(3)">最多评论</v-tab>
+          <v-tabs v-model="comments.sort" color="primary" bg-color="transparent">
+            <v-tab :value="1" @click="comments.setSort(1)">时间倒序</v-tab>
+            <v-tab :value="0" @click="comments.setSort(0)">评论时间</v-tab>
+            <v-tab :value="2" @click="comments.setSort(2)">最多点赞</v-tab>
+            <v-tab :value="3" @click="comments.setSort(3)">最多评论</v-tab>
           </v-tabs>
         </v-col>
       </v-row>
 
       <v-divider class="mb-4"></v-divider>
 
-      <v-row v-if="total == 0" justify="center" class="my-6">
+      <v-row v-if="comments.isEmpty" justify="center" class="my-6">
         <v-icon
           icon="mdi-message-text-outline"
           size="large"
@@ -52,12 +58,11 @@
       </v-row>
 
       <template v-else>
-        <v-row v-for="item in secondList" :key="item.id">
+        <v-row v-for="item in comments.items" :key="item.id">
           <v-col>
             <Card
               :father="father"
               :comment="item"
-              :type="type"
               @comment="getComment"
               @open="showSecondReportDialogFun"
             />
@@ -65,16 +70,11 @@
         </v-row>
       </template>
 
-      <v-row justify="center" class="my-4">
-        <v-pagination
-          :total-visible="7"
-          v-model="page"
-          :length="length"
-          rounded="circle"
-          color="blue"
-          @update:model-value="pageChange"
-        />
-      </v-row>
+      <Pagination
+        v-model="comments.page"
+        :length="comments.length"
+        @update:model-value="comments.load"
+      />
     </v-container>
 
     <v-dialog v-model="showSecondReportDialog" width="50vh">
@@ -87,27 +87,27 @@
       />
     </v-dialog>
 
-    <v-snackbar v-model="showMessage" location="top" :timeout="3000">
-      {{ message }}
-      <template v-slot:actions>
-        <v-btn color="pink" variant="text" @click="showMessage = false">关闭</v-btn>
-      </template>
-    </v-snackbar>
+    <AppSnackbar :state="toast" />
   </v-card>
 </template>
-  
+
 <script>
 import Card from '@/components/card/comment/SecondCard.vue'
 import SecondCommentVditor from '@/components/vditor/VditorComment.vue'
-import { useUserStore } from '@/stores/userStore'
-import StringUtils from '@/utils/string-utils.vue'
 import OpinionCard from '@/components/card/OpinionCard.vue'
+import Pagination from '@/components/common/Pagination.vue'
+import AppSnackbar from '@/components/common/AppSnackbar.vue'
+import { useCommentList } from '@/composables/useCommentList'
+import { useMessage } from '@/composables/useMessage'
+
 export default {
   name: 'SecondComment',
   components: {
     Card,
     SecondCommentVditor,
     OpinionCard,
+    Pagination,
+    AppSnackbar,
   },
   props: {
     father: {
@@ -119,34 +119,23 @@ export default {
       default: 2,
     },
   },
+  setup(props) {
+    const { toast, showMessage } = useMessage()
+    const comments = useCommentList({
+      articleId: () => props.father?.articleId,
+      fatherId: () => props.father?.id,
+      type: props.type || 2,
+      size: 10,
+    })
+    return { comments, toast, showMessage }
+  },
   data() {
     return {
-      activeTab: '1',
-      secondList: [],
-      page: 1,
-      size: 10,
-      length: 1,
-      sort: 1,
-      total: 0,
-      comment: {
-        comment: '',
-        type: this.type,
-        articleId: this.father.articleId,
-        parentCommentId: this.father.id,
-        parentUserId: this.father.userId,
-      },
-      commentPlaceholder: '',
-      message: '',
-      showMessage: false,
+      commentPlaceholder: '请自觉遵守互联网相关的政策法规，严禁发布色情、暴力、反动的言论。',
       secondCommentKey: 0,
-      uploadurl: this.SERVER_API_URL + '/uploads/file',
-      userInfo: useUserStore(),
       showSecondReportDialog: false,
       selectSecondComment: null,
     }
-  },
-  created() {
-    this.getSecondList()
   },
   methods: {
     showSecondReportDialogFun(value) {
@@ -154,84 +143,23 @@ export default {
       this.showSecondReportDialog = true
     },
     getComment(value) {
-      this.$refs.commentTop.scrollIntoView({ behavior: 'smooth' })
+      if (this.$refs.commentTop) this.$refs.commentTop.scrollIntoView({ behavior: 'smooth' })
       this.commentPlaceholder = '回复 @' + value.username + ': ' + value.comment
       this.secondCommentKey++
-      this.comment.parentCommentId = value.id
-    },
-    getVerifyImage() {
-      this.verifyImageUrl = this.SERVER_API_URL + '/verifyImage?t=' + new Date().getTime()
-    },
-    getSecondList() {
-      this.httpGet(
-        `/comment/list?article=${this.father.articleId}&fatherId=${this.father.id}&page=${this.page}&limit=${this.size}&sort=${this.sort}&type=2`,
-        (json) => {
-          if (json.status === 200) {
-            this.secondList = json.data.list
-            this.length = json.data.totalPage
-            this.total = json.data.totalCount
-          }
-        }
-      )
-    },
-    submit() {
-      if (this.userInfo.userData == null) {
-        this.message = '请先登录后再评论！'
-        this.showMessage = true
-        return
-      }
-      if (
-        this.comment.comment == null ||
-        this.comment.comment === '' ||
-        this.comment.comment === '\n'
-      ) {
-        this.message = '评论内容不能为空！'
-        this.showMessage = true
-        return
-      }
-
-      this.httpPost('/comment/save', this.comment, (json) => {
-        if (json.status === 200) {
-          if (json.data.status == -1) {
-            this.message = '评论成功，待管理员审核通过后，其他观众即可看见你的评论！'
-            this.showMessage = true
-          } else {
-            this.message = '评论成功！'
-            this.showMessage = true
-          }
-          let com = json.data
-          com.avatarUrl = this.userInfo.userData.avatarUrl
-          com.username = this.userInfo.userData.username
-          com.userId = this.userInfo.userData.id
-          this.secondList.unshift(com)
-          this.total++
-          this.comment.comment = ''
-          this.$refs.secondCommentView.setTextValue('')
-        } else if (json.status === 4002) {
-          this.message = StringUtils.dataErrorMessage(json.data)
-          this.showMessage = true
-        } else {
-          this.message = json.message
-          this.showMessage = true
-        }
-      })
-    },
-    pageChange(value) {
-      this.page = value
-      this.getSecondList()
+      this.comments.reply(value)
     },
     getSecondCommentText(value) {
-      this.comment.comment = value
+      this.comments.draft = value
     },
-    setSort(sort) {
-      this.sort = sort
-      this.activeTab = sort.toString()
-      this.getSecondList()
+    async submit() {
+      const result = await this.comments.submit()
+      this.showMessage(result.message, result.ok ? 'success' : 'error')
+      if (result.ok) {
+        this.$refs.secondCommentView?.setTextValue('')
+        this.commentPlaceholder = '请自觉遵守互联网相关的政策法规，严禁发布色情、暴力、反动的言论。'
+        this.comments.clearReply()
+      }
     },
   },
 }
 </script>
-  
-<style>
-</style>
-  

@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeLayout from '../layout/IndexLayout.vue'
-import checkPower from '@/utils/check-power.vue'
+import checkPower from '@/utils/check-power'
 // 默认网站名称
 const DEFAULT_TITLE = 'TikTube'
 

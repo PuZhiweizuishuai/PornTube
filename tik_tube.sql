@@ -360,7 +360,7 @@ CREATE TABLE `follow`  (
   `create_time` bigint NULL DEFAULT NULL COMMENT '关注时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `find_follow_user`(`follow_user`) USING BTREE,
-  INDEX `find_create_user`(`create_user`) USING BTREE
+  UNIQUE INDEX `uk_follow_create_user`(`create_user`, `follow_user`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 

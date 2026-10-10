@@ -8,7 +8,8 @@
           prepend-icon="mdi-refresh"
           color="white"
           variant="tonal"
-          @click="getDanmukuList"
+          :loading="table.loading"
+          @click="table.refresh"
           class="mr-2"
         >
           刷新数据
@@ -87,17 +88,19 @@
       </v-tabs>
 
       <v-card-text>
-        <v-data-table-server
+        <!-- 表格 + 分页由通用组件承载，业务差异通过插槽透传 -->
+        <AdminDataTable
           :headers="headers"
-          :itemsLength="totalCount"
-          :items-per-page="pageSize"
-          :items="danmakuList"
-          :loading="loading"
-          hover
-          class="elevation-0 rounded-lg"
-          hide-default-footer
-          mobile-breakpoint="md"
-          :hide-default-header="$vuetify.display.smAndDown"
+          :items="table.items"
+          :loading="table.loading"
+          :page="table.page"
+          :total-pages="table.totalPages"
+          :total-count="table.totalCount"
+          :page-size="table.pageSize"
+          empty-text="暂无弹幕数据"
+          show-refresh-on-empty
+          @update:page="table.load"
+          @refresh="table.refresh"
         >
           <template #[`item.text`]="{ item }">
             <div class="d-flex flex-column">
@@ -122,19 +125,6 @@
               {{ item.author }}
             </v-btn>
           </template>
-
-          <!-- <template #[`item.videoId`]="{ item }">
-            <v-btn
-              :to="`/video/${item.videoId}`"
-              variant="text"
-              color="primary"
-              density="comfortable"
-              target="_blank"
-              size="small"
-            >
-              {{ item.videoId }}
-            </v-btn>
-          </template> -->
 
           <template #[`item.colorView`]="{ item }">
             <div class="d-flex align-center justify-center">
@@ -241,18 +231,8 @@
               <v-btn color="primary" class="mt-4" @click="getDanmukuList">刷新数据</v-btn>
             </div>
           </template>
-        </v-data-table-server>
+        </AdminDataTable>
       </v-card-text>
-
-      <div class="d-flex justify-center pa-4">
-        <v-pagination
-          v-model="page"
-          :length="totalPages"
-          :total-visible="7"
-          @update:model-value="handlePageChange"
-          rounded
-        ></v-pagination>
-      </div>
     </v-card>
 
     <!-- 弹幕详情对话框 -->
@@ -353,14 +333,15 @@
               }}</v-list-item-subtitle>
             </v-list-item>
 
-<!-- AI 审核信息 -->
+            <!-- AI 审核信息 -->
             <v-list-item v-if="selectedItem?.aiExamineMessage">
               <template #prepend>
                 <v-icon color="indigo">mdi-robot</v-icon>
               </template>
               <v-list-item-title>AI审核状态</v-list-item-title>
               <div>
-                AI审核意见：{{ selectedItem.aiExamineMessage }} | 消耗 TOKEN: {{ selectedItem.aiExamineToken  }}
+                AI审核意见：{{ selectedItem.aiExamineMessage }} | 消耗 TOKEN:
+                {{ selectedItem.aiExamineToken }}
               </div>
             </v-list-item>
 
@@ -396,79 +377,91 @@
       </v-card>
     </v-dialog>
 
-    <!-- 删除确认对话框 -->
-    <v-dialog v-model="deleteDialog" max-width="400">
-      <v-card>
-        <v-card-title class="text-h5">确认删除</v-card-title>
-        <v-card-text> 您确定要删除这条弹幕吗？此操作可以撤销。 </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="grey" variant="text" @click="deleteDialog = false">取消</v-btn>
-          <v-btn color="error" variant="elevated" @click="deleteItem">删除</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <!-- 删除 / 恢复 / 审核确认：统一由 ConfirmDialog 承载 -->
+    <ConfirmDialog
+      v-model="deleteDialog"
+      title="确认删除"
+      text="您确定要删除这条弹幕吗？此操作可以撤销。"
+      confirm-text="删除"
+      @confirm="deleteItem"
+    />
+    <ConfirmDialog
+      v-model="restoreDialog"
+      title="确认恢复"
+      text="您确定要恢复这条弹幕吗？"
+      confirm-text="恢复"
+      color="success"
+      @confirm="restoreItem"
+    />
+    <ConfirmDialog
+      v-model="approveDialog"
+      title="确认通过"
+      text="您确定要通过这条弹幕的审核吗？"
+      confirm-text="通过"
+      color="success"
+      @confirm="approveItem"
+    />
 
-    <!-- 恢复确认对话框 -->
-    <v-dialog v-model="restoreDialog" max-width="400">
-      <v-card>
-        <v-card-title class="text-h5">确认恢复</v-card-title>
-        <v-card-text> 您确定要恢复这条弹幕吗？ </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="grey" variant="text" @click="restoreDialog = false">取消</v-btn>
-          <v-btn color="success" variant="elevated" @click="restoreItem">恢复</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    <!-- 审核通过确认对话框 -->
-    <v-dialog v-model="approveDialog" max-width="400">
-      <v-card>
-        <v-card-title class="text-h5">确认通过</v-card-title>
-        <v-card-text> 您确定要通过这条弹幕的审核吗？ </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="grey" variant="text" @click="approveDialog = false">取消</v-btn>
-          <v-btn color="success" variant="elevated" @click="approveItem">通过</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    <!-- 消息提示 -->
-    <v-snackbar v-model="showMessage" :timeout="3000" location="top" :color="messageType">
-      {{ message }}
-      <template #actions>
-        <v-btn color="white" variant="text" @click="showMessage = false">关闭</v-btn>
-      </template>
-    </v-snackbar>
+    <AppSnackbar :state="toast" />
   </v-container>
 </template>
 
 <script>
-import { UAParser } from 'ua-parser-js'
+import { ref } from 'vue'
+import AdminDataTable from '@/components/admin/AdminDataTable.vue'
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import AppSnackbar from '@/components/common/AppSnackbar.vue'
+import { useTable } from '@/composables/useTable'
+import { useMessage } from '@/composables/useMessage'
+import { formatDate, getUaInfo } from '@/utils/format'
+import http from '@/api/index'
+
+/** 状态标签 -> 后端 status 参数 */
+const STATUS_MAP = { pending: -1, normal: 0, deleted: 1 }
 
 export default {
   name: 'DanmukuControlView',
+  components: {
+    AdminDataTable,
+    ConfirmDialog,
+    AppSnackbar,
+  },
+  setup() {
+    const { toast, showMessage } = useMessage()
+    const activeTab = ref('pending')
+    const searchUserId = ref('')
+    const searchVideoId = ref('')
+
+    // 分页、加载态、筛选联动全部由 useTable 承担
+    const table = useTable({
+      url: '/admin/danmaku/list',
+      size: 20,
+      params: () => ({
+        status: STATUS_MAP[activeTab.value],
+        userId: searchUserId.value,
+        videoId: searchVideoId.value,
+      }),
+    })
+
+    return {
+      toast,
+      showMessage,
+      activeTab,
+      searchUserId,
+      searchVideoId,
+      table,
+      // 模板里直接使用这几个格式化函数
+      formatDate,
+      getUaInfo,
+    }
+  },
   data() {
     return {
-      activeTab: 'pending',
-      danmakuList: [],
-      loading: false,
-      page: 1,
-      pageSize: 20,
-      totalPages: 1,
-      totalCount: 0,
-      showMessage: false,
-      message: '',
-      messageType: 'info',
       detailDialog: false,
       deleteDialog: false,
       approveDialog: false,
       restoreDialog: false,
       selectedItem: null,
-      searchUserId: '',
-      searchVideoId: '',
       headers: [
         { title: '弹幕内容', key: 'text', align: 'start', sortable: false },
         { title: '用户ID', key: 'author', align: 'center', sortable: false, width: '100px' },
@@ -477,153 +470,95 @@ export default {
         { title: '类型', key: 'type', align: 'center', sortable: false, width: '100px' },
         { title: '出现时间', key: 'time', align: 'center', sortable: false, width: '120px' },
         { title: 'IP信息', key: 'ipInfo', align: 'center', sortable: false },
-        { title: 'AI 审核意见', key: 'aiExamineMessage', align: 'center', sortable: false, width: '100px' },
+        {
+          title: 'AI 审核意见',
+          key: 'aiExamineMessage',
+          align: 'center',
+          sortable: false,
+          width: '100px',
+        },
         { title: '状态', key: 'status', align: 'center', sortable: false, width: '100px' },
         { title: '创建时间', key: 'createTime', align: 'center', sortable: false, width: '180px' },
         { title: '操作', key: 'actions', align: 'center', sortable: false, width: '120px' },
       ],
     }
   },
-  mounted() {
-    this.getDanmukuList()
-  },
   methods: {
-    getDanmukuList() {
-      this.loading = true
-
-      let url = `/admin/danmaku/list?page=${this.page}&limit=${this.pageSize}`
-
-      if (this.activeTab === 'normal') {
-        url += '&status=0'
-      } else if (this.activeTab === 'deleted') {
-        url += '&status=1'
-      } else if (this.activeTab === 'pending') {
-        url += '&status=-1'
-      }
-
-      if (this.searchUserId) {
-        url += `&userId=${this.searchUserId}`
-      }
-
-      if (this.searchVideoId) {
-        url += `&videoId=${this.searchVideoId}`
-      }
-
-      this.httpGet(url, (json) => {
-        this.loading = false
-        if (json && json.data) {
-          this.danmakuList = json.data.list || []
-          this.totalCount = json.data.totalCount
-          this.totalPages = json.data.totalPage
-          this.page = json.data.currPage
+    /**
+     * 统一的写操作：成功后自动刷新列表并提示
+     * @param {Promise} promise
+     * @param {string} successText
+     * @param {object} [opts] { isSuccess, errorText }
+     *   isSuccess 用于判定成功（审核类接口只回 status/message，不带 data）
+     */
+    async doAction(promise, successText, opts = {}) {
+      const { isSuccess, errorText = '操作失败' } = opts
+      try {
+        const json = await promise
+        if (isSuccess ? isSuccess(json) : !!json?.data) {
+          this.showMessage(successText, 'success')
+          this.closeAllDialogs()
+          await this.table.refresh()
         } else {
-          this.showNotification('获取数据失败', 'error')
+          this.showMessage(json?.message || errorText, 'error')
         }
-      })
+      } catch (error) {
+        this.showMessage(error?.message || errorText, 'error')
+      }
     },
-
-    pageChange(options) {
-      this.page = options.page
-      this.getDanmukuList()
+    closeAllDialogs() {
+      this.deleteDialog = false
+      this.restoreDialog = false
+      this.approveDialog = false
+      this.detailDialog = false
     },
-
-    handlePageChange() {
-      this.getDanmukuList()
+    getDanmakuList() {
+      return this.table.refresh()
     },
-
     handleTabChange() {
-      this.page = 1
-      this.getDanmukuList()
+      return this.table.reload()
     },
-
     viewDetails(item) {
       this.selectedItem = item
       this.detailDialog = true
     },
-
-    confirmDelete(item) {
-      this.selectedItem = item
-      this.deleteDialog = true
-    },
-
-    confirmRestore(item) {
-      this.selectedItem = item
-      this.restoreDialog = true
-    },
-
-    deleteItem() {
-      if (!this.selectedItem) return
-
-      this.httpPost(`/admin/danmaku/toggle`, { id: this.selectedItem.id }, (json) => {
-        if (json.data) {
-          this.showNotification('弹幕已删除', 'success')
-          this.deleteDialog = false
-          this.detailDialog = false
-          this.getDanmukuList()
-        } else {
-          this.showNotification(json?.message || '操作失败', 'error')
-        }
-      })
-    },
-
     confirmApprove(item) {
       this.selectedItem = item
       this.approveDialog = true
     },
-
-    confirmReject(item) {
+    confirmDelete(item) {
       this.selectedItem = item
-      this.rejectDialog = true
+      this.deleteDialog = true
     },
-
+    confirmRestore(item) {
+      this.selectedItem = item
+      this.restoreDialog = true
+    },
     approveItem() {
       if (!this.selectedItem) return
-      this.selectedItem.status = 0
-      this.httpPost(`/admin/examine/danmaku`, this.selectedItem, (json) => {
-        if (json.status === 200) {
-          this.showNotification('弹幕已通过审核', 'success')
-          this.approveDialog = false
-          this.detailDialog = false
-          this.getDanmukuList()
-        } else {
-          this.showNotification(json?.message || '操作失败', 'error')
-        }
-      })
+      const entity = { ...this.selectedItem, status: 0 }
+      return this.doAction(
+        http.post('/admin/examine/danmaku', entity),
+        '弹幕已通过审核',
+        // 审核接口返回 { status, message }，不带 data 信封
+        { isSuccess: (json) => json?.status === 200 }
+      )
     },
-
-    rejectItem() {
+    deleteItem() {
       if (!this.selectedItem) return
+      return this.doAction(
+        http.post('/admin/danmaku/toggle', { id: this.selectedItem.id }),
+        '弹幕已删除'
+      )
     },
-
     restoreItem() {
       if (!this.selectedItem) return
-
-      this.httpPost(`/admin/danmaku/toggle`, { id: this.selectedItem.id }, (json) => {
-        if (json.data) {
-          this.showNotification('弹幕已恢复', 'success')
-          this.restoreDialog = false
-          this.detailDialog = false
-          this.getDanmukuList()
-        } else {
-          this.showNotification(json?.message || '操作失败', 'error')
-        }
-      })
+      return this.doAction(
+        http.post('/admin/danmaku/toggle', { id: this.selectedItem.id }),
+        '弹幕已恢复'
+      )
     },
-
-    formatDate(timestamp) {
-      if (!timestamp) return '-'
-      const date = new Date(timestamp)
-      return new Intl.DateTimeFormat('zh-CN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false,
-      }).format(date)
-    },
-
+    /** 弹幕出现时间：秒 -> mm:ss */
     formatTime(seconds) {
       if (seconds === undefined || seconds === null) return '00:00'
 
@@ -634,7 +569,6 @@ export default {
         .toString()
         .padStart(2, '0')}`
     },
-
     getDanmakuTypeName(type) {
       switch (type) {
         case 0:
@@ -647,7 +581,6 @@ export default {
           return '未知'
       }
     },
-
     getDanmakuTypeColor(type) {
       switch (type) {
         case 0:
@@ -660,86 +593,45 @@ export default {
           return 'grey'
       }
     },
-
-    getUaInfo(uastr) {
-      if (!uastr) return '未知设备'
-      const ua = new UAParser(uastr)
-      return `操作系统：${ua.getOS().name || '未知'} ${ua.getOS().version || ''} 浏览器：${
-        ua.getBrowser().name || '未知'
-      } ${ua.getBrowser().major || ''}`
-    },
-
-    showNotification(message, type = 'info') {
-      this.message = message
-      this.messageType = type
-      this.showMessage = true
-    },
-
-    handleSearch() {
-      this.page = 1
-      this.getDanmukuList()
-    },
-
-    clearUserIdSearch() {
-      this.searchUserId = ''
-      this.page = 1
-      this.getDanmukuList()
-    },
-
-    clearVideoIdSearch() {
-      this.searchVideoId = ''
-      this.page = 1
-      this.getDanmukuList()
-    },
-
-    clearAllFilters() {
-      this.searchUserId = ''
-      this.searchVideoId = ''
-      this.page = 1
-      this.getDanmukuList()
-    },
-
-    removeFilter(type) {
-      if (type === 'userId') {
-        this.searchUserId = ''
-      } else if (type === 'videoId') {
-        this.searchVideoId = ''
-      }
-      this.page = 1
-      this.getDanmukuList()
-    },
     getStatusColor(status) {
       if (status === 0) return 'success'
       if (status === 1) return 'error'
       if (status === -1) return 'warning'
       return 'grey'
     },
-
     getStatusText(status) {
       if (status === 0) return '正常'
       if (status === 1) return '已删除'
       if (status === -1) return '待审核'
       return '未知'
     },
+    handleSearch() {
+      return this.table.reload()
+    },
+    clearUserIdSearch() {
+      this.searchUserId = ''
+      return this.table.reload()
+    },
+    clearVideoIdSearch() {
+      this.searchVideoId = ''
+      return this.table.reload()
+    },
+    clearAllFilters() {
+      this.searchUserId = ''
+      this.searchVideoId = ''
+      return this.table.reload()
+    },
+    removeFilter(type) {
+      if (type === 'userId') this.searchUserId = ''
+      else if (type === 'videoId') this.searchVideoId = ''
+      return this.table.reload()
+    },
   },
   computed: {
     activeSearchFilters() {
       const filters = []
-
-      if (this.searchUserId) {
-        filters.push({
-          type: 'userId',
-          label: `用户: ${this.searchUserId}`,
-        })
-      }
-
-      if (this.searchVideoId) {
-        filters.push({
-          type: 'videoId',
-          label: `视频: ${this.searchVideoId}`,
-        })
-      }
-
+      if (this.searchUserId) filters.push({ type: 'userId', label: `用户: ${this.searchUserId}` })
+      if (this.searchVideoId) filters.push({ type: 'videoId', label: `视频: ${this.searchVideoId}` })
       return filters
     },
   },
@@ -747,10 +639,8 @@ export default {
 </script>
 
 <style scoped>
-.v-data-table-server th {
+:deep(.v-data-table-server th) {
   font-weight: 600 !important;
   background-color: #f5f5f5;
 }
 </style>
-
-

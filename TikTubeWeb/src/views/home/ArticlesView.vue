@@ -19,7 +19,7 @@
     
     <v-container>
       <v-row justify="center">
-        <v-pagination
+        <Pagination
           rounded="circle"
           :total-visible="7"
           v-model="page"
@@ -34,10 +34,12 @@
 
 <script>
 import TextInfoCard from '@/components/card/TextInfoCard.vue'
+import Pagination from '@/components/common/Pagination.vue'
 
 export default {
   components: {
-    TextInfoCard
+    TextInfoCard,
+    Pagination
   },
   data() {
     return {

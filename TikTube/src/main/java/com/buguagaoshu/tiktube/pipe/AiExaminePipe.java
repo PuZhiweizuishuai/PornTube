@@ -159,11 +159,8 @@ public class AiExaminePipe {
                                 comment.getId(),
                                 "评论被删除",
                                 "",
-                                "你好，你的评论："
-                                        + MyStringUtils.extractString(comment.getComment(), 50)
-                                        + "因为" + comment.getAiExamineMessage()
-                                        + "已被删除，请遵相关法律法规及社区规定。"
-                                        + "如有异议，请 【<a href='/appeal?id=" + comment.getId() + "&type=comment'>点击此处</a>】 进行申诉。",
+                                buildDeleteNotification("评论", comment.getComment(), result.getMessage(),
+                                        comment.getId(), "comment"),
                                 NotificationType.SYSTEM
                         );
                     }
@@ -217,11 +214,8 @@ public class AiExaminePipe {
                                 danmaku.getId(),
                                 "弹幕被删除",
                                 "",
-                                "你好，你的弹幕："
-                                        + MyStringUtils.extractString(danmaku.getText(), 50)
-                                        + "因为" + danmaku.getAiExamineMessage()
-                                        + "已被删除，请遵相关法律法规及社区规定。"
-                                        + "如有异议，请 【<a href='/appeal?id=" + danmaku.getId() + "&type=danmaku'>点击此处</a>】 进行申诉。",
+                                buildDeleteNotification("弹幕", danmaku.getText(), result.getMessage(),
+                                        danmaku.getId(), "danmaku"),
                                 NotificationType.SYSTEM
                         );
                     }
@@ -241,6 +235,17 @@ public class AiExaminePipe {
                 log.error("处理弹幕时发生错误", e);
             }
         }
+    }
+
+    /**
+     * 内容被 AI 审核删除时发给用户的通知正文。
+     * 用户原文与模型理由一律转成转义后的纯文本，只有申诉链接是系统自己生成的可信 HTML。
+     */
+    private String buildDeleteNotification(String target, String originalText, String aiMessage,
+                                           Long id, String appealType) {
+        return "你好，你的" + target + "：" + MyStringUtils.safeTextForRichMessage(originalText, 50)
+                + " 因为「" + MyStringUtils.safeTextForRichMessage(aiMessage, 100) + "」已被删除，请遵相关法律法规及社区规定。"
+                + "如有异议，请 【<a href=\"/appeal?id=" + id + "&type=" + appealType + "\">点击此处</a>】 进行申诉。";
     }
 
     /**

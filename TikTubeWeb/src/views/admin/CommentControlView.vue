@@ -8,7 +8,8 @@
           prepend-icon="mdi-refresh"
           color="white"
           variant="tonal"
-          @click="getCommentList"
+          :loading="table.loading"
+          @click="table.refresh"
           class="mr-2"
         >
           刷新数据
@@ -88,17 +89,19 @@
       </v-tabs>
 
       <v-card-text>
-        <v-data-table-server
+        <!-- 表格 + 分页由通用组件承载，业务差异通过插槽透传 -->
+        <AdminDataTable
           :headers="headers"
-          :itemsLength="totalCount"
-          :items-per-page="pageSize"
-          :items="comments"
-          :loading="loading"
-          hover
-          class="elevation-0 rounded-lg"
-          hide-default-footer
-          mobile-breakpoint="md"
-          :hide-default-header="$vuetify.display.smAndDown"
+          :items="table.items"
+          :loading="table.loading"
+          :page="table.page"
+          :total-pages="table.totalPages"
+          :total-count="table.totalCount"
+          :page-size="table.pageSize"
+          empty-text="暂无评论数据"
+          show-refresh-on-empty
+          @update:page="table.load"
+          @refresh="table.refresh"
         >
           <template #[`item.comment`]="{ item }">
             <div class="d-flex flex-column">
@@ -213,13 +216,7 @@
                 </v-tooltip>
                 <v-tooltip location="top" text="删除">
                   <template #activator="{ props }">
-                    <v-btn
-                      v-bind="props"
-                      icon
-                      size="small"
-                      color="error"
-                      @click="confirmDelete(item)"
-                    >
+                    <v-btn v-bind="props" icon size="small" color="error" @click="confirmDelete(item)">
                       <v-icon>mdi-delete</v-icon>
                     </v-btn>
                   </template>
@@ -243,26 +240,8 @@
               </template>
             </div>
           </template>
-
-          <template #no-data>
-            <div class="d-flex flex-column align-center pa-4">
-              <v-icon size="large" color="grey-lighten-1" class="mb-2">mdi-emoticon-sad</v-icon>
-              <span class="text-body-1 text-grey">暂无评论数据</span>
-              <v-btn color="primary" class="mt-4" @click="getCommentList">刷新数据</v-btn>
-            </div>
-          </template>
-        </v-data-table-server>
+        </AdminDataTable>
       </v-card-text>
-
-      <div class="d-flex justify-center pa-4">
-        <v-pagination
-          v-model="page"
-          :length="totalPages"
-          :total-visible="7"
-          @update:model-value="handlePageChange"
-          rounded
-        ></v-pagination>
-      </div>
     </v-card>
 
     <!-- 评论详情对话框 -->
@@ -333,7 +312,8 @@
               </template>
               <v-list-item-title>AI审核状态</v-list-item-title>
               <div>
-                AI审核意见：{{ selectedItem.aiExamineMessage }} | 消耗 TOKEN: {{ selectedItem.aiExamineToken  }}
+                AI审核意见：{{ selectedItem.aiExamineMessage }} | 消耗 TOKEN:
+                {{ selectedItem.aiExamineToken }}
               </div>
             </v-list-item>
 
@@ -369,83 +349,94 @@
       </v-card>
     </v-dialog>
 
-    <!-- 删除确认对话框 -->
-    <v-dialog v-model="deleteDialog" max-width="400">
-      <v-card>
-        <v-card-title class="text-h5">确认删除</v-card-title>
-        <v-card-text> 您确定要删除这条评论吗？此操作可以撤销。 </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="grey" variant="text" @click="deleteDialog = false">取消</v-btn>
-          <v-btn color="error" variant="elevated" @click="deleteItem">删除</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <!-- 删除 / 恢复 / 审核确认：统一由 ConfirmDialog 承载 -->
+    <ConfirmDialog
+      v-model="deleteDialog"
+      title="确认删除"
+      text="您确定要删除这条评论吗？此操作可以撤销。"
+      confirm-text="删除"
+      @confirm="deleteItem"
+    />
+    <ConfirmDialog
+      v-model="restoreDialog"
+      title="确认恢复"
+      text="您确定要恢复这条评论吗？"
+      confirm-text="恢复"
+      color="success"
+      @confirm="restoreItem"
+    />
+    <ConfirmDialog
+      v-model="approveDialog"
+      title="确认通过"
+      text="您确定要通过这条评论的审核吗？"
+      confirm-text="通过"
+      color="success"
+      @confirm="approveItem"
+    />
 
-    <!-- 恢复确认对话框 -->
-    <v-dialog v-model="restoreDialog" max-width="400">
-      <v-card>
-        <v-card-title class="text-h5">确认恢复</v-card-title>
-        <v-card-text> 您确定要恢复这条评论吗？ </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="grey" variant="text" @click="restoreDialog = false">取消</v-btn>
-          <v-btn color="success" variant="elevated" @click="restoreItem">恢复</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    <!-- 审核通过确认对话框 -->
-    <v-dialog v-model="approveDialog" max-width="400">
-      <v-card>
-        <v-card-title class="text-h5">确认通过</v-card-title>
-        <v-card-text> 您确定要通过这条评论的审核吗？ </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="grey" variant="text" @click="approveDialog = false">取消</v-btn>
-          <v-btn color="success" variant="elevated" @click="approveItem">通过</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    <!-- 消息提示 -->
-    <v-snackbar v-model="showMessage" :timeout="3000" location="top" :color="messageType">
-      {{ message }}
-      <template #actions>
-        <v-btn color="white" variant="text" @click="showMessage = false">关闭</v-btn>
-      </template>
-    </v-snackbar>
+    <AppSnackbar :state="toast" />
   </v-container>
 </template>
 
 <script>
-import { UAParser } from 'ua-parser-js'
+import { ref } from 'vue'
 import ShowMarkdown from '@/components/vditor/ShowMarkdown.vue'
+import AdminDataTable from '@/components/admin/AdminDataTable.vue'
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import AppSnackbar from '@/components/common/AppSnackbar.vue'
+import { useTable } from '@/composables/useTable'
+import { useMessage } from '@/composables/useMessage'
+import { formatDate, formatNumber, getUaInfo } from '@/utils/format'
+import http from '@/api/index'
+
+/** 状态标签 -> 后端 status 参数 */
+const STATUS_MAP = { pending: -1, normal: 0, deleted: 1 }
+
 export default {
   name: 'CommentControlView',
   components: {
     ShowMarkdown,
+    AdminDataTable,
+    ConfirmDialog,
+    AppSnackbar,
+  },
+  setup() {
+    const { toast, showMessage } = useMessage()
+    const activeTab = ref('pending')
+    const searchUserId = ref('')
+    const searchArticleId = ref('')
+
+    // 分页、加载态、筛选联动全部由 useTable 承担
+    const table = useTable({
+      url: '/admin/comment/list',
+      size: 20,
+      params: () => ({
+        status: STATUS_MAP[activeTab.value],
+        userId: searchUserId.value,
+        articleId: searchArticleId.value,
+      }),
+    })
+
+    return {
+      toast,
+      showMessage,
+      activeTab,
+      searchUserId,
+      searchArticleId,
+      table,
+      // 模板里直接使用这几个格式化函数
+      formatDate,
+      formatNumber,
+      getUaInfo,
+    }
   },
   data() {
     return {
-      activeTab: 'pending',
-      comments: [],
-      loading: false,
-      page: 1,
-      pageSize: 20,
-      totalPages: 1,
-      totalCount: 0,
-      showMessage: false,
-      message: '',
-      messageType: 'info',
       detailDialog: false,
       deleteDialog: false,
       approveDialog: false,
-      rejectDialog: false,
       restoreDialog: false,
       selectedItem: null,
-      searchUserId: '',
-      searchArticleId: '',
       headers: [
         { title: '评论内容', key: 'comment', align: 'start', sortable: false },
         { title: '用户ID', key: 'userId', align: 'center', sortable: false, width: '100px' },
@@ -460,42 +451,27 @@ export default {
       ],
     }
   },
-  mounted() {
-    this.getCommentList()
-  },
   methods: {
-    getCommentList() {
-      this.loading = true
-
-      let url = `/admin/comment/list?page=${this.page}&limit=${this.pageSize}`
-
-      if (this.activeTab === 'normal') {
-        url += '&status=0'
-      } else if (this.activeTab === 'deleted') {
-        url += '&status=1'
-      } else if (this.activeTab === 'pending') {
-        url += '&status=-1'
-      }
-
-      if (this.searchUserId) {
-        url += `&userId=${this.searchUserId}`
-      }
-
-      if (this.searchArticleId) {
-        url += `&articleId=${this.searchArticleId}`
-      }
-
-      this.httpGet(url, (json) => {
-        this.loading = false
-        if (json && json.data) {
-          this.comments = json.data.list || []
-          this.totalCount = json.data.totalCount
-          this.totalPages = json.data.totalPage
-          this.page = json.data.currPage
+    /** 统一的写操作：成功后自动刷新列表并提示 */
+    async doAction(promise, successText) {
+      try {
+        const json = await promise
+        if (json?.data) {
+          this.showMessage(successText, 'success')
+          this.closeAllDialogs()
+          await this.table.refresh()
         } else {
-          this.showNotification('获取数据失败', 'error')
+          this.showMessage(json?.message || '操作失败', 'error')
         }
-      })
+      } catch (error) {
+        this.showMessage(error?.message || '操作失败', 'error')
+      }
+    },
+    closeAllDialogs() {
+      this.deleteDialog = false
+      this.restoreDialog = false
+      this.approveDialog = false
+      this.detailDialog = false
     },
     getStatusColor(status) {
       if (status === 0) return 'success'
@@ -503,7 +479,6 @@ export default {
       if (status === -1) return 'warning'
       return 'grey'
     },
-
     getStatusText(status) {
       if (status === 0) return '正常'
       if (status === 1) return '已删除'
@@ -514,176 +489,63 @@ export default {
       this.selectedItem = item
       this.approveDialog = true
     },
-
-    confirmReject(item) {
-      this.selectedItem = item
-      this.rejectDialog = true
-    },
-
     approveItem() {
       if (!this.selectedItem) return
-      this.selectedItem.status = 0
-      this.httpPost(`/admin/examine/comment`, this.selectedItem, (json) => {
-        if (json.status === 200) {
-          this.showNotification('评论已通过审核', 'success')
-          this.approveDialog = false
-          this.detailDialog = false
-          this.getCommentList()
-        } else {
-          this.showNotification(json?.message || '操作失败', 'error')
-        }
-      })
+      const entity = { ...this.selectedItem, status: 0 }
+      return this.doAction(http.post('/admin/examine/comment', entity), '评论已通过审核')
     },
-
-    rejectItem() {
-      if (!this.selectedItem) return
-
-      console.log('拒绝审核')
-    },
-    pageChange(options) {
-      this.page = options.page
-      this.getCommentList()
-    },
-
-    handlePageChange() {
-      this.getCommentList()
-    },
-
     handleTabChange() {
-      this.page = 1
-      this.getCommentList()
+      return this.table.reload()
     },
-
     viewDetails(item) {
       this.selectedItem = item
       this.detailDialog = true
     },
-
     confirmDelete(item) {
       this.selectedItem = item
       this.deleteDialog = true
     },
-
     confirmRestore(item) {
       this.selectedItem = item
       this.restoreDialog = true
     },
-
     deleteItem() {
       if (!this.selectedItem) return
-
-      this.httpPost(`/admin/comment/toggle`, { id: this.selectedItem.id }, (json) => {
-        if (json.data) {
-          this.showNotification('评论已删除', 'success')
-          this.deleteDialog = false
-          this.detailDialog = false
-          this.getCommentList()
-        } else {
-          this.showNotification(json?.message || '操作失败', 'error')
-        }
-      })
+      return this.doAction(http.post('/admin/comment/toggle', { id: this.selectedItem.id }), '评论已删除')
     },
-
     restoreItem() {
       if (!this.selectedItem) return
-
-      this.httpPost(`/admin/comment/toggle`, { id: this.selectedItem.id }, (json) => {
-        if (json.data) {
-          this.showNotification('评论已恢复', 'success')
-          this.restoreDialog = false
-          this.detailDialog = false
-          this.getCommentList()
-        } else {
-          this.showNotification(json?.message || '操作失败', 'error')
-        }
-      })
+      return this.doAction(http.post('/admin/comment/toggle', { id: this.selectedItem.id }), '评论已恢复')
     },
-
-    formatDate(timestamp) {
-      if (!timestamp) return '-'
-      const date = new Date(timestamp)
-      return new Intl.DateTimeFormat('zh-CN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false,
-      }).format(date)
-    },
-
-    formatNumber(num) {
-      if (!num) return '0'
-      return num.toString()
-    },
-
-    getUaInfo(uastr) {
-      if (!uastr) return '未知设备'
-      const ua = new UAParser(uastr)
-      return `操作系统：${ua.getOS().name || '未知'} ${ua.getOS().version || ''} 浏览器：${
-        ua.getBrowser().name || '未知'
-      } ${ua.getBrowser().major || ''}`
-    },
-
-    showNotification(message, type = 'info') {
-      this.message = message
-      this.messageType = type
-      this.showMessage = true
-    },
-
     handleSearch() {
-      this.page = 1
-      this.getCommentList()
+      return this.table.reload()
     },
-
     clearUserIdSearch() {
       this.searchUserId = ''
-      this.page = 1
-      this.getCommentList()
+      return this.table.reload()
     },
-
     clearArticleIdSearch() {
       this.searchArticleId = ''
-      this.page = 1
-      this.getCommentList()
+      return this.table.reload()
     },
-
     clearAllFilters() {
       this.searchUserId = ''
       this.searchArticleId = ''
-      this.page = 1
-      this.getCommentList()
+      return this.table.reload()
     },
-
     removeFilter(type) {
-      if (type === 'userId') {
-        this.searchUserId = ''
-      } else if (type === 'articleId') {
-        this.searchArticleId = ''
-      }
-      this.page = 1
-      this.getCommentList()
+      if (type === 'userId') this.searchUserId = ''
+      else if (type === 'articleId') this.searchArticleId = ''
+      return this.table.reload()
     },
   },
   computed: {
     activeSearchFilters() {
       const filters = []
-
-      if (this.searchUserId) {
-        filters.push({
-          type: 'userId',
-          label: `用户: ${this.searchUserId}`,
-        })
-      }
-
+      if (this.searchUserId) filters.push({ type: 'userId', label: `用户: ${this.searchUserId}` })
       if (this.searchArticleId) {
-        filters.push({
-          type: 'articleId',
-          label: `稿件: ${this.searchArticleId}`,
-        })
+        filters.push({ type: 'articleId', label: `稿件: ${this.searchArticleId}` })
       }
-
       return filters
     },
   },
@@ -691,7 +553,7 @@ export default {
 </script>
 
 <style scoped>
-.v-data-table-server th {
+:deep(.v-data-table-server th) {
   font-weight: 600 !important;
   background-color: #f5f5f5;
 }

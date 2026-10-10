@@ -333,7 +333,8 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, CommentEntity> i
 
     @Override
     public void addCount(String col, long commentId, long count) {
-        this.baseMapper.addCount(col, commentId, count);
+        // col 会被拼进 update 语句，只允许计数列白名单
+        this.baseMapper.addCount(SQLFilter.checkedCountColumn(col), commentId, count);
     }
 
 }

@@ -292,13 +292,13 @@
 </template>
 
 <script>
-import TimeUtil from '@/utils/time-util.vue'
+import TimeUtil from '@/utils/time-util'
 import PlayerVideo from '@/components/player/PlayerVideo.vue'
 import Comment from '@/views/comment/VideoComment.vue'
 import { useUserStore } from '@/stores/userStore'
 import ShareCard from '@/components/card/ShareCard.vue'
 import VideoCared from '@/components/card/VideoCard.vue'
-import Power from '@/utils/check-power.vue'
+import Power from '@/utils/check-power'
 import OpinionCard from '@/components/card/OpinionCard.vue'
 export default {
   name: 'VideoView',

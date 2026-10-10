@@ -27,11 +27,12 @@
         <result property="aiExamineId" column="ai_examine_id"/>
     </resultMap>
     
+    <!-- col 由服务层 SQLFilter.checkedCountColumn 白名单校验后才能拼接 -->
     <update id="addCount">
         update comment set ${col} = ${col} + #{count} where id = #{id}
     </update>
     
-    <!-- 批量更新评论计数的SQL - 优化版 -->
+    <!-- 批量更新评论计数的SQL - 优化版，col 只允许 SQLFilter.COUNT_COLUMNS 中的列名 -->
     <update id="batchUpdateCount">
         UPDATE comment
         SET ${col} = CASE id

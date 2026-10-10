@@ -176,13 +176,13 @@
       </v-data-table>
 
       <div class="text-center pa-4">
-        <v-pagination
+        <Pagination
           v-model="page"
           :length="totalPages"
           :total-visible="7"
           @update:model-value="handlePageChange"
           rounded
-        ></v-pagination>
+        />
       </div>
     </v-card>
 
@@ -212,8 +212,13 @@
 </template>
 
 <script>
+import Pagination from '@/components/common/Pagination.vue'
+
 export default {
   name: 'StudioListView',
+  components: {
+    Pagination,
+  },
   data() {
     return {
       activeTab: 'all',

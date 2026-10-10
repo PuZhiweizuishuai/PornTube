@@ -48,22 +48,16 @@ public class CurrentLimitingRedisRepositoryImpl implements APICurrentLimitingRep
 
         // 获取上次访问时间
         Object lastVisitTimeObj = redisRepository.get(key);
-
-        // 如果是首次访问或者已经超过限制时间，则允许访问
-        if (lastVisitTimeObj == null) {
-            // 更新访问时间并设置过期时间
-            redisRepository.set(key, String.valueOf(currentTime), TIME_LIMIT);
-            return true;
-        } else {
+        if (lastVisitTimeObj != null) {
             long lastVisitTime = Long.parseLong(lastVisitTimeObj.toString());
-            if ((currentTime - lastVisitTime) >= TIME_LIMIT) {
-                // 更新访问时间并设置过期时间
-                redisRepository.set(key, String.valueOf(currentTime), TIME_LIMIT);
-                return true;
+            // 还在限制期内时不刷新上次访问时间，否则不断重试会把窗口一直往后推
+            if ((currentTime - lastVisitTime) < TIME_LIMIT) {
+                return false;
             }
         }
+        // 允许访问，更新访问时间并设置过期时间
         redisRepository.set(key, String.valueOf(currentTime), TIME_LIMIT);
-        return false;
+        return true;
     }
 
     @Override

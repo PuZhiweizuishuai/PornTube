@@ -5,8 +5,8 @@ import com.buguagaoshu.tiktube.repository.CountLimitRepository;
 import com.buguagaoshu.tiktube.repository.RedisRepository;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @author Pu Zhiwei {@literal puzhiweipuzhiwei@foxmail.com}
@@ -54,33 +54,59 @@ public class CountLimitRedisRepositoryImpl implements CountLimitRepository {
     }
 
     @Override
-    public void recordFailedAttempt(String email) {
-        String attemptsKey = LOGIN_ATTEMPTS_KEY_PREFIX + email;
+    public void recordFailedAttempt(String key) {
+        String attemptsKey = LOGIN_ATTEMPTS_KEY_PREFIX + key;
         // 增加失败次数
         long attempts = redisRepository.incr(attemptsKey, 1);
-        
-        // 设置过期时间（如果没有设置过）
-        redisRepository.expire(attemptsKey, WebConstant.LOCK_DURATION * 60);
-        
+
+        // 仅在首次失败（或丢失 TTL）时设置过期时间，避免每次失败都把窗口往后推
+        if (attempts == 1 || redisRepository.getExpire(attemptsKey) < 0) {
+            redisRepository.expire(attemptsKey, WebConstant.LOCK_DURATION * 60);
+        }
+
         // 如果达到最大尝试次数，设置锁定
         if (attempts >= WebConstant.MAX_ATTEMPTS) {
-            String lockTimeKey = LOGIN_LOCK_TIME_KEY_PREFIX + email;
+            String lockTimeKey = LOGIN_LOCK_TIME_KEY_PREFIX + key;
             long lockExpiryTime = System.currentTimeMillis() + WebConstant.LOCK_DURATION * 60 * 1000;
-            redisRepository.set(lockTimeKey, String.valueOf(lockExpiryTime));
-            redisRepository.expire(lockTimeKey, WebConstant.LOCK_DURATION * 60);
+            redisRepository.set(lockTimeKey, String.valueOf(lockExpiryTime), WebConstant.LOCK_DURATION * 60);
         }
     }
 
     @Override
-    public void recordSuccess(String email) {
+    public void recordSuccess(String key) {
         // 登录成功，删除尝试记录和锁定记录
-        redisRepository.del(LOGIN_ATTEMPTS_KEY_PREFIX + email);
-        redisRepository.del(LOGIN_LOCK_TIME_KEY_PREFIX + email);
+        redisRepository.del(LOGIN_ATTEMPTS_KEY_PREFIX + key);
+        redisRepository.del(LOGIN_LOCK_TIME_KEY_PREFIX + key);
     }
 
     @Override
-    public int getRemainingAttempts(String email) {
-        String attemptsKey = LOGIN_ATTEMPTS_KEY_PREFIX + email;
+    public void clearAccount(String account) {
+        // key 形如 前缀 + ip|账号，按账号后缀匹配所有来源 IP
+        String suffix = "*" + LOGIN_KEY_SEPARATOR + escapeGlob(account);
+        Set<String> keysToDelete = new HashSet<>(redisRepository.scan(LOGIN_ATTEMPTS_KEY_PREFIX + suffix));
+        keysToDelete.addAll(redisRepository.scan(LOGIN_LOCK_TIME_KEY_PREFIX + suffix));
+        if (!keysToDelete.isEmpty()) {
+            redisRepository.del(keysToDelete.toArray(new String[0]));
+        }
+    }
+
+    /**
+     * 转义 Redis key 匹配语法中的通配字符
+     */
+    private static String escapeGlob(String value) {
+        StringBuilder builder = new StringBuilder(value.length() + 8);
+        for (char c : value.toCharArray()) {
+            if (c == '*' || c == '?' || c == '[' || c == '\\') {
+                builder.append('\\');
+            }
+            builder.append(c);
+        }
+        return builder.toString();
+    }
+
+    @Override
+    public int getRemainingAttempts(String key) {
+        String attemptsKey = LOGIN_ATTEMPTS_KEY_PREFIX + key;
         Object attemptsObj = redisRepository.get(attemptsKey);
         
         if (attemptsObj != null) {

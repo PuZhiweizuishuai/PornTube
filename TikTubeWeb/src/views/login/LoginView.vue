@@ -208,7 +208,7 @@ import LoginFrom from '@/components/form/LoginForm.vue'
 import RegisterFrom from '@/components/form/RegisterForm.vue'
 import { useWebInfoStore } from '@/stores/webInfoStore'
 import { useUserStore } from '@/stores/userStore'
-import StringUtils from '@/utils/string-utils.vue'
+import StringUtils from '@/utils/string-utils'
 export default {
   name: 'LoginView',
   components: {
@@ -433,6 +433,12 @@ export default {
         return
       }
 
+      if (this.forgotPassword.newPassword.length > 64) {
+        this.message = '密码长度不能超过64个字符'
+        this.showMessage = true
+        return
+      }
+
       // 提交数据
       this.forgotPasswordLoading = true
       const data = {
@@ -444,14 +450,10 @@ export default {
 
       this.httpPost('/user/forgot/password', data, (json) => {
         this.forgotPasswordLoading = false
-        if (json.data === true) {
+        if (json.status === 200) {
           this.message = '密码重置成功，请使用新密码登录'
           this.showMessage = true
           this.showForgotPasswordDialog = false
-        } else if (json.status === 4002) {
-          this.message = StringUtils.dataErrorMessage(json.data)
-          this.showMessage = true
-          this.getVerifyImage()
         } else {
           this.message = json.message || '密码重置失败'
           this.showMessage = true

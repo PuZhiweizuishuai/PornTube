@@ -1,5 +1,6 @@
 package com.buguagaoshu.tiktube.service.impl;
 
+import com.buguagaoshu.tiktube.cache.TotpLoginChallengeCache;
 import com.buguagaoshu.tiktube.cache.WebSettingCache;
 import com.buguagaoshu.tiktube.config.WebConstant;
 import com.buguagaoshu.tiktube.dto.LoginDetails;
@@ -9,11 +10,11 @@ import com.buguagaoshu.tiktube.entity.UserRoleEntity;
 import com.buguagaoshu.tiktube.enums.*;
 import com.buguagaoshu.tiktube.exception.NeedToCheckEmailException;
 import com.buguagaoshu.tiktube.exception.UserNotFoundException;
+import com.buguagaoshu.tiktube.exception.VerifyFailedException;
 import com.buguagaoshu.tiktube.repository.CountLimitRepository;
 import com.buguagaoshu.tiktube.service.*;
 import com.buguagaoshu.tiktube.utils.*;
 import com.buguagaoshu.tiktube.vo.*;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,6 +54,16 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
 
     private static final long TEN_MINUTES =  600000;
 
+    /**
+     * 密码长度下限
+     */
+    private static final int MIN_PASSWORD_LENGTH = 6;
+
+    /**
+     * 密码长度上限，超长输入既无安全收益，又会被部分哈希算法截断
+     */
+    private static final int MAX_PASSWORD_LENGTH = 64;
+
 
     private final UserRoleService userRoleService;
 
@@ -72,9 +83,9 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
 
     private final CountLimitRepository countLimitRepository;
 
+    private final TotpLoginChallengeCache totpLoginChallengeCache;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
+    private final IpUtil ipUtil;
 
 
     @Autowired
@@ -85,7 +96,9 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
                            FileTableService fileTableService,
                            TwoFactorAuthenticationServer twoFactorAuthenticationServer,
                            WebSettingCache webSettingCache,
-                           CountLimitRepository countLimitRepository) {
+                           CountLimitRepository countLimitRepository,
+                           TotpLoginChallengeCache totpLoginChallengeCache,
+                           IpUtil ipUtil) {
         this.userRoleService = userRoleService;
         this.verifyCodeService = verifyCodeService;
         this.loginLogService = loginLogService;
@@ -94,6 +107,8 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
         this.twoFactorAuthenticationServer = twoFactorAuthenticationServer;
         this.webSettingCache = webSettingCache;
         this.countLimitRepository = countLimitRepository;
+        this.totpLoginChallengeCache = totpLoginChallengeCache;
+        this.ipUtil = ipUtil;
     }
 
 
@@ -153,13 +168,19 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
         } else {
             userEntity = findUserByPhone(loginDetails.getUsername());
         }
-        if (userEntity == null) {
-            throw new UserNotFoundException("请检查用户名或密码!");
-        }
 
-        boolean b = countLimitRepository.allowLogin(userEntity.getMail());
+        // 登录失败按「来源 IP + 账号」计数，避免任意人用少量错误密码把他人账号锁死
+        // 账号不存在时用用户输入的那串值计数，同样限制同一来源不断撞号
+        String loginKey = CountLimitRepository.loginKey(ipUtil.getIpAddr(request),
+                userEntity == null ? loginDetails.getUsername() : userEntity.getMail());
+        boolean b = countLimitRepository.allowLogin(loginKey);
         if (!b) {
             throw new UserNotFoundException("错误次数太多了，请一个小时后再试或重置密码！");
+        }
+
+        if (userEntity == null) {
+            countLimitRepository.recordFailedAttempt(loginKey);
+            throw new UserNotFoundException("请检查用户名或密码!");
         }
 
         if (PasswordUtil.judgePassword(loginDetails.getPassword(), userEntity.getPassword())) {
@@ -180,31 +201,22 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
 
             // 判断是否开启了两步认证
             if (userEntity.getOtp().equals(TwoFactorAuthenticationType.ClOSE)) {
-                return loginSuccess(userEntity, loginDetails, response, request);
+                return loginSuccess(userEntity, Boolean.TRUE.equals(loginDetails.getRememberMe()), response, request);
             } else {
                 // 处理两步认证
-                // 返回 AES KEY 构造临时令牌
-
-                try {
-                    TOTPLoginKey totpLoginKey = new TOTPLoginKey();
-                    totpLoginKey.setUser(userEntity);
-                    totpLoginKey.setLoginDetails(loginDetails);
-                    totpLoginKey.setExpire(System.currentTimeMillis() + TEN_MINUTES);
-                    String json = objectMapper.writeValueAsString(totpLoginKey);
-                    // 加密 json
-                    String encrypt = AesUtil.getInstance().encrypt(json);
-                    User user = new User();
-                    user.setLoginStatus(false);
-                    user.setOtp(1);
-                    user.setKey(encrypt);
-                    return user;
-                } catch (Exception e) {
-                    throw new UserNotFoundException("请检查用户名或密码!");
-                }
+                // 待验证状态只保存在服务端，返回给浏览器的只是一个随机 ID
+                boolean rememberMe = Boolean.TRUE.equals(loginDetails.getRememberMe());
+                String challengeId = totpLoginChallengeCache.create(userEntity.getId(),
+                        rememberMe, System.currentTimeMillis() + TEN_MINUTES);
+                User user = new User();
+                user.setLoginStatus(false);
+                user.setOtp(1);
+                user.setKey(challengeId);
+                return user;
             }
         } else {
             // 错误次数记录
-            countLimitRepository.recordFailedAttempt(userEntity.getMail());
+            countLimitRepository.recordFailedAttempt(loginKey);
             throw new UserNotFoundException("请检查用户名或密码!");
         }
 
@@ -212,41 +224,37 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
 
     @Override
     public User loginTOTP(TOTPLoginKey userTotpLogin, HttpServletRequest request, HttpServletResponse response) {
-        // 获取 AES 加密临时 KEY,并解密
-        String decrypt = AesUtil.getInstance().decrypt(userTotpLogin.getKey());
-        try {
-            TOTPLoginKey totpLoginKey = objectMapper.readValue(decrypt, TOTPLoginKey.class);
-            // 检查令牌有效期
-            if (totpLoginKey.getExpire() >= System.currentTimeMillis()) {
-                // 检查 CODE
-                UserEntity user1 = totpLoginKey.getUser();
-                boolean code = twoFactorAuthenticationServer.verifyTOTPCode(user1.getId(), user1.getOtpSecret(), userTotpLogin.getCode());
-                if (code) {
-                    return loginSuccess(user1, totpLoginKey.getLoginDetails(), response, request);
-                } else {
-                    // 错误次数记录
-                    countLimitRepository.recordFailedAttempt(user1.getMail());
-                    throw new UserNotFoundException("验证码错误!");
-                }
-
-            } else {
-                throw new UserNotFoundException("登录信息已过期，请返回重新登录！");
-            }
-        } catch (Exception e) {
-            throw new UserNotFoundException("登录验证码输入错误！");
+        String challengeId = userTotpLogin.getKey();
+        TotpLoginChallengeCache.Challenge challenge = totpLoginChallengeCache.consume(challengeId);
+        if (challenge == null) {
+            throw new UserNotFoundException("登录信息已过期，请返回重新登录！");
         }
+        // 用户信息一律重新从数据库读取，绝不信任客户端传来的用户实体
+        UserEntity userEntity = this.getById(challenge.getUserId());
+        if (userEntity == null || userEntity.getOtpSecret() == null) {
+            totpLoginChallengeCache.invalidate(challengeId);
+            throw new UserNotFoundException("登录信息已过期，请返回重新登录！");
+        }
+        if (!twoFactorAuthenticationServer.verifyTOTPCode(userEntity.getId(), userEntity.getOtpSecret(), userTotpLogin.getCode())) {
+            // 错误次数记录
+            countLimitRepository.recordFailedAttempt(
+                    CountLimitRepository.loginKey(ipUtil.getIpAddr(request), userEntity.getMail()));
+            throw new UserNotFoundException("验证码错误!");
+        }
+        totpLoginChallengeCache.invalidate(challengeId);
+        return loginSuccess(userEntity, challenge.isRememberMe(), response, request);
     }
 
     public User loginSuccess(UserEntity userEntity,
-                             LoginDetails loginDetails,
+                             boolean rememberMe,
                              HttpServletResponse response,
                              HttpServletRequest request) {
         User user = new User();
         BeanUtils.copyProperties(userEntity, user);
         long time = System.currentTimeMillis();
-        long expirationTime = EXPIRATION_TIME;
+        long expirationTime;
         int cookExpirationTime = -1;
-        String jwt = "";
+        String jwt;
         UserRoleEntity userRoleEntity = userRoleService.findByUserId(userEntity.getId());
         if (userRoleEntity.getRole().equals(RoleTypeEnum.VIP.getRole())) {
             if (userRoleEntity.getVipStopTime() < System.currentTimeMillis()) {
@@ -256,11 +264,11 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
         }
 
         user.setUserRoleEntity(userRoleEntity);
-        if (loginDetails.getRememberMe() != null && loginDetails.getRememberMe()) {
+        if (rememberMe) {
             expirationTime = COOKIE_EXPIRATION_TIME * 1000 + time;
             cookExpirationTime = COOKIE_EXPIRATION_TIME;
         } else {
-            expirationTime += time;
+            expirationTime = EXPIRATION_TIME + time;
         }
 
         user.setExpireTime(expirationTime);
@@ -275,8 +283,9 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
         // 写入登录日志
         loginLogService.saveLoginLog(userEntity, request);
         user.setLoginStatus(true);
-        // 重置登录次数
-        countLimitRepository.recordSuccess(user.getMail());
+        // 重置本来源 IP 的登录失败次数
+        countLimitRepository.recordSuccess(
+                CountLimitRepository.loginKey(ipUtil.getIpAddr(request), userEntity.getMail()));
         return user;
     }
 
@@ -288,7 +297,9 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
             verifyCodeService.verify(request.getSession().getId(), userEntity.getVerifyCode());
         }
 
-        if (userEntity.getPassword().length() < 6) {
+        if (userEntity.getPassword() == null
+                || userEntity.getPassword().length() < MIN_PASSWORD_LENGTH
+                || userEntity.getPassword().length() > MAX_PASSWORD_LENGTH) {
             return ReturnCodeEnum.PASSWORD_TO_SHORT;
         }
         UserEntity sys = findUserByEmail(userEntity.getMail());
@@ -408,7 +419,10 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
             return ReturnCodeEnum.USER_NOT_FIND;
         }
         if (PasswordUtil.judgePassword(passwordDto.getOldPassword(), userEntity.getPassword())) {
-            if (passwordDto.getNewPassword().length() < 6) {
+            String newPassword = passwordDto.getNewPassword();
+            if (newPassword == null
+                    || newPassword.length() < MIN_PASSWORD_LENGTH
+                    || newPassword.length() > MAX_PASSWORD_LENGTH) {
                 return ReturnCodeEnum.PASSWORD_TO_SHORT;
             }
             UserEntity newUser = new UserEntity();
@@ -542,7 +556,8 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
 
     @Override
     public void addCount(String col, Long userId, int count) {
-        this.baseMapper.addCount(col, userId, count);
+        // col 会被拼进 update 语句，只允许计数列白名单
+        this.baseMapper.addCount(SQLFilter.checkedCountColumn(col), userId, count);
     }
 
     @Override
@@ -636,13 +651,38 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
     }
 
     @Override
-    public boolean forgotPassword(UserEntity user, String sessionId) {
-        verifyCodeService.verify(user.getMail(), user.getEmailCode());
-        UserEntity userEntity = findUserByEmail(user.getMail());
-        userEntity.setPassword(PasswordUtil.encode(user.getPassword()));
+    public ReturnCodeEnum forgotPassword(UserEntity user, String sessionId) {
+        String mail = user.getMail();
+        String newPassword = user.getPassword();
+        if (mail == null || mail.isEmpty()) {
+            return ReturnCodeEnum.VERIFY_FAILED;
+        }
+        // 密码长度只取决于调用方自己的输入，可以单独报错
+        if (newPassword == null || newPassword.length() < MIN_PASSWORD_LENGTH) {
+            return ReturnCodeEnum.PASSWORD_TO_SHORT;
+        }
+        if (newPassword.length() > MAX_PASSWORD_LENGTH) {
+            return ReturnCodeEnum.DATA_VALID_EXCEPTION;
+        }
+
+        UserEntity userEntity = null;
+        try {
+            verifyCodeService.verify(mail, user.getEmailCode());
+            userEntity = findUserByEmail(mail);
+        } catch (VerifyFailedException ignored) {
+            // 与「邮箱未注册」合并为同一返回值
+        }
+        if (userEntity == null) {
+            // 验证码错误和邮箱未注册返回完全一致的结果
+            // 发送验证码接口对任意邮箱都会发送，若此处区分提示将可用于枚举已注册账号
+            return ReturnCodeEnum.VERIFY_FAILED;
+        }
+
+        userEntity.setPassword(PasswordUtil.encode(newPassword));
         this.updateById(userEntity);
-        countLimitRepository.recordSuccess(userEntity.getMail());
-        return true;
+        // 邮箱验证码已通过，说明确实持有该邮箱，解除该账号所有来源 IP 的登录锁定
+        countLimitRepository.clearAccount(mail);
+        return ReturnCodeEnum.SUCCESS;
     }
 
 

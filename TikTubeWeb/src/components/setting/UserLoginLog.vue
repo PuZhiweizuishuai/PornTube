@@ -42,7 +42,7 @@
         </v-row>
 
         <v-card-actions class="pa-4 d-flex justify-center">
-          <v-pagination
+          <Pagination
             rounded="circle"
             :total-visible="7"
             v-model="page"
@@ -58,10 +58,14 @@
   
 <script>
 import { useUserStore } from '@/stores/userStore'
-import TimeUtil from '@/utils/time-util.vue'
+import TimeUtil from '@/utils/time-util'
 import { UAParser } from 'ua-parser-js'
+import Pagination from '@/components/common/Pagination.vue'
 export default {
   name: 'LoginLog',
+  components: {
+    Pagination,
+  },
   data() {
     return {
       TimeUtil,

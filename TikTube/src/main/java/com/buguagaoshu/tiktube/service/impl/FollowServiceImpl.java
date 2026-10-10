@@ -12,6 +12,7 @@ import com.buguagaoshu.tiktube.service.UserService;
 import com.buguagaoshu.tiktube.utils.PageUtils;
 import com.buguagaoshu.tiktube.utils.Query;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,56 +42,69 @@ public class FollowServiceImpl extends ServiceImpl<FollowDao, FollowEntity> impl
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean addFollow(FollowEntity follow, Long userId) {
-        UserEntity user = userService.getById(follow.getFollowUser());
+        Long followUser = follow.getFollowUser();
+        // 不能关注自己，也不能关注不存在的用户
+        if (followUser == null || followUser.equals(userId)) {
+            return false;
+        }
+        UserEntity user = userService.getById(followUser);
         if (user == null) {
             return false;
         }
-        // 增加关注数
-        userService.addCount("fans_count", user.getId(), 1);
-        // 增加粉丝数
+        // 重复关注只生效一次，否则计数可以被无限刷高
+        if (checkFollow(followUser, userId)) {
+            return true;
+        }
+        FollowEntity record = new FollowEntity();
+        record.setFollowUser(followUser);
+        record.setCreateUser(userId);
+        record.setCreateTime(System.currentTimeMillis());
+        try {
+            this.baseMapper.insert(record);
+        } catch (DuplicateKeyException e) {
+            // 并发下的重复关注由唯一索引拦下，按已关注处理
+            return true;
+        }
+        // 被关注的人粉丝数 +1
+        userService.addCount("fans_count", followUser, 1);
+        // 发起关注的人关注数 +1
         userService.addCount("follow_count", userId, 1);
-        follow.setId(null);
-        follow.setCreateTime(System.currentTimeMillis());
-        follow.setCreateUser(userId);
-        this.save(follow);
         return true;
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean deleteFollow(FollowEntity follow, Long userId) {
+        if (follow.getFollowUser() == null) {
+            return false;
+        }
         QueryWrapper<FollowEntity> wrapper = new QueryWrapper<>();
         wrapper.eq("create_user", userId);
         wrapper.eq("follow_user", follow.getFollowUser());
 
-        return remove(wrapper, userId, 0);
+        return remove(wrapper);
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean removeFans(FollowEntity follow, Long userId) {
+        if (follow.getCreateUser() == null) {
+            return false;
+        }
         QueryWrapper<FollowEntity> wrapper = new QueryWrapper<>();
         wrapper.eq("create_user", follow.getCreateUser());
         wrapper.eq("follow_user", userId);
-        return remove(wrapper, userId, 1);
+        return remove(wrapper);
     }
 
-    /**
-     * @param type 0 粉丝主动取关
-     *             1 移除关注
-     * */
-    private boolean remove(QueryWrapper<FollowEntity> wrapper, Long userId, Integer type) {
+    private boolean remove(QueryWrapper<FollowEntity> wrapper) {
         FollowEntity sys = this.getOne(wrapper);
         if (sys == null) {
             return false;
         }
-        if (type == 0) {
-            // 增加关注数
-            userService.addCount("fans_count", sys.getFollowUser(), -1);
-            // 增加粉丝数
-
-        } else {
-            userService.addCount("fans_count", userId, -1);
-            userService.addCount("follow_count", sys.getCreateUser(), -1);
-        }
+        // 取关要同时回退两边的计数，否则 fans_count / follow_count 会单向漂移
+        userService.addCount("fans_count", sys.getFollowUser(), -1);
+        userService.addCount("follow_count", sys.getCreateUser(), -1);
         this.removeById(sys.getId());
         return true;
     }

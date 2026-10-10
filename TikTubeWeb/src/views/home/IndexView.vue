@@ -39,7 +39,7 @@
     </v-row>
     <v-container>
       <v-row justify="center">
-        <v-pagination
+        <Pagination
           rounded="circle"
           :total-visible="7"
           v-model="page"
@@ -91,12 +91,14 @@
 import VideoCared from '@/components/card/VideoCard.vue'
 import NoticeDialogCard from '@/components/card/NoticeDialogCard.vue'
 import TextInfoCard from '@/components/card/TextInfoCard.vue'
+import Pagination from '@/components/common/Pagination.vue'
 
 export default {
   components: {
     VideoCared,
     NoticeDialogCard,
-    TextInfoCard
+    TextInfoCard,
+    Pagination
   },
   data() {
     return {

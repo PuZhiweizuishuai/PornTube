@@ -1020,7 +1020,8 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
 
     @Override
     public void addCount(String col, Long articleId, long count) {
-        this.baseMapper.addCount(col, articleId, count);
+        // col 会被拼进 update 语句，只允许计数列白名单
+        this.baseMapper.addCount(SQLFilter.checkedCountColumn(col), articleId, count);
     }
 
     @Override

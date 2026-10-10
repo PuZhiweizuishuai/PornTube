@@ -44,15 +44,14 @@
 
       <!-- 分页器 -->
       <v-row v-if="videoList.length > 0" justify="center" class="mt-6">
-        <v-pagination
+        <Pagination
           rounded="circle"
           v-model="page"
           :length="length"
           :total-visible="7"
           color="primary"
           @update:model-value="pageChange"
-          class="rounded-pill"
-        ></v-pagination>
+        />
       </v-row>
     </div>
   </v-container>
@@ -62,11 +61,13 @@
 import NotLoginCard from '@/components/card/NotLoginCard.vue'
 import FavoriteCard from '@/components/card/FavoriteCard.vue'
 import { useUserStore } from '@/stores/userStore'
+import Pagination from '@/components/common/Pagination.vue'
 
 export default {
   components: {
     NotLoginCard,
     FavoriteCard,
+    Pagination,
   },
   data() {
     return {

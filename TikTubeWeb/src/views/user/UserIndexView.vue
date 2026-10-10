@@ -146,7 +146,7 @@
         </v-col>
       </v-row>
       <v-row justify="center" style="padding-top: 12px; padding-bottom: 12px">
-        <v-pagination
+        <Pagination
           :total-visible="7"
           v-model="page"
           :length="length"
@@ -167,18 +167,20 @@
 </template>
 
 <script>
-import Power from '@/utils/check-power.vue'
-import TimeUtil from '@/utils/time-util.vue'
+import Power from '@/utils/check-power'
+import TimeUtil from '@/utils/time-util'
 import { useUserStore } from '@/stores/userStore'
 import { useWebInfoStore } from '@/stores/webInfoStore'
 import VideoListView from '@/components/player/VideoList.vue'
 import TextInfoCard from '@/components/card/TextInfoCard.vue'
+import Pagination from '@/components/common/Pagination.vue'
 
 export default {
   name: 'UserHome',
   components: {
     VideoListView,
-    TextInfoCard
+    TextInfoCard,
+    Pagination
   },
   data() {
     return {

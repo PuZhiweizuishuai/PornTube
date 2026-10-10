@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.buguagaoshu.tiktube.cache.WebSettingCache;
 
+import java.util.Collection;
 import java.util.Map;
 
 /**
@@ -18,6 +19,15 @@ public class Query<T> {
     }
 
     public IPage<T> getPage(Map<String, Object> params, String defaultOrderField, boolean isAsc) {
+        return this.getPage(params, defaultOrderField, isAsc, null);
+    }
+
+    /**
+     * @param allowedOrderFields 允许前端通过 sidx 指定的排序列白名单
+     *                           排序列会被拼进 ORDER BY，不在白名单内的一律忽略前端排序参数
+     *                           传 null 表示完全不接受前端排序
+     * */
+    public IPage<T> getPage(Map<String, Object> params, String defaultOrderField, boolean isAsc, Collection<String> allowedOrderFields) {
         // 分页参数
         long curPage = 1;
         long limit = 10;
@@ -53,8 +63,8 @@ public class Query<T> {
         params.put(Constant.PAGE, page);
 
         // 排序字段
-        // 防止SQL注入（因为sidx、order是通过拼接SQL实现排序的，会有SQL注入风险）
-        String orderField = SQLFilter.sqlInject((String) params.get(Constant.ORDER_FIELD));
+        // 只接受白名单内的合法标识符，杜绝把用户输入拼进 ORDER BY
+        String orderField = SQLFilter.safeOrderField((String) params.get(Constant.ORDER_FIELD), allowedOrderFields);
         String order = (String) params.get(Constant.ORDER);
 
 

@@ -68,7 +68,7 @@
 </template>
   
 <script>
-import TimeUtil from '@/utils/time-util.vue'
+import TimeUtil from '@/utils/time-util'
 import { UAParser } from 'ua-parser-js'
 
 export default {

@@ -207,28 +207,25 @@
       </v-col>
     </v-row>
 
-    <!-- 消息提示 -->
-    <v-snackbar
-      v-model="showMessage"
-      :color="messageType"
-      variant="elevated"
-      location="top"
-      :timeout="3000"
-    >
-      {{ message }}
-      <template v-slot:actions>
-        <v-btn variant="text" @click="showMessage = false"> 关闭 </v-btn>
-      </template>
-    </v-snackbar>
+    <!-- 消息提示：统一由 useMessage + AppSnackbar 承载 -->
+    <AppSnackbar :state="toast" />
   </v-container>
 </template>
 
 <script>
 import ArticleSegment from '@/components/upload/ArticleSegment.vue'
+import AppSnackbar from '@/components/common/AppSnackbar.vue'
+import { useMessage } from '@/composables/useMessage'
+import { uploadCover } from '@/utils/upload'
 
 export default {
   components: {
-    ArticleSegment
+    ArticleSegment,
+    AppSnackbar
+  },
+  setup() {
+    const { toast, showSuccessMessage, showErrorMessage } = useMessage()
+    return { toast, showSuccessMessage, showErrorMessage }
   },
   data() {
     return {
@@ -273,9 +270,6 @@ export default {
       selectedSubCategory: null,
       nowCategory: {},
       files: [],
-      showMessage: false,
-      message: '',
-      messageType: 'info',
       isSubmitting: false,
       editCode: -1
     }
@@ -470,43 +464,24 @@ export default {
       })
     },
 
-    showSuccessMessage(msg) {
-      this.message = msg
-      this.messageType = 'success'
-      this.showMessage = true
-    },
-
-    showErrorMessage(msg) {
-      this.message = msg
-      this.messageType = 'error'
-      this.showMessage = true
-    },
+    // showSuccessMessage / showErrorMessage 由 useMessage 提供（见 setup），此处不再重复实现
 
     setFile(value) {
       this.files = []
       if (value) this.files.push(value)
     },
 
-    uploadFile() {
-      if (this.files.length === 0) {
-        this.showErrorMessage('请先选择文章封面，然后上传！')
-        return
+    async uploadFile() {
+      try {
+        const { imageId, imgUrl } = await uploadCover(this.files, {
+          emptyMessage: '请先选择文章封面，然后上传！',
+        })
+        this.article.imageId = imageId
+        this.article.imgUrl = imgUrl
+        this.showSuccessMessage('封面上传成功')
+      } catch (error) {
+        this.showErrorMessage(error?.message || '封面上传失败')
       }
-
-      const formData = new FormData()
-      for (let i = 0; i < this.files.length; i++) {
-        formData.append('file[]', this.files[i])
-      }
-
-      this.uploadFiles('/upload/photo', formData, (json) => {
-        if (json.status === 200) {
-          this.article.imageId = json.data[0].id
-          this.article.imgUrl = json.data[0].fileUrl
-          this.showSuccessMessage('封面上传成功')
-        } else {
-          this.showErrorMessage('上传失败，请重试！' + (json.message || ''))
-        }
-      })
     },
 
     getCategory() {

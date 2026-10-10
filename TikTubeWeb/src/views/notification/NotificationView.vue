@@ -247,7 +247,7 @@
           <v-divider v-if="totalPage > 1"></v-divider>
 
           <div v-if="totalPage > 1" class="d-flex justify-center pa-4">
-            <v-pagination
+            <Pagination
               v-model="currPage"
               :length="totalPage"
               :total-visible="7"
@@ -255,7 +255,7 @@
               rounded
               density="comfortable"
               active-color="primary"
-            ></v-pagination>
+            />
           </div>
         </v-card>
       </v-col>
@@ -393,6 +393,7 @@
 <script>
 import ShowMarkdown from '@/components/vditor/ShowMarkdown.vue'
 import CommentVditor from '@/components/vditor/VditorComment.vue'
+import Pagination from '@/components/common/Pagination.vue'
 import { useUserStore } from '@/stores/userStore'
 
 export default {
@@ -400,6 +401,7 @@ export default {
   components: {
     ShowMarkdown,
     CommentVditor,
+    Pagination,
   },
   data() {
     return {

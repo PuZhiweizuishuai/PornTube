@@ -19,7 +19,7 @@
         </v-col>
       </v-row>
       <v-row justify="center">
-        <v-pagination
+        <Pagination
           rounded="circle"
           :total-visible="7"
           v-model="page"
@@ -35,10 +35,12 @@
 import NotLoginCard from '@/components/card/NotLoginCard.vue'
 import HistoryCard from '@/components/card/HistoryCard.vue'
 import { useUserStore } from '@/stores/userStore'
+import Pagination from '@/components/common/Pagination.vue'
 export default {
   components: {
     NotLoginCard,
     HistoryCard,
+    Pagination,
   },
   data() {
     return {

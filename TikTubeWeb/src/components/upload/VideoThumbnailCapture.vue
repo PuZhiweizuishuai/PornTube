@@ -99,24 +99,22 @@
       </v-card>
     </v-dialog>
 
-    <v-snackbar
-      v-model="showMessage"
-      :color="messageType"
-      variant="elevated"
-      location="top"
-      :timeout="3000"
-    >
-      {{ message }}
-      <template v-slot:actions>
-        <v-btn variant="text" @click="showMessage = false">关闭</v-btn>
-      </template>
-    </v-snackbar>
+    <!-- 消息提示统一由 useMessage + AppSnackbar 承载 -->
+    <AppSnackbar :state="toast" />
   </div>
 </template>
 
 <script>
+import AppSnackbar from '@/components/common/AppSnackbar.vue'
+import { useMessage } from '@/composables/useMessage'
+
 export default {
   name: 'VideoThumbnailCapture',
+  components: { AppSnackbar },
+  setup() {
+    const { toast, showSuccessMessage, showErrorMessage } = useMessage()
+    return { toast, showSuccessMessage, showErrorMessage }
+  },
   props: {
     file: {
       type: Object,
@@ -138,9 +136,6 @@ export default {
       selectedFrameIndex: -1,
       capturedImage: null,
       hasCapturedFrame: false,
-      message: '',
-      showMessage: false,
-      messageType: 'info',
       videoUrl: '',
     }
   },
@@ -392,17 +387,7 @@ export default {
       this.hasCapturedFrame = false
     },
 
-    showSuccessMessage(msg) {
-      this.message = msg
-      this.messageType = 'success'
-      this.showMessage = true
-    },
-
-    showErrorMessage(msg) {
-      this.message = msg
-      this.messageType = 'error'
-      this.showMessage = true
-    },
+    // showSuccessMessage / showErrorMessage 由 useMessage 提供（见 setup），此处不再重复实现
   },
 }
 </script>

@@ -160,13 +160,13 @@
 
       <!-- 分页控件 -->
       <div v-if="totalPage > 1" class="d-flex justify-center my-4">
-        <v-pagination
+        <Pagination
           v-model="page"
           :length="totalPage"
           :total-visible="7"
           rounded="circle"
           @update:model-value="loadFans"
-        ></v-pagination>
+        />
       </div>
     </template>
 
@@ -213,9 +213,13 @@
     
 <script>
 import { useUserStore } from '@/stores/userStore'
+import Pagination from '@/components/common/Pagination.vue'
 
 export default {
   name: 'FansView',
+  components: {
+    Pagination,
+  },
   data() {
     return {
       fans: [],

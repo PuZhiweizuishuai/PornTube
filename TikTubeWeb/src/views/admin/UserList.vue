@@ -174,14 +174,14 @@
           <template #bottom>
             <div class="d-flex justify-space-between align-center pa-4">
               <div class="text-caption text-medium-emphasis">共 {{ totalCount }} 名用户</div>
-              <v-pagination
+              <Pagination
                 v-model="page"
                 :length="totalPage"
-                @update:model-value="fetchUsers"
                 :total-visible="7"
                 rounded="lg"
                 density="comfortable"
-              ></v-pagination>
+                @update:model-value="fetchUsers"
+              />
             </div>
           </template>
 
@@ -788,35 +788,28 @@
       </v-card>
     </v-dialog>
 
-    <!-- 提示消息 -->
-    <v-snackbar
-      v-model="snackbar"
-      :color="snackbarColor"
-      :timeout="3000"
-      location="top"
-      rounded="pill"
-    >
-      <div class="d-flex align-center">
-        <v-icon class="mr-2">{{
-          snackbarColor === 'success'
-            ? 'mdi-check-circle'
-            : snackbarColor === 'error'
-            ? 'mdi-alert-circle'
-            : 'mdi-information'
-        }}</v-icon>
-        {{ snackbarText }}
-      </div>
-      <template #actions>
-        <v-btn size="small" icon variant="text" @click="snackbar = false">
-          <v-icon>mdi-close</v-icon>
-        </v-btn>
-      </template>
-    </v-snackbar>
+    <AppSnackbar :state="toast" />
   </v-container>
 </template>
 
 <script>
+import AppSnackbar from '@/components/common/AppSnackbar.vue'
+import { useMessage } from '@/composables/useMessage'
+import { formatDate } from '@/utils/format'
+
 export default {
+  name: 'UserList',
+  components: { AppSnackbar },
+  setup() {
+    const { toast, showMessage } = useMessage()
+
+    return {
+      toast,
+      showMessage,
+      // 模板里直接使用格式化函数
+      formatDate,
+    }
+  },
   data() {
     return {
       users: [],
@@ -877,11 +870,6 @@ export default {
       },
       newUserStartDateMenu: false,
       newUserEndDateMenu: false,
-
-      // 提示消息
-      snackbar: false,
-      snackbarText: '',
-      snackbarColor: 'success',
     }
   },
   created() {
@@ -920,13 +908,6 @@ export default {
           this.loading = false
         }
       )
-    },
-    formatDate(timestamp) {
-      if (!timestamp) return '-'
-      const date = new Date(timestamp)
-      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
-        date.getDate()
-      ).padStart(2, '0')}`
     },
     getTimeAgo(timestamp) {
       if (!timestamp) return ''
@@ -1007,7 +988,7 @@ export default {
 
       if (this.selectedRole !== 'ROLE_USER') {
         if (!this.startDate || !this.endDate) {
-          this.showSnackbar('请设置开始和结束日期', 'error')
+          this.showMessage('请设置开始和结束日期', 'error')
           return
         }
 
@@ -1015,7 +996,7 @@ export default {
         roleData.vipStopTime = new Date(this.endDate).getTime()
 
         if (roleData.vipStartTime >= roleData.vipStopTime) {
-          this.showSnackbar('结束日期必须晚于开始日期', 'error')
+          this.showMessage('结束日期必须晚于开始日期', 'error')
           return
         }
       }
@@ -1024,10 +1005,10 @@ export default {
       this.updateRoleLoading = true
       this.httpPost('/admin/user/update/role', roleData, (json) => {
         if (json.data != null) {
-          this.showSnackbar('用户角色更新成功')
+          this.showMessage('用户角色更新成功', 'success')
           this.fetchUsers() // 刷新列表
         } else {
-          this.showSnackbar('用户角色更新失败', 'error')
+          this.showMessage('用户角色更新失败', 'error')
         }
         this.updateRoleLoading = false
         this.roleDialog = false
@@ -1083,7 +1064,7 @@ export default {
           (json) => {
             if (json.data === true) {
               // 操作成功
-              this.showSnackbar(
+              this.showMessage(
                 this.selectedUser.status === 1 ? '用户已解除封禁' : '用户已被封禁',
                 'success'
               )
@@ -1098,14 +1079,14 @@ export default {
               // 关闭弹窗
               this.blockUserDialog = false
             } else {
-              this.showSnackbar('操作失败，请重试', 'error')
+              this.showMessage('操作失败，请重试', 'error')
             }
             this.blockUserLoading = false
           }
         )
       } catch (error) {
         console.error('封禁用户出错:', error)
-        this.showSnackbar('操作失败: ' + (error.response?.data?.message || '未知错误'), 'error')
+        this.showMessage('操作失败: ' + (error.response?.data?.message || '未知错误'), 'error')
         this.blockUserLoading = false
       }
     },
@@ -1116,9 +1097,9 @@ export default {
       this.httpPost('/admin/user/update/pwd', { id: this.selectedUser.id }, (json) => {
         if (json.data != '') {
           this.newPassword = json.data
-          this.showSnackbar('密码重置成功', 'success')
+          this.showMessage('密码重置成功', 'success')
         } else {
-          this.showSnackbar('密码重置失败', 'error')
+          this.showMessage('密码重置失败', 'error')
         }
         this.resetLoading = false
       })
@@ -1126,10 +1107,10 @@ export default {
     copyToClipboard(text) {
       navigator.clipboard.writeText(text).then(
         () => {
-          this.showSnackbar('密码已复制到剪贴板', 'success')
+          this.showMessage('密码已复制到剪贴板', 'success')
         },
         () => {
-          this.showSnackbar('复制失败，请手动复制', 'error')
+          this.showMessage('复制失败，请手动复制', 'error')
         }
       )
     },
@@ -1155,28 +1136,28 @@ export default {
     addUser() {
       // 验证表单
       if (!this.newUser.mail || !this.newUser.username || !this.newUser.password) {
-        this.showSnackbar('请填写必填信息', 'error')
+        this.showMessage('请填写必填信息', 'error')
         return
       }
 
       if (!/^.+@.+\..+$/.test(this.newUser.mail)) {
-        this.showSnackbar('邮箱格式错误', 'error')
+        this.showMessage('邮箱格式错误', 'error')
         return
       }
 
       if (this.newUser.password.length < 6) {
-        this.showSnackbar('密码长度不能小于6个字符', 'error')
+        this.showMessage('密码长度不能小于6个字符', 'error')
         return
       }
 
       if (this.newUser.phone && !/^[1][3-9][0-9]{9}$/.test(this.newUser.phone)) {
-        this.showSnackbar('手机号码格式错误', 'error')
+        this.showMessage('手机号码格式错误', 'error')
         return
       }
 
       if (this.newUser.role !== 'ROLE_USER') {
         if (!this.newUser.startDate || !this.newUser.endDate) {
-          this.showSnackbar('请设置角色有效期', 'error')
+          this.showMessage('请设置角色有效期', 'error')
           return
         }
 
@@ -1184,7 +1165,7 @@ export default {
         const endTime = new Date(this.newUser.endDate).getTime()
 
         if (startTime >= endTime) {
-          this.showSnackbar('结束日期必须晚于开始日期', 'error')
+          this.showMessage('结束日期必须晚于开始日期', 'error')
           return
         }
       }
@@ -1207,18 +1188,13 @@ export default {
 
       this.httpPost('/admin/user/add', userData, (json) => {
         if (json.status == 200) {
-          this.showSnackbar('用户创建成功')
+          this.showMessage('用户创建成功', 'success')
           this.fetchUsers() // 刷新列表
           this.addUserDialog = false
         } else {
-          this.showSnackbar(json.message, 'error')
+          this.showMessage(json.message, 'error')
         }
       })
-    },
-    showSnackbar(text, color = 'success') {
-      this.snackbarText = text
-      this.snackbarColor = color
-      this.snackbar = true
     },
   },
 }

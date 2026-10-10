@@ -127,7 +127,7 @@
 import { useWebInfoStore } from '@/stores/webInfoStore'
 import { useUserStore } from '@/stores/userStore'
 import AppBarHead from '@/components/user/AppBarHead.vue'
-import CheckPower from '@/utils/check-power.vue'
+import CheckPower from '@/utils/check-power'
 import OpinionCard from '@/components/card/OpinionCard.vue'
 export default {
   components: {

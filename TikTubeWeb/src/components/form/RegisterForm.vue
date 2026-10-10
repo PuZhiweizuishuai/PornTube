@@ -127,6 +127,7 @@
 
 <script>
 import { useWebInfoStore } from '@/stores/webInfoStore'
+import http from '@/api/index'
 export default {
   name: 'RegisterFrom',
   data() {
@@ -214,7 +215,12 @@ export default {
     getVerifyImage() {
       this.verifyImageUrl = '/api/verifyImage?t=' + new Date().getTime()
     },
-    sendEmailVerify() {
+    /**
+     * 发送邮箱验证码
+     * 原实现使用 this.$parent.httpPost —— 通过父组件实例取全局属性，一旦 RegisterForm
+     * 被别的容器（或 slot 层级变化）包裹就会崩。改为直接使用统一的 HTTP 层。
+     */
+    async sendEmailVerify() {
       // 验证邮箱格式
       var re =
         /^(([^()[\]\\.,;:\s@]+(\.[^()[\]\\.,;:\s@]+)*)|(.+))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
@@ -233,22 +239,26 @@ export default {
       }
 
       // 发送邮箱验证码
-      this.$parent.httpPost(
-        '/verify/send',
-        { mail: this.registerUser.mail, verifyCode: this.registerUser.verifyCode },
-        (json) => {
-          if (json.status === 200) {
-            this.message = '邮箱验证码发送成功，请查收'
-            this.color = 'success'
-            this.snackbar = true
-            this.startCountDown()
-          } else {
-            this.message = json.message || '邮箱验证码发送失败'
-            this.color = 'error'
-            this.snackbar = true
-          }
+      try {
+        const json = await http.post('/verify/send', {
+          mail: this.registerUser.mail,
+          verifyCode: this.registerUser.verifyCode,
+        })
+        if (json.status === 200) {
+          this.message = '邮箱验证码发送成功，请查收'
+          this.color = 'success'
+          this.snackbar = true
+          this.startCountDown()
+        } else {
+          this.message = json.message || '邮箱验证码发送失败'
+          this.color = 'error'
+          this.snackbar = true
         }
-      )
+      } catch (error) {
+        this.message = error?.message || '邮箱验证码发送失败，请稍后重试'
+        this.color = 'error'
+        this.snackbar = true
+      }
     },
     startCountDown() {
       // 设置倒计时60秒

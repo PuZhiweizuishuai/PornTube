@@ -11,7 +11,8 @@
           prepend-icon="mdi-refresh"
           color="white"
           variant="tonal"
-          @click="loadItems"
+          :loading="table.loading"
+          @click="table.refresh"
           class="mr-2"
         >
           刷新数据
@@ -19,8 +20,8 @@
       </v-toolbar>
 
       <v-alert type="info" variant="tonal" border="start" density="comfortable" class="ma-4">
-        文件管理系统支持视频、图片、附件等多种类型文件的管理。当前共有：{{ totalItems }} 个文件。
-        临时文件将在一段时间后自动清理，请确保重要文件已标记为"已发布"状态。
+        文件管理系统支持视频、图片、附件等多种类型文件的管理。当前共有：{{ table.totalCount }}
+        个文件。 临时文件将在一段时间后自动清理，请确保重要文件已标记为"已发布"状态。
       </v-alert>
 
       <!-- 筛选区域 -->
@@ -66,16 +67,19 @@
 
       <!-- 数据表格 -->
       <v-card-text>
-        <v-data-table
-          :hide-default-footer="true"
+        <!-- 表格 + 分页由通用组件承载，业务差异通过插槽透传 -->
+        <AdminDataTable
           :headers="headers"
-          :items="items"
-          :loading="loading"
-          :items-per-page="itemsPerPage"
-          hover
-          mobile-breakpoint="md"
-          :hide-default-header="$vuetify.display.smAndDown"
-          class="elevation-0 rounded-lg"
+          :items="table.items"
+          :loading="table.loading"
+          :page="table.page"
+          :total-pages="table.totalPages"
+          :total-count="table.totalCount"
+          :page-size="table.pageSize"
+          empty-text="暂无文件数据"
+          show-refresh-on-empty
+          @update:page="table.load"
+          @refresh="table.refresh"
         >
           <!-- 文件类型列 -->
           <template #[`item.type`]="{ item }">
@@ -186,20 +190,8 @@
               <v-btn color="primary" class="mt-4" @click="loadItems">刷新数据</v-btn>
             </div>
           </template>
-        </v-data-table>
+        </AdminDataTable>
       </v-card-text>
-
-      <!-- 分页 -->
-      <div class="d-flex justify-center pa-4">
-        <v-pagination
-          v-model="page"
-          :length="Math.ceil(totalItems / itemsPerPage)"
-          :total-visible="7"
-          @update:model-value="loadItems"
-          rounded
-          density="comfortable"
-        ></v-pagination>
-      </div>
     </v-card>
 
     <!-- 预览对话框 -->
@@ -287,8 +279,8 @@
                         selectedFile.status === 0
                           ? 'warning'
                           : selectedFile.status === 1
-                          ? 'success'
-                          : 'error'
+                            ? 'success'
+                            : 'error'
                       "
                       class="ml-2"
                       text-color="white"
@@ -297,8 +289,8 @@
                         selectedFile.status === 0
                           ? '临时文件'
                           : selectedFile.status === 1
-                          ? '已发布'
-                          : '删除失败'
+                            ? '已发布'
+                            : '删除失败'
                       }}
                     </v-chip>
                   </div>
@@ -407,65 +399,74 @@
       </v-card>
     </v-dialog>
 
-    <!-- 删除确认对话框 -->
-    <v-dialog v-model="deleteDialog" max-width="500px">
-      <v-card>
-        <v-card-title class="text-h5 bg-error text-white">
-          <v-row class="mt-1 mb-1">
-            <v-icon class="mr-2">mdi-delete</v-icon>
-            确认删除
-            <v-spacer></v-spacer>
-            <v-btn
-              icon="mdi-close"
-              variant="text"
-              color="white"
-              @click="deleteDialog = false"
-            ></v-btn>
-          </v-row>
-        </v-card-title>
-        <v-card-text class="pa-4">
-          <v-alert type="warning" variant="tonal" border="start" density="comfortable" class="mb-3">
-            您确定要删除这个文件吗？此操作不可撤销。
-          </v-alert>
-          <div v-if="selectedFile" class="d-flex align-center">
-            <v-icon size="small" color="primary" class="mr-2">mdi-file-document</v-icon>
-            <strong>文件名：</strong>
-            <span class="ml-2">{{ selectedFile.fileOriginalName }}</span>
-          </div>
-        </v-card-text>
-        <v-card-actions class="pa-4 bg-grey-lighten-5">
-          <v-spacer></v-spacer>
-          <v-btn
-            color="primary"
-            variant="text"
-            @click="deleteDialog = false"
-            prepend-icon="mdi-close"
-          >
-            取消
-          </v-btn>
-          <v-btn color="error" variant="text" @click="deleteFile" prepend-icon="mdi-delete">
-            删除
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <!-- 删除确认：统一由 ConfirmDialog 承载 -->
+    <ConfirmDialog
+      v-model="deleteDialog"
+      title="确认删除"
+      confirm-text="删除"
+      max-width="500"
+      @confirm="deleteFile"
+    >
+      <v-alert type="warning" variant="tonal" border="start" density="comfortable" class="mb-3">
+        您确定要删除这个文件吗？此操作不可撤销。
+      </v-alert>
+      <div v-if="selectedFile" class="d-flex align-center">
+        <v-icon size="small" color="primary" class="mr-2">mdi-file-document</v-icon>
+        <strong>文件名：</strong>
+        <span class="ml-2">{{ selectedFile.fileOriginalName }}</span>
+      </div>
+    </ConfirmDialog>
 
-    <!-- 通知提示 -->
-    <v-snackbar v-model="snackbar" :color="snackbarColor" :timeout="3000" location="top">
-      {{ snackbarText }}
-      <template #actions>
-        <v-btn variant="text" color="white" @click="snackbar = false"> 关闭 </v-btn>
-      </template>
-    </v-snackbar>
+    <AppSnackbar :state="toast" />
   </v-container>
 </template>
 
 <script>
+import { ref } from 'vue'
+import AdminDataTable from '@/components/admin/AdminDataTable.vue'
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import AppSnackbar from '@/components/common/AppSnackbar.vue'
+import { useTable } from '@/composables/useTable'
+import { useMessage } from '@/composables/useMessage'
+import { formatDate } from '@/utils/format'
+import http from '@/api/index'
+
 export default {
   name: 'FileTableView',
+  components: {
+    AdminDataTable,
+    ConfirmDialog,
+    AppSnackbar,
+  },
+  setup() {
+    const { toast, showMessage } = useMessage()
+    const fileTypeFilter = ref(null)
+    const statusFilter = ref(null)
+
+    // 分页、加载态、筛选联动全部由 useTable 承担
+    const table = useTable({
+      url: '/admin/files/list',
+      size: 25,
+      params: () => ({
+        type: fileTypeFilter.value,
+        status: statusFilter.value,
+      }),
+      onError: () => showMessage('加载文件列表失败', 'error'),
+    })
+
+    return {
+      toast,
+      showMessage,
+      fileTypeFilter,
+      statusFilter,
+      table,
+      // 模板里直接使用的格式化函数
+      formatDate,
+    }
+  },
   data() {
     return {
-      // 表格数据
+      // 表格列配置
       headers: [
         { title: 'ID', key: 'id', sortable: false },
         { title: '文件名', key: 'fileOriginalName', sortable: false },
@@ -477,16 +478,8 @@ export default {
         { title: '状态', key: 'status', sortable: false },
         { title: '操作', key: 'actions', sortable: false },
       ],
-      items: [],
-      loading: false,
-      itemsPerPage: 25,
-      page: 1,
-      totalItems: 0,
-      search: '',
 
       // 筛选选项
-      fileTypeFilter: null,
-      statusFilter: null,
       fileTypeOptions: [
         { title: '全部类型', value: null },
         { title: '视频', value: 0 },
@@ -518,51 +511,44 @@ export default {
         status: 0,
         articleId: null,
       },
-
-      // 通知提示
-      snackbar: false,
-      snackbarText: '',
-      snackbarColor: 'success',
     }
   },
-
-  mounted() {
-    this.loadItems()
-  },
-
   methods: {
+    /**
+     * 统一的写操作：成功后自动刷新列表并提示
+     * @param {Promise} promise
+     * @param {string} successText
+     * @param {object} [opts] { failureText } 失败文案（文件接口失败码固定，不看 message）
+     */
+    async doAction(promise, successText, opts = {}) {
+      const { failureText = '操作失败' } = opts
+      try {
+        const json = await promise
+        if (json?.data) {
+          this.showMessage(successText, 'success')
+          this.closeAllDialogs()
+          await this.table.refresh()
+        } else {
+          this.showMessage(failureText, 'error')
+        }
+      } catch (error) {
+        this.showMessage(error?.message || failureText, 'error')
+      }
+    },
+    closeAllDialogs() {
+      this.deleteDialog = false
+      this.editDialog = false
+    },
     // 加载文件列表数据
     loadItems() {
-      this.loading = true
-      let url = `/admin/files/list?limit=${this.itemsPerPage}&page=${this.page}`
-
-      // 添加筛选参数
-      if (this.fileTypeFilter !== null) {
-        url += `&type=${this.fileTypeFilter}`
-      }
-      if (this.statusFilter !== null) {
-        url += `&status=${this.statusFilter}`
-      }
-
-      this.httpGet(url, (json) => {
-        if (json.status === 200) {
-          this.items = json.data.list
-          this.totalItems = json.data.totalCount
-        } else {
-          this.showSnackbar('加载文件列表失败', 'error')
-        }
-        this.loading = false
-      })
+      return this.table.refresh()
     },
-
     // 重置筛选条件
     resetFilters() {
       this.fileTypeFilter = null
       this.statusFilter = null
-      this.page = 1
-      this.loadItems()
+      return this.table.reload()
     },
-
     // 获取文件类型文本
     getTypeText(type) {
       const typeMap = {
@@ -575,7 +561,6 @@ export default {
       }
       return typeMap[type] || '未知'
     },
-
     // 获取文件类型对应的颜色
     getTypeColor(type) {
       const colorMap = {
@@ -588,7 +573,6 @@ export default {
       }
       return colorMap[type] || 'grey'
     },
-
     // 格式化文件大小
     formatFileSize(size) {
       if (!size) return '0 B'
@@ -603,28 +587,11 @@ export default {
 
       return `${size.toFixed(2)} ${units[i]}`
     },
-
-    // 格式化日期
-    formatDate(timestamp) {
-      if (!timestamp) return '--'
-
-      const date = new Date(timestamp)
-      return new Intl.DateTimeFormat('zh-CN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-      }).format(date)
-    },
-
     // 预览文件
     previewFile(item) {
       this.selectedFile = item
       this.previewDialog = true
     },
-
     // 编辑文件URL
     editFileUrl(item) {
       this.selectedFile = item
@@ -639,9 +606,8 @@ export default {
       }
       this.editDialog = true
     },
-
     // 更新文件信息
-    updateFileInfo() {
+    async updateFileInfo() {
       // 构建更新对象
       const updateData = {
         id: this.editedFile.id,
@@ -651,47 +617,30 @@ export default {
         articleId: this.editedFile.articleId,
       }
 
-      this.httpPost('/admin/files/update', updateData, (json) => {
-        if (json.data == true) {
-          // 更新本地数据
-          this.loadItems()
-
-          this.showSnackbar('文件信息已更新', 'success')
-        } else {
-          this.showSnackbar('更新文件信息失败', 'error')
-        }
+      try {
+        return await this.doAction(http.post('/admin/files/update', updateData), '文件信息已更新', {
+          failureText: '更新文件信息失败',
+        })
+      } finally {
+        // 与原来一致：无论成功失败都关闭编辑弹窗
         this.editDialog = false
-      })
+      }
     },
-
     // 确认删除
     confirmDelete(item) {
       this.selectedFile = item
       this.deleteDialog = true
     },
-
     // 删除文件
     deleteFile() {
       const fileTableEntity = {
         id: this.selectedFile.id,
       }
-      this.httpPost('/admin/files/delete', fileTableEntity, (json) => {
-        if (json.data === true) {
-          // 从本地列表中移除
-          this.items = this.items.filter((item) => item.id !== this.selectedFile.id)
-          this.showSnackbar('文件已删除', 'success')
-        } else {
-          this.showSnackbar('删除文件失败，该文件关联了稿件或不存在', 'error')
-        }
-        this.deleteDialog = false
-      })
-    },
-
-    // 显示通知提示
-    showSnackbar(text, color = 'success') {
-      this.snackbarText = text
-      this.snackbarColor = color
-      this.snackbar = true
+      return this.doAction(
+        http.post('/admin/files/delete', fileTableEntity),
+        '文件已删除',
+        { failureText: '删除文件失败，该文件关联了稿件或不存在' }
+      )
     },
   },
 }
@@ -709,8 +658,9 @@ export default {
   border-radius: 0 0 8px 8px;
 }
 
-.v-data-table {
-  border-radius: 8px;
+:deep(.v-data-table-server th) {
+  font-weight: 600 !important;
+  background-color: #f5f5f5;
 }
 
 .url-cell {

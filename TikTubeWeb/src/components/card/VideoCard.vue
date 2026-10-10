@@ -90,8 +90,8 @@
 </template>
 
 <script>
-import TimeUtil from '@/utils/time-util.vue'
-import StringUtils from '@/utils/string-utils.vue'
+import TimeUtil from '@/utils/time-util'
+import StringUtils from '@/utils/string-utils'
 export default {
   name: 'VideoCard',
   props: {

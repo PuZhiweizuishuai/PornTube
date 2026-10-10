@@ -30,17 +30,19 @@
       </v-tabs>
 
       <v-card-text>
-        <v-data-table-server
+        <AdminDataTable
           :headers="headers"
-          :itemsLength="totalCount"
-          :items-per-page="pageSize"
-          :items="articles"
-          :loading="loading"
+          :items="table.items"
+          :loading="table.loading"
+          :page="table.page"
+          :total-pages="table.totalPages"
+          :total-count="table.totalCount"
+          :page-size="table.pageSize"
           mobile-breakpoint="md"
-          :hide-default-header="$vuetify.display.smAndDown"
-          hover
-          class="elevation-0 rounded-lg"
-          hide-default-footer
+          empty-text="暂无稿件数据"
+          show-refresh-on-empty
+          @update:page="table.load"
+          @refresh="table.refresh"
         >
           <template #[`item.imgUrl`]="{ item }">
             <v-img
@@ -107,15 +109,15 @@
             <div class="d-flex flex-column">
               <div class="d-flex align-center mb-1">
                 <v-icon size="small" class="mr-1">mdi-eye</v-icon>
-                <span class="text-caption">{{ formatNumber(item.viewCount) }}</span>
+                <span class="text-caption">{{ formatCount(item.viewCount) }}</span>
               </div>
               <div class="d-flex align-center mb-1">
                 <v-icon size="small" class="mr-1">mdi-thumb-up</v-icon>
-                <span class="text-caption">{{ formatNumber(item.likeCount) }}</span>
+                <span class="text-caption">{{ formatCount(item.likeCount) }}</span>
               </div>
               <div class="d-flex align-center">
                 <v-icon size="small" class="mr-1">mdi-message</v-icon>
-                <span class="text-caption">{{ formatNumber(item.commentCount) }}</span>
+                <span class="text-caption">{{ formatCount(item.commentCount) }}</span>
               </div>
             </div>
           </template>
@@ -204,18 +206,8 @@
               <v-btn color="primary" class="mt-4" @click="getList">刷新数据</v-btn>
             </div>
           </template>
-        </v-data-table-server>
+        </AdminDataTable>
       </v-card-text>
-
-      <div class="d-flex justify-center pa-4">
-        <v-pagination
-          v-model="page"
-          :length="totalPages"
-          :total-visible="7"
-          @update:model-value="handlePageChange"
-          rounded
-        ></v-pagination>
-      </div>
     </v-card>
 
     <!-- 审核对话框 -->
@@ -270,61 +262,75 @@
       </v-card>
     </v-dialog>
 
-    <!-- 删除确认对话框 -->
-    <v-dialog v-model="deleteDialog" max-width="400">
-      <v-card>
-        <v-card-title class="text-h5">确认删除</v-card-title>
-        <v-card-text>
-          您确定要删除视频 <strong>{{ selectedItem?.title }}</strong> 吗？此操作不可撤销。
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="grey" variant="text" @click="deleteDialog = false">取消</v-btn>
-          <v-btn color="error" variant="elevated" @click="deleteItem">删除</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <!-- 删除确认对话框：正文含 HTML（加粗标题），用默认插槽 -->
+    <ConfirmDialog
+      v-model="deleteDialog"
+      title="确认删除"
+      confirm-text="删除"
+      @confirm="deleteItem"
+    >
+      您确定要删除视频 <strong>{{ selectedItem?.title }}</strong> 吗？此操作不可撤销。
+    </ConfirmDialog>
 
     <!-- 恢复确认对话框 -->
-    <v-dialog v-model="restoreDialog" max-width="400">
-      <v-card>
-        <v-card-title class="text-h5">确认恢复</v-card-title>
-        <v-card-text>
-          您确定要恢复视频 <strong>{{ selectedItem?.title }}</strong> 吗？
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="grey" variant="text" @click="restoreDialog = false">取消</v-btn>
-          <v-btn color="success" variant="elevated" @click="restoreItem">恢复</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <ConfirmDialog
+      v-model="restoreDialog"
+      title="确认恢复"
+      confirm-text="恢复"
+      color="success"
+      @confirm="restoreItem"
+    >
+      您确定要恢复视频 <strong>{{ selectedItem?.title }}</strong> 吗？
+    </ConfirmDialog>
 
-    <!-- 消息提示 -->
-    <v-snackbar v-model="showMessage" :timeout="3000" location="top" :color="messageType">
-      {{ message }}
-      <template #actions>
-        <v-btn color="white" variant="text" @click="showMessage = false">关闭</v-btn>
-      </template>
-    </v-snackbar>
+    <AppSnackbar :state="toast" />
   </v-container>
 </template>
 
 <script>
+import { ref } from 'vue'
+import AdminDataTable from '@/components/admin/AdminDataTable.vue'
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import AppSnackbar from '@/components/common/AppSnackbar.vue'
+import { useTable } from '@/composables/useTable'
+import { useMessage } from '@/composables/useMessage'
+import { formatDate, formatCount } from '@/utils/format'
+import http from '@/api/index'
+
 export default {
   name: 'ArticleListView',
+  components: {
+    AdminDataTable,
+    ConfirmDialog,
+    AppSnackbar,
+  },
+  setup() {
+    const { toast, showMessage } = useMessage()
+    const activeTab = ref('all')
+
+    // 分页、加载态、tab 联动全部由 useTable 承担
+    const table = useTable({
+      url: '/studio/article/list',
+      size: 10,
+      params: () => ({
+        type: 'admin',
+        active: activeTab.value,
+      }),
+      onError: () => showMessage('获取数据失败', 'error'),
+    })
+
+    return {
+      toast,
+      showMessage,
+      activeTab,
+      table,
+      // 模板里直接使用这两个格式化函数
+      formatDate,
+      formatCount,
+    }
+  },
   data() {
     return {
-      activeTab: 'all',
-      articles: [],
-      loading: false,
-      page: 1,
-      pageSize: 10,
-      totalPages: 1,
-      totalCount: 0,
-      showMessage: false,
-      message: '',
-      messageType: 'info',
       examineDialog: false,
       deleteDialog: false,
       restoreDialog: false,
@@ -351,45 +357,37 @@ export default {
   },
   computed: {},
   mounted() {
-    this.getList()
+    // 列表首屏由 useTable 自动加载，这里只拉两类辅助数据
     this.getCategoryList()
     this.getExamineItems()
   },
   methods: {
     filteredArticles() {
-      this.getList()
+      return this.table.reload()
     },
     getList() {
-      this.loading = true
-      this.httpGet(
-        `/studio/article/list?limit=${this.pageSize}&page=${this.page}&type=admin&active=${this.activeTab}`,
-        (json) => {
-          this.loading = false
-          if (json && json.data) {
-            this.articles = json.data.list || []
-            this.totalCount = json.data.totalCount
-            this.totalPages = json.data.totalPage
-            this.page = json.data.currPage
-          } else {
-            this.showNotification('获取数据失败', 'error')
-          }
-        }
-      )
+      return this.table.refresh()
     },
-    getCategoryList() {
-      this.httpGet(`/category/tree`, (json) => {
+    async getCategoryList() {
+      try {
+        const json = await http.get('/category/tree')
         if (json && json.data) {
           this.categoryList = json.data
           this.buildCategoryMap()
         }
-      })
+      } catch (error) {
+        console.error('[ArticleListView] 加载分区失败:', error?.message || error)
+      }
     },
-    getExamineItems() {
-      this.httpGet('/examine/item', (json) => {
+    async getExamineItems() {
+      try {
+        const json = await http.get('/examine/item')
         if (json && json.data) {
           this.examineItems = json.data
         }
-      })
+      } catch (error) {
+        console.error('[ArticleListView] 加载审核项失败:', error?.message || error)
+      }
     },
     buildCategoryMap() {
       this.categoryMap = {}
@@ -425,25 +423,25 @@ export default {
       this.selectedItem = item
       this.deleteDialog = true
     },
-    deleteItem() {
+    async deleteItem() {
       if (!this.selectedItem) return
 
-      this.httpPost('/studio/article/delete', this.selectedItem, (json) => {
-        if (json.data == 0) {
-          this.showNotification('删除成功', 'success')
-          this.articles = this.articles.filter((item) => item.id !== this.selectedItem.id)
-          this.deleteDialog = false
-          this.selectedItem = null
-        } else if (json.data == 1) {
-          this.showNotification('没有权限', 'success')
-          this.deleteDialog = false
-          this.selectedItem = null
+      try {
+        const json = await http.post('/studio/article/delete', this.selectedItem)
+        // 该接口用 data 里的结果码区分：0=成功 1=没有权限 其它=已经删除
+        if (json?.data == 0) {
+          this.showMessage('删除成功', 'success')
+          this.table.items = this.table.items.filter((item) => item.id !== this.selectedItem.id)
+        } else if (json?.data == 1) {
+          this.showMessage('没有权限', 'success')
         } else {
-          this.showNotification('已经删除', 'success')
-          this.deleteDialog = false
-          this.selectedItem = null
+          this.showMessage('已经删除', 'success')
         }
-      })
+        this.deleteDialog = false
+        this.selectedItem = null
+      } catch (error) {
+        this.showMessage(error?.message || '删除失败', 'error')
+      }
     },
     handleExamineStatusChange(value) {
       this.showRejectionOptions = value === '不通过'
@@ -454,7 +452,7 @@ export default {
       this.examineMessage = ''
       this.showRejectionOptions = false
     },
-    saveExamine() {
+    async saveExamine() {
       if (!this.selectedItem) return
 
       const result = this.selectedStatus === '通过'
@@ -466,43 +464,19 @@ export default {
         message: this.examineMessage,
       }
 
-      this.httpPost(`/admin/examine`, data, (json) => {
-        if (json.status === 200) {
-          this.showNotification('审核完成', 'success')
-          this.getList()
+      try {
+        // 审核接口只回 { status, message }，不带 data 信封，故以 status 判定
+        const json = await http.post('/admin/examine', data)
+        if (json?.status === 200) {
+          this.showMessage('审核完成', 'success')
           this.examineDialog = false
+          await this.table.refresh()
         } else {
-          this.showNotification('审核失败：' + json.message, 'error')
+          this.showMessage('审核失败：' + (json?.message || ''), 'error')
         }
-      })
-    },
-    handlePageChange(page) {
-      this.page = page
-      this.getList()
-    },
-    pageChange({ page }) {
-      this.page = page
-      this.getList()
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-    },
-    formatNumber(num) {
-      if (num === null || num === undefined) return '0'
-
-      if (num >= 10000) {
-        return (num / 10000).toFixed(1) + '万'
+      } catch (error) {
+        this.showMessage('审核失败：' + (error?.message || ''), 'error')
       }
-      return num.toString()
-    },
-    formatDate(timestamp) {
-      if (!timestamp) return ''
-      const date = new Date(timestamp)
-      return date.toLocaleDateString('zh-CN', {
-        year: 'numeric',
-        month: 'numeric',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      })
     },
     getStatusText(status) {
       if (status === 1) return '已通过'
@@ -534,28 +508,27 @@ export default {
         return []
       }
     },
-    showNotification(message, type = 'info') {
-      this.message = message
-      this.messageType = type
-      this.showMessage = true
-    },
     confirmRestore(item) {
       this.selectedItem = item
       this.restoreDialog = true
     },
-    restoreItem() {
+    async restoreItem() {
       if (!this.selectedItem) return
 
-      this.httpPost('/admin/article/restore', this.selectedItem, (json) => {
-        if (json.data === true) {
-          this.showNotification('恢复成功', 'success')
-          this.getList()
+      try {
+        // 恢复接口只回 true/false，不带 data 信封
+        const json = await http.post('/admin/article/restore', this.selectedItem)
+        if (json?.data === true) {
+          this.showMessage('恢复成功', 'success')
+          await this.table.refresh()
         } else {
-          this.showNotification('恢复失败: ' + json.message, 'error')
+          this.showMessage('恢复失败: ' + (json?.message || ''), 'error')
         }
-        this.restoreDialog = false
-        this.selectedItem = null
-      })
+      } catch (error) {
+        this.showMessage('恢复失败: ' + (error?.message || ''), 'error')
+      }
+      this.restoreDialog = false
+      this.selectedItem = null
     },
   },
 }

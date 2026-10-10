@@ -85,7 +85,7 @@
 </template>
 
 <script>
-import TimeUtil from '@/utils/time-util.vue'
+import TimeUtil from '@/utils/time-util'
 export default {
   name: 'TextInfoCard',
   props: {

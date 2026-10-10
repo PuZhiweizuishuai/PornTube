@@ -142,6 +142,6 @@ public interface UserService extends IService<UserEntity> {
     /**
      * 忘记密码
      * */
-    boolean forgotPassword(UserEntity user, String sessionId);
+    ReturnCodeEnum forgotPassword(UserEntity user, String sessionId);
 }
 
