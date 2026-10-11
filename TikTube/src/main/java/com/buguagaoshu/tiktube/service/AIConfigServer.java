@@ -1,7 +1,7 @@
 package com.buguagaoshu.tiktube.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.buguagaoshu.tiktube.cache.AIConfigCache;
 import com.buguagaoshu.tiktube.cache.CountRecorder;
 import com.buguagaoshu.tiktube.cache.WebSettingCache;

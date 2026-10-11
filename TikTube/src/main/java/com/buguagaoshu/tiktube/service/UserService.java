@@ -1,6 +1,6 @@
 package com.buguagaoshu.tiktube.service;
 
-import com.baomidou.mybatisplus.extension.service.IService;
+import com.baomidou.mybatisplus.spring.service.IService;
 import com.buguagaoshu.tiktube.dto.LoginDetails;
 import com.buguagaoshu.tiktube.dto.PasswordDto;
 import com.buguagaoshu.tiktube.entity.UserRoleEntity;

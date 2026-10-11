@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.0.3</version>
+        <version>4.1.1</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.buguagaoshu</groupId>
@@ -16,16 +16,15 @@
 
     <properties>
         <java.version>25</java.version>
-        <mybatis-plus.version>3.5.15</mybatis-plus.version>
+        <mybatis-plus.version>3.5.17</mybatis-plus.version>
         <jjwt.version>0.12.6</jjwt.version>
         <javacv.version>1.5.13</javacv.version>
-        <ip2region.version>3.3.4</ip2region.version>
-        <minio.version>8.6.0</minio.version>
+        <ip2region.version>3.3.7</ip2region.version>
+        <aws-s3.version>2.55.12</aws-s3.version>
         <totp.version>1.7.1</totp.version>
         <jaxb-api.version>2.3.1</jaxb-api.version>
-        <openai.version>4.23.0</openai.version>
-        <commonmark.version>0.27.1</commonmark.version>
-        <okhttp3.version>4.12.0</okhttp3.version>
+        <openai.version>4.78.0</openai.version>
+        <commonmark.version>0.30.0</commonmark.version>
     </properties>
 
     <repositories>
@@ -97,9 +96,9 @@
             <version>${jaxb-api.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.minio</groupId>
-            <artifactId>minio</artifactId>
-            <version>${minio.version}</version>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+            <version>${aws-s3.version}</version>
         </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
@@ -142,12 +141,6 @@
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
             <scope>runtime</scope>
-        </dependency>
-        <!-- Source: https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp -->
-        <dependency>
-            <groupId>com.squareup.okhttp3</groupId>
-            <artifactId>okhttp</artifactId>
-            <version>${okhttp3.version}</version>
         </dependency>
         <!--        <dependency>-->
         <!--            <groupId>org.springframework.security</groupId>-->

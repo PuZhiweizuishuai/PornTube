@@ -108,7 +108,7 @@ public class WebSettingController {
         ossConfig.setUpdaterId(JwtUtil.getUserId(request));
         boolean b = ossConfigService.saveOssConfig(ossConfig);
         if (b) {
-            repositoryInOSS.updateMinioClient();
+            repositoryInOSS.updateS3Client();
         }
         return ResponseDetails.ok().put("data", b);
     }
@@ -123,7 +123,7 @@ public class WebSettingController {
         ossConfig.setUpdaterId(JwtUtil.getUserId(request));
         boolean b = ossConfigService.updateOssConfig(ossConfig);
         if (b) {
-            repositoryInOSS.updateMinioClient();
+            repositoryInOSS.updateS3Client();
         }
         return ResponseDetails.ok().put("data", b);
     }
@@ -144,7 +144,7 @@ public class WebSettingController {
     public ResponseDetails deleteOssConfig(@PathVariable("id") Integer id) {
         boolean b = ossConfigService.deleteOssConfig(id);
         if (b) {
-            repositoryInOSS.updateMinioClient();
+            repositoryInOSS.updateS3Client();
         }
         return ResponseDetails.ok().put("data", b);
     }

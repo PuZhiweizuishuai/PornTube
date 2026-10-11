@@ -14,7 +14,7 @@ import java.util.List;
  * create          2020-09-06 20:52
  */
 @Data
-public class VideoArticleDto {
+public class VideoArticleDto implements ArticleDraft {
     private Long id;
 
     @NotBlank(message = "标题不能为空")

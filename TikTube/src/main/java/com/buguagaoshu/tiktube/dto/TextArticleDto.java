@@ -13,7 +13,7 @@ import java.util.List;
  * @create 2025-05-26
  */
 @Data
-public class TextArticleDto {
+public class TextArticleDto implements ArticleDraft {
     private Long id;
 
     @NotBlank(message = "标题不能为空")

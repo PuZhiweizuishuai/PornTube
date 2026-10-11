@@ -369,12 +369,12 @@ export default {
 
       const url = this.editedItem.id ? '/admin/oss/update' : '/admin/oss/save'
       this.httpPost(url, this.editedItem, (json) => {
-        if (json.status === 200) {
+        if (json.status === 200 && json.data) {
           this.showMessage('操作成功', 'success')
           this.dialog = false
           this.initialize()
         } else {
-          this.showMessage('配置校验失败，请检查配置', 'error')
+          this.showMessage(json.message || '操作失败，请检查配置', 'error')
         }
       })
     },
@@ -383,7 +383,7 @@ export default {
     deleteConfig(id) {
       if (confirm('确定要删除该配置吗？')) {
         this.httpPost(`/admin/oss/delete/${id}`, {}, (json) => {
-          if (json.status === 200) {
+          if (json.status === 200 && json.data) {
             this.showMessage('删除成功', 'success')
             this.initialize()
           } else {

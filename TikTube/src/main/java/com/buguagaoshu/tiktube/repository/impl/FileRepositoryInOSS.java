@@ -5,19 +5,30 @@ import com.buguagaoshu.tiktube.config.WebConfig;
 import com.buguagaoshu.tiktube.config.WebConstant;
 import com.buguagaoshu.tiktube.entity.OSSConfigEntity;
 import com.buguagaoshu.tiktube.service.impl.OssConfigService;
-import io.minio.*;
-import io.minio.http.Method;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
+import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author Pu Zhiwei {@literal puzhiweipuzhiwei@foxmail.com}
@@ -28,7 +39,9 @@ import java.util.concurrent.TimeUnit;
 public class FileRepositoryInOSS {
     private final OssConfigService ossConfigService;
 
-    Map<Integer, MinioClient> minioClients = new HashMap<Integer, MinioClient>();
+    Map<Integer, S3Client> s3Clients = new HashMap<>();
+
+    Map<Integer, S3Presigner> s3Presigners = new HashMap<>();
 
     Map<Integer, OSSConfigEntity> configEntityMap = new HashMap<>();
 
@@ -36,68 +49,50 @@ public class FileRepositoryInOSS {
     public FileRepositoryInOSS(OssConfigService ossConfigService) {
         this.ossConfigService = ossConfigService;
         // 初始化时更新客户端
-        updateMinioClient();
+        updateS3Client();
     }
 
     /**
      * 当对象存储配置发生变化后，更新客户端
-     * 更新 Minio 客户端
+     * 更新 S3 客户端
      * */
-    public void updateMinioClient() {
+    public void updateS3Client() {
+        List<S3Client> outdatedClients = new ArrayList<>(s3Clients.values());
+        List<S3Presigner> outdatedPresigners = new ArrayList<>(s3Presigners.values());
+        s3Clients.clear();
+        s3Presigners.clear();
+        configEntityMap.clear();
         boolean flag = false;
         // 获取所有对象存储配置
         List<OSSConfigEntity> ossConfigEntities = this.ossConfigService.listAllOssConfigs();
         if (ossConfigEntities == null || ossConfigEntities.isEmpty()) {
             WebConfig.FILE_SAVE_LOCATION = 0;
+            closeOutdated(outdatedClients, outdatedPresigners);
             return;
         }
         // 创建客户端并保存
-        minioClients.clear();
         for (OSSConfigEntity ossConfigEntity : ossConfigEntities) {
             configEntityMap.put(ossConfigEntity.getId(), ossConfigEntity);
-            // 创建 Minio S3 兼容客户端
             try {
-                if (ossConfigEntity.getStatus().equals(1)) {
+                if (Integer.valueOf(1).equals(ossConfigEntity.getStatus())) {
                     WebConfig.FILE_SAVE_LOCATION = ossConfigEntity.getId();
                     flag = true;
                 }
-                MinioClient.Builder builder = MinioClient.builder()
-                        .endpoint(ossConfigEntity.getEndpoint())
-                        .credentials(ossConfigEntity.getAccessKey(), ossConfigEntity.getSecretKey());
-                
-                // 设置区域（如果有）
-                if (ossConfigEntity.getRegion() != null && !ossConfigEntity.getRegion().isEmpty()) {
-                    builder.region(ossConfigEntity.getRegion());
-                }
+                S3Client s3Client = this.ossConfigService.buildS3Client(ossConfigEntity);
+                s3Clients.put(ossConfigEntity.getId(), s3Client);
+                s3Presigners.put(ossConfigEntity.getId(), this.ossConfigService.buildS3Presigner(ossConfigEntity));
 
-                
-                MinioClient minioClient = builder.build();
-
-                //minioClient.traceOn(System.out);
-
-                // 设置路径访问风格
-                if (ossConfigEntity.getPathStyleAccess() != null) {
-                    if (ossConfigEntity.getPathStyleAccess().equals(1)) {
-                        minioClient.enableVirtualStyleEndpoint();
-                    }
-                }
                 // 检查存储桶是否存在，不存在则创建
-                boolean bucketExists = minioClient.bucketExists(
-                        BucketExistsArgs.builder()
-                                .bucket(ossConfigEntity.getBucketName())
-                                .build()
-                );
-                
-                if (!bucketExists && ossConfigEntity.getStatus() == 1) {
-                    minioClient.makeBucket(
-                            MakeBucketArgs.builder()
+                if (!bucketExists(s3Client, ossConfigEntity.getBucketName())
+                        && Integer.valueOf(1).equals(ossConfigEntity.getStatus())) {
+                    s3Client.createBucket(
+                            CreateBucketRequest.builder()
                                     .bucket(ossConfigEntity.getBucketName())
                                     .build()
                     );
                     log.info("创建存储桶成功: {}", ossConfigEntity.getBucketName());
                 }
-                
-                minioClients.put(ossConfigEntity.getId(), minioClient);
+
                 log.info("初始化对象存储客户端成功: {}", ossConfigEntity.getConfigName());
             } catch (Exception e) {
                 log.error("初始化对象存储客户端失败: {}, 错误信息: {}", ossConfigEntity.getConfigName(), e.getMessage(), e);
@@ -106,8 +101,45 @@ public class FileRepositoryInOSS {
         if (!flag) {
             WebConfig.FILE_SAVE_LOCATION = 0;
         }
+        closeOutdated(outdatedClients, outdatedPresigners);
     }
-    
+
+    /**
+     * 存储桶是否存在
+     * */
+    private boolean bucketExists(S3Client s3Client, String bucketName) {
+        try {
+            s3Client.headBucket(
+                    HeadBucketRequest.builder()
+                            .bucket(bucketName)
+                            .build()
+            );
+            return true;
+        } catch (NoSuchBucketException e) {
+            return false;
+        }
+    }
+
+    /**
+     * 重建客户端时关闭上一批客户端，避免连接池泄漏
+     * */
+    private void closeOutdated(List<S3Client> clients, List<S3Presigner> presigners) {
+        for (S3Client client : clients) {
+            try {
+                client.close();
+            } catch (Exception e) {
+                log.warn("关闭对象存储客户端失败: {}", e.getMessage());
+            }
+        }
+        for (S3Presigner presigner : presigners) {
+            try {
+                presigner.close();
+            } catch (Exception e) {
+                log.warn("关闭对象存储预签名客户端失败: {}", e.getMessage());
+            }
+        }
+    }
+
     /**
      * 保存文件到对象存储
      * 
@@ -121,10 +153,10 @@ public class FileRepositoryInOSS {
         try {
 
             OSSConfigEntity ossConfigEntity = configEntityMap.get(ossConfigId);
-            // 获取MinioClient
-            MinioClient minioClient = minioClients.get(ossConfigId);
-            if (minioClient == null) {
-                log.error("未找到对应的MinioClient WebConfig.FILE_SAVE_LOCATION = {}", ossConfigId);
+            // 获取S3Client
+            S3Client s3Client = s3Clients.get(ossConfigId);
+            if (s3Client == null) {
+                log.error("未找到对应的S3Client WebConfig.FILE_SAVE_LOCATION = {}", ossConfigId);
                 return null;
             }
             
@@ -136,21 +168,13 @@ public class FileRepositoryInOSS {
             
             // 上传文件
             try (InputStream inputStream = file.getInputStream()) {
-//                minioClient.uploadObject(
-//                        UploadObjectArgs.builder()
-//                                .bucket(ossConfigEntity.getBucketName())
-//                                .object(objectName)
-//                                .filename(localFilePath)
-//                                .contentType(contentType)
-//                                .build()
-//                );
-                minioClient.putObject(
-                        PutObjectArgs.builder()
+                s3Client.putObject(
+                        PutObjectRequest.builder()
                                 .bucket(ossConfigEntity.getBucketName())
-                                .object(objectName)
+                                .key(objectName)
                                 .contentType(contentType != null ? contentType : file.getContentType())
-                                .stream(inputStream, file.getSize(), -1)
-                                .build()
+                                .build(),
+                        RequestBody.fromInputStream(inputStream, file.getSize())
                 );
                 return objectName;
             } catch (Exception e) {
@@ -175,18 +199,18 @@ public class FileRepositoryInOSS {
             // 获取对象存储配置
             OSSConfigEntity ossConfig = configEntityMap.get(ossConfigId);
             
-            // 获取MinioClient
-            MinioClient minioClient = minioClients.get(ossConfig.getId());
-            if (minioClient == null) {
-                log.error("未找到对应的MinioClient: {}", ossConfig.getConfigName());
+            // 获取S3Client
+            S3Client s3Client = s3Clients.get(ossConfigId);
+            if (s3Client == null) {
+                log.error("未找到对应的S3Client: {}", ossConfig.getConfigName());
                 return false;
             }
             
             // 删除文件
-            minioClient.removeObject(
-                    RemoveObjectArgs.builder()
+            s3Client.deleteObject(
+                    DeleteObjectRequest.builder()
                             .bucket(ossConfig.getBucketName())
-                            .object(objectName)
+                            .key(objectName)
                             .build()
             );
             
@@ -209,10 +233,10 @@ public class FileRepositoryInOSS {
             // 获取对象存储配置
             OSSConfigEntity ossConfig = configEntityMap.get(ossConfigId);
             
-            // 获取MinioClient
-            MinioClient minioClient = minioClients.get(ossConfig.getId());
-            if (minioClient == null) {
-                log.error("未找到对应的MinioClient: {}", ossConfig.getConfigName());
+            // 获取S3Presigner
+            S3Presigner s3Presigner = s3Presigners.get(ossConfigId);
+            if (s3Presigner == null) {
+                log.error("未找到对应的S3Presigner: {}", ossConfig.getConfigName());
                 return null;
             }
             
@@ -223,14 +247,17 @@ public class FileRepositoryInOSS {
             
             // 生成预签名URL
 
-            return minioClient.getPresignedObjectUrl(
-                    GetPresignedObjectUrlArgs.builder()
-                            .bucket(ossConfig.getBucketName())
-                            .object(objectName)
-                            .method(Method.GET)
-                            .expiry(WebConstant.OSS_DAY_TIME, TimeUnit.DAYS)
+            return s3Presigner.presignGetObject(
+                    GetObjectPresignRequest.builder()
+                            .signatureDuration(Duration.ofDays(WebConstant.OSS_DAY_TIME))
+                            .getObjectRequest(
+                                    GetObjectRequest.builder()
+                                            .bucket(ossConfig.getBucketName())
+                                            .key(objectName)
+                                            .build()
+                            )
                             .build()
-            );
+            ).url().toString();
         } catch (Exception e) {
             log.error("获取文件URL失败: {}", e.getMessage(), e);
             return null;
@@ -267,16 +294,16 @@ public class FileRepositoryInOSS {
                 return null;
             }
             
-            // 获取MinioClient
-            MinioClient minioClient = minioClients.get(ossConfigId);
-            if (minioClient == null) {
-                log.error("未找到对应的MinioClient: {}", ossConfigId);
+            // 获取S3Client
+            S3Client s3Client = s3Clients.get(ossConfigId);
+            if (s3Client == null) {
+                log.error("未找到对应的S3Client: {}", ossConfigId);
                 return null;
             }
             
             // 创建File对象
-            java.io.File file = new java.io.File(localFilePath);
-            if (!file.exists() || !file.isFile()) {
+            Path path = Path.of(localFilePath);
+            if (!Files.isRegularFile(path)) {
                 log.error("本地文件不存在或不是文件: {}", localFilePath);
                 return null;
             }
@@ -284,24 +311,24 @@ public class FileRepositoryInOSS {
             // 如果对象名为空，则自动生成
             if (objectName == null || objectName.isEmpty()) {
                 objectName = UUID.randomUUID().toString().replaceAll("-", "") + 
-                        getFileExtension(file.getName());
+                        getFileExtension(path.getFileName().toString());
             }
             
             // 获取文件内容类型
-            String contentType = java.nio.file.Files.probeContentType(file.toPath());
+            String contentType = Files.probeContentType(path);
             if (contentType == null) {
                 // 如果无法确定内容类型，使用通用二进制类型
                 contentType = "application/octet-stream";
             }
             
             // 上传文件
-            minioClient.uploadObject(
-                    UploadObjectArgs.builder()
+            s3Client.putObject(
+                    PutObjectRequest.builder()
                             .bucket(ossConfigEntity.getBucketName())
-                            .object(objectName)
-                            .filename(localFilePath)
+                            .key(objectName)
                             .contentType(contentType)
-                            .build()
+                            .build(),
+                    RequestBody.fromFile(path)
             );
             
             return objectName;
