@@ -182,9 +182,10 @@ a {
   text-decoration: none;
 }
 
+/* 原写法用的是 Vuetify 2 的 --v-primary-base，在 v3 中无效，改为 v3 的主题变量 */
 .v-chip--selected {
-  background-color: var(--v-primary-base) !important;
-  color: white !important;
+  background-color: rgb(var(--v-theme-primary)) !important;
+  color: rgb(var(--v-theme-on-primary)) !important;
 }
 </style>
   

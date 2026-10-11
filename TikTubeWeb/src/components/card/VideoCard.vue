@@ -176,12 +176,9 @@ export default {
   overflow: hidden;
 }
 
+/* 颜色交由 Main.css 的全局规则统一到主题变量，这里不再写死色值 */
 .category-link {
   color: inherit;
   text-decoration: none;
-}
-
-.category-link:hover {
-  color: #1867c0;
 }
 </style>

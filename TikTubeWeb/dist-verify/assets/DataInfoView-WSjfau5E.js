@@ -1,0 +1,1 @@
+import{_ as e,c as n,w as a,r,o as s,f as c}from"./index-6G0MuQgz.js";const _={};function f(p,o,i,d,l,u){const t=r("v-container");return s(),n(t,{fluid:""},{default:a(()=>o[0]||(o[0]=[c(" 数据分析 ")])),_:1})}const x=e(_,[["render",f]]);export{x as default};

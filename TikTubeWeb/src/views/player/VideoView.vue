@@ -605,9 +605,7 @@ export default {
 </script>
 
 <style>
-.category-link {
-  color: #1867c0;
-}
+/* .category-link 的颜色已统一到 Main.css，跟随主题变化 */
 
 .position-relative {
   position: relative;

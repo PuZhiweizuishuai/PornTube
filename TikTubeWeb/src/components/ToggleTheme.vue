@@ -1,17 +1,8 @@
 <template>
-  <v-btn @click="toggleTheme">主题切换</v-btn>
+  <!-- 兼容旧引用：真正的实现已迁移到 @/components/common/ThemeToggle.vue -->
+  <ThemeToggle />
 </template>
 
 <script setup>
-import { useTheme } from 'vuetify'
-
-const theme = useTheme()
-
-function toggleTheme () {
-  theme.global.name.value = theme.global.current.value.dark ? 'light' : 'dark'
-}
+import ThemeToggle from '@/components/common/ThemeToggle.vue'
 </script>
-
-<style>
-
-</style>

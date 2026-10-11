@@ -1,11 +1,16 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeLayout from '../layout/IndexLayout.vue'
-import checkPower from '@/utils/check-power'
-// 默认网站名称
-const DEFAULT_TITLE = 'TikTube'
+import { useUserStore } from '@/stores/userStore'
+import { useWebInfoStore } from '@/stores/webInfoStore'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
+  // 换页回到顶部；浏览器前进/后退时恢复原滚动位置
+  scrollBehavior(to, from, savedPosition) {
+    if (to.hash) return { el: to.hash, behavior: 'smooth' }
+    if (savedPosition) return savedPosition
+    return { top: 0 }
+  },
   routes: [
     {
       path: '/',
@@ -354,56 +359,40 @@ const router = createRouter({
   ],
 })
 
-// 导航守卫，在路由跳转前进行权限判断
+// 导航守卫：权限判断一律以 Pinia 为唯一数据源，不再裸读 localStorage
 router.beforeEach((to, from, next) => {
-  // 尝试从localStorage获取网站信息作为标题
-  let siteTitle = DEFAULT_TITLE
+  let siteTitle = 'TikTube'
+  let isLogin = false
+  let isAdmin = false
+
   try {
-    // App.vue中会将网站信息存储到localStorage，如果有则使用它
-    const webInfoStr = localStorage.getItem('webInfo')
-    if (webInfoStr) {
-      const webInfo = JSON.parse(webInfoStr)
-      if (webInfo && webInfo.name) {
-        siteTitle = webInfo.name
-      }
-    }
+    // Pinia 在 main.js 中最先安装，这里拿到的 store 已经是 rehydrate 之后的状态
+    const webInfoStore = useWebInfoStore()
+    const userStore = useUserStore()
+    siteTitle = webInfoStore.getName || 'TikTube'
+    isLogin = userStore.isLogin
+    isAdmin = userStore.isAdmin
   } catch (e) {
-    console.error('获取网站标题失败', e)
+    // Pinia 尚未就绪（极端情况）：放行非鉴权页面，鉴权页面退回登录
+    console.warn('[router] 读取 store 失败，按未登录处理', e)
   }
 
-  // 设置页面标题
   document.title = to.meta.title ? `${siteTitle} - ${to.meta.title}` : siteTitle
-  
-  // 判断页面是否需要登录权限
-  if (to.meta.requireAuth) {
-    // 判断用户是否已登录，通过localStorage直接判断
-    const userData = JSON.parse(localStorage.getItem('user'))
-    
-    if (userData && userData !== 'undefined' && userData !== '') {
-      // 已登录，允许访问
-      if (to.meta.requireAdmin) {
-        if (checkPower.checkPower(userData) === "admin") {
-          next()
-        } else {
-          next({
-            path: '/',
-          })
-        }
-      } else {
-        next()
-      }
-    } else {
-      // 未登录，重定向到登录页面
-      next({
-        path: '/login',
-        // 将原本要访问的页面路径作为查询参数传递，便于登录后重定向回去
-        query: { redirect: to.fullPath }
-      })
-    }
-  } else {
-    // 不需要登录权限的页面，直接访问
-    next()
+
+  if (!to.meta.requireAuth) {
+    return next()
   }
+
+  if (!isLogin) {
+    // 未登录，重定向到登录页并带上回跳地址
+    return next({ path: '/login', query: { redirect: to.fullPath } })
+  }
+
+  if (to.meta.requireAdmin && !isAdmin) {
+    return next({ path: '/' })
+  }
+
+  next()
 })
 
 export default router

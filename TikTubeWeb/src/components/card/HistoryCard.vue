@@ -109,9 +109,7 @@ export default {
   transition: all 0.2s ease;
 }
 
-.history-card:hover {
-  background-color: rgba(0, 0, 0, 0.03);
-}
+/* hover 背景色见 Main.css（随主题变化），这里不再写死 rgba(0,0,0,.03) */
 
 .text-truncate-2 {
   display: -webkit-box;

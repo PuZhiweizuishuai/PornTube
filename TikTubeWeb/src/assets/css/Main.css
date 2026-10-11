@@ -1,13 +1,177 @@
+/* ==========================================================================
+   全站样式基线：设计令牌 + 页面过渡 + 历史硬编码颜色收敛
+   配色不在这里写死，统一引用 Vuetify 主题变量（--v-theme-* / --v-*），
+   这样浅色 / 深色两套主题共用同一份规则。
+   ========================================================================== */
+
+/* ---------- 设计令牌（与主题无关的几何 / 动效常量） ---------- */
+:root {
+  --app-header-height: 64px;
+  --app-radius-sm: 8px;
+  --app-radius-md: 12px;
+  --app-radius-lg: 16px;
+  --app-transition-duration: 220ms;
+  --app-transition-fast: 140ms;
+  --app-easing: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ---------- 首屏底色（Vuetify 挂载前由 index.html 的内联脚本决定） ---------- */
+html[data-theme='light'] {
+  background-color: #ffffff;
+  color-scheme: light;
+}
+
+html[data-theme='dark'] {
+  background-color: #0f0f0f;
+  color-scheme: dark;
+}
+
+/* ---------- 滚动条 ---------- */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+html[data-theme='light'] ::-webkit-scrollbar-thumb {
+  background-color: #c6c6c6;
+  border-radius: 8px;
+}
+
+html[data-theme='dark'] ::-webkit-scrollbar-thumb {
+  background-color: #5a5a5a;
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ---------- 主内容区 ---------- */
+.app-main {
+  min-height: calc(100vh - var(--app-header-height));
+}
+
+/* ---------- 页面切换过渡 ---------- */
+/* 只在真正换页时播放（见 AppRouterView）；翻页等仅改 query 的跳转走 page-instant */
+.page-enter-active {
+  transition:
+    opacity var(--app-transition-duration) var(--app-easing),
+    transform var(--app-transition-duration) var(--app-easing);
+}
+
+.page-leave-active {
+  transition:
+    opacity var(--app-transition-fast) var(--app-easing),
+    transform var(--app-transition-fast) var(--app-easing);
+}
+
+.page-enter-from {
+  opacity: 0;
+  transform: translate3d(0, 10px, 0);
+}
+
+.page-leave-to {
+  opacity: 0;
+  transform: translate3d(0, -6px, 0);
+}
+
+/* 同页内 query 变化：零时长切换，避免翻页闪烁 */
+.page-instant-enter-active,
+.page-instant-leave-active {
+  transition: none !important;
+}
+
+/* 尊重系统的「减少动态效果」设置 */
+@media (prefers-reduced-motion: reduce) {
+  .page-enter-active,
+  .page-leave-active {
+    transition: none !important;
+  }
+
+  .page-enter-from,
+  .page-leave-to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------- 历史硬编码颜色收敛到主题变量 ---------- */
+/* 这些类名散落在各 SFC 中，早期写死了具体色值，深色模式下会「看不见」。
+   统一在这里改写成主题变量，避免逐个文件改模板。 */
+
+.text-black,
+.text-black * {
+  color: rgb(var(--v-theme-on-surface)) !important;
+}
+
+.text-grey {
+  color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity)) !important;
+}
+
+/* 404 页自定义的 .text-red 改成 error 色，深色下不会糊成一团 */
+.text-red {
+  color: rgb(var(--v-theme-error)) !important;
+}
+
+.category-link {
+  color: rgb(var(--v-theme-primary));
+  text-decoration: none;
+}
+
+.category-link:hover {
+  text-decoration: underline;
+}
+
+/* 播放器里出现的绝对定位辅助类，收敛为全局可用 */
+.position-relative {
+  position: relative;
+}
+
+.position-absolute {
+  position: absolute;
+  z-index: 1;
+}
+
+/* ---------- 侧边栏收起（rail）模式 ----------
+   rail 宽度只有 56px，而 v-list-item 默认左右内边距 16px，图标后还跟着一个
+   宽 32px 的 __spacer，内容区实际只剩 8px —— 选中背景框会被压扁、图标被挤到
+   边缘，看起来「只框住半个图标」。这里把每一项改成居中的 40px 方块，并去掉
+   图标后面只为「图标与标题之间留空」而存在的 spacer。
+   注意：这些规则必须放在全局样式里，因为 __spacer 是 v-list-item 的内部元素，
+   拿不到组件的 scoped 属性选择器。 */
+.app-sidebar__rail-item {
+  width: 40px;
+  margin-inline: auto;
+  padding-inline: 8px;
+}
+
+.app-sidebar__rail-item .v-list-item__spacer {
+  display: none;
+}
+
+/* ---------- 深色模式下的悬浮阴影补偿 ---------- */
+/* 浅色的 rgba(0,0,0,.1) 阴影在深色背景上几乎不可见，这里加深 */
+.v-theme--dark .video-card:hover,
+.v-theme--dark .text-card:hover,
+.v-theme--dark .favorite-card:hover,
+.v-theme--dark .on-hover {
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55) !important;
+}
+
+/* 历史卡片的 hover 背景改成「on-surface 的低透明度」，两套主题都适用 */
+.history-card:hover {
+  background-color: rgba(var(--v-theme-on-surface), 0.04) !important;
+}
+
+/* ---------- 通用文本截断 ---------- */
 .title-wrap {
-    white-space: normal;
-    word-break: break-word;
-    overflow-wrap: break-word;
-    max-height: 3.6em;
-    /* 约两行文字的高度 */
-    overflow: hidden;
-    display: -webkit-box;
-    line-clamp: 2;
-    -webkit-line-clamp: 2;
-    /* 限制最多显示2行 */
-    -webkit-box-orient: vertical;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  max-height: 3.6em;
+  overflow: hidden;
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }

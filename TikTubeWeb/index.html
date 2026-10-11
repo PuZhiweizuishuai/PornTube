@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="">
+<html lang="zh-CN" data-theme="light">
 
 <head>
   <meta charset="UTF-8">
@@ -8,6 +8,26 @@
   <title>TikTube</title>
   <meta name="keywords" content="Spring,Java,Vue,YouTube,弹幕" />
   <meta name="description" content="一个牛逼的视频网站!" />
+  <meta name="theme-color" content="#FFFFFF" />
+  <script>
+    // 首屏防闪烁：在 Vue / Vuetify 挂载前就把主题定下来。
+    // 这里只读一次 localStorage，之后主题的唯一数据源是 Pinia 的 themeStore。
+    (function () {
+      try {
+        var mode = localStorage.getItem('themeMode') || 'system'
+        var dark =
+          mode === 'dark' ||
+          (mode === 'system' &&
+            window.matchMedia &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches)
+        var root = document.documentElement
+        root.setAttribute('data-theme', dark ? 'dark' : 'light')
+        root.style.colorScheme = dark ? 'dark' : 'light'
+      } catch (e) {
+        /* 隐私模式等场景忽略 */
+      }
+    })()
+  </script>
 </head>
 
 <body>

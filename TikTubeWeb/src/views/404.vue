@@ -2,7 +2,7 @@
   <v-container fluid class="pa-0 fill-height d-flex align-center">
     <v-row justify="center" align="center">
       <v-col cols="12" sm="10" md="8" lg="6" xl="4">
-        <v-card class="mx-auto pa-4" elevation="0" rounded="lg">
+        <v-card class="mx-auto pa-4 card-plain" elevation="0" rounded="lg">
           <v-card-item class="text-center">
             <v-card-title class="text-h4 font-weight-bold my-4">
               <span class="text-red">4</span>
@@ -71,12 +71,9 @@ export default {
 }
 </script>
 
-<style>
-.text-red {
-  color: #ff0000 !important;
-}
-
-.v-card {
-  background-color: transparent !important;
+<style scoped>
+/* 注意：原来这里是全局 <style>，.v-card 透明规则会污染全站卡片，已改为 scoped */
+.card-plain {
+  background-color: transparent;
 }
 </style>

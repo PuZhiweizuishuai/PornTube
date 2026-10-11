@@ -173,9 +173,10 @@ export default {
   text-decoration: none;
 }
 
+/* 颜色交由 Main.css 的全局规则统一到主题变量，这里不再写死色值 */
 .category-link:hover,
 .username-text:hover {
-  color: #1867c0;
+  color: rgb(var(--v-theme-primary));
   text-decoration: underline;
 }
 

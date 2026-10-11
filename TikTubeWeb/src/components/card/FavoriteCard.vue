@@ -143,7 +143,7 @@ export default {
 .favorite-card {
   transition: all 0.2s ease-in-out;
   cursor: pointer;
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
 }
 
 .favorite-card:hover {
@@ -196,12 +196,12 @@ export default {
 
 .deleted-video-thumbnail {
   aspect-ratio: 16/9;
-  background-color: #f5f5f5;
+  background-color: rgb(var(--v-theme-surface-variant));
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #757575;
+  color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
 }
 
 .deleted-text {
@@ -218,7 +218,7 @@ export default {
 .text-description {
   height: 100%;
   min-height: 5em;
-  background-color: #f5f5f5;
+  background-color: rgb(var(--v-theme-surface-variant));
   border-radius: 8px;
 }
 

@@ -1,0 +1,179 @@
+<template>
+  <v-app-bar flat color="background" height="64" class="app-header px-2">
+    <template #prepend>
+      <v-app-bar-nav-icon variant="text" @click="emit('toggle-nav')" />
+    </template>
+
+    <!-- 品牌区 -->
+    <router-link
+      :to="homePath"
+      class="app-header__brand d-flex align-center ga-2 text-decoration-none flex-shrink-0"
+    >
+      <v-avatar size="30" rounded="lg" color="primary">
+        <v-img v-if="webInfoStore.getLogoUrl" :src="webInfoStore.getLogoUrl" :alt="webInfoStore.getName" />
+        <v-icon v-else size="18">mdi-play</v-icon>
+      </v-avatar>
+      <span class="text-h6 font-weight-bold d-none d-sm-inline">{{ webInfoStore.getName }}</span>
+      <span v-if="suffix" class="text-caption text-medium-emphasis d-none d-md-inline">{{ suffix }}</span>
+    </router-link>
+
+    <v-spacer />
+
+    <!-- 搜索区：YouTube 式的居中胶囊输入框 -->
+    <div class="app-header__search d-none d-sm-flex align-center ga-1 flex-grow-0">
+      <v-text-field
+        v-model="searchText"
+        density="compact"
+        variant="solo-filled"
+        flat
+        hide-details
+        single-line
+        rounded="pill"
+        bg-color="surface-variant"
+        placeholder="搜索"
+        prepend-inner-icon="mdi-magnify"
+        @keydown="onSearchKeydown"
+      />
+      <v-tooltip location="bottom" text="搜索">
+        <template #activator="{ props }">
+          <v-btn v-bind="props" icon="mdi-magnify" variant="text" @click="doSearch" />
+        </template>
+      </v-tooltip>
+    </div>
+
+    <v-spacer />
+
+    <!-- 右侧操作区 -->
+    <div class="d-flex align-center ga-1">
+      <slot name="actions" />
+
+      <ThemeToggle />
+
+      <v-tooltip v-if="showGithub" location="bottom" text="Github 开源地址">
+        <template #activator="{ props }">
+          <v-btn v-bind="props" icon variant="text" @click="openGithub">
+            <v-icon>mdi-github</v-icon>
+          </v-btn>
+        </template>
+      </v-tooltip>
+
+      <v-tooltip location="bottom" text="投稿">
+        <template #activator="{ props }">
+          <v-btn v-bind="props" icon variant="text" @click="goTo(publishPath)">
+            <v-icon>mdi-video-plus</v-icon>
+          </v-btn>
+        </template>
+      </v-tooltip>
+
+      <v-tooltip location="bottom" text="通知">
+        <template #activator="{ props }">
+          <v-btn v-bind="props" icon variant="text" @click="goTo('/notification')">
+            <v-badge
+              v-if="notificationCount > 0"
+              color="error"
+              :content="String(notificationCount)"
+              offset-x="4"
+              offset-y="4"
+            >
+              <v-icon>mdi-bell</v-icon>
+            </v-badge>
+            <v-icon v-else>mdi-bell</v-icon>
+          </v-btn>
+        </template>
+      </v-tooltip>
+
+      <AppBarHead v-if="userStore.isLogin" />
+
+      <v-btn
+        v-else
+        class="ml-1"
+        prepend-icon="mdi-account-circle"
+        variant="tonal"
+        color="primary"
+        rounded="pill"
+        @click="goTo('/login')"
+      >
+        登录
+      </v-btn>
+    </div>
+  </v-app-bar>
+</template>
+
+<script setup>
+import { ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import http from '@/api/index'
+import { useUserStore } from '@/stores/userStore'
+import { useWebInfoStore } from '@/stores/webInfoStore'
+import ThemeToggle from '@/components/common/ThemeToggle.vue'
+import AppBarHead from '@/components/user/AppBarHead.vue'
+
+defineProps({
+  /** 点击品牌 LOGO 跳转的地址 */
+  homePath: { type: String, default: '/' },
+  /** 「投稿」按钮跳转的地址 */
+  publishPath: { type: String, default: '/studio/upload' },
+  /** 品牌名后的小后缀，如 Studio / Admin */
+  suffix: { type: String, default: '' },
+  showGithub: { type: Boolean, default: true },
+})
+
+const emit = defineEmits(['toggle-nav', 'search'])
+
+const router = useRouter()
+const userStore = useUserStore()
+const webInfoStore = useWebInfoStore()
+
+const searchText = ref('')
+const notificationCount = ref(0)
+
+async function fetchNotificationCount() {
+  if (!userStore.isLogin) {
+    notificationCount.value = 0
+    return
+  }
+  try {
+    const json = await http.get('/notification/count')
+    notificationCount.value = json?.data || 0
+  } catch {
+    // 未登录 / 接口异常都不该让顶栏报错
+    notificationCount.value = 0
+  }
+}
+
+watch(() => userStore.isLogin, fetchNotificationCount, { immediate: true })
+
+function goTo(path) {
+  router.push(path)
+}
+
+function doSearch() {
+  const key = searchText.value.trim()
+  if (!key) return
+  emit('search', key)
+  searchText.value = ''
+}
+
+function onSearchKeydown(event) {
+  if (event.key === 'Enter') doSearch()
+}
+
+function openGithub() {
+  window.open('https://github.com/PuZhiweizuishuai/TikTube', '_blank', 'noopener')
+}
+</script>
+
+<style scoped>
+.app-header {
+  border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+.app-header__brand {
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.app-header__search {
+  width: min(46%, 520px);
+  min-width: 180px;
+}
+</style>
