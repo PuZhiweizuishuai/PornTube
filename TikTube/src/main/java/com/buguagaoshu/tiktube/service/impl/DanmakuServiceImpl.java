@@ -7,10 +7,11 @@ import com.buguagaoshu.tiktube.entity.FileTableEntity;
 import com.buguagaoshu.tiktube.enums.ArticleStatusEnum;
 import com.buguagaoshu.tiktube.enums.ReturnCodeEnum;
 import com.buguagaoshu.tiktube.enums.TypeCode;
-import com.buguagaoshu.tiktube.exception.UserNotLoginException;
 import com.buguagaoshu.tiktube.pipe.AiExaminePipe;
 import com.buguagaoshu.tiktube.service.ArticleService;
 import com.buguagaoshu.tiktube.service.FileTableService;
+import com.buguagaoshu.tiktube.support.CurrentUser;
+import com.buguagaoshu.tiktube.support.CurrentUserResolver;
 import com.buguagaoshu.tiktube.utils.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -47,18 +48,22 @@ public class DanmakuServiceImpl extends ServiceImpl<DanmakuDao, DanmakuEntity> i
 
     private final AiExaminePipe aiExaminePipe;
 
+    private final CurrentUserResolver currentUserResolver;
+
     @Autowired
     public DanmakuServiceImpl(ArticleService articleService,
                               FileTableService fileTableService,
                               CountRecorder countRecorder,
                               WebSettingCache webSettingCache,
-                              IpUtil ipUtil, AiExaminePipe aiExaminePipe) {
+                              IpUtil ipUtil, AiExaminePipe aiExaminePipe,
+                              CurrentUserResolver currentUserResolver) {
         this.articleService = articleService;
         this.fileTableService = fileTableService;
         this.countRecorder = countRecorder;
         this.webSettingCache = webSettingCache;
         this.ipUtil = ipUtil;
         this.aiExaminePipe = aiExaminePipe;
+        this.currentUserResolver = currentUserResolver;
     }
 
     @Override
@@ -85,10 +90,9 @@ public class DanmakuServiceImpl extends ServiceImpl<DanmakuDao, DanmakuEntity> i
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ReturnCodeEnum saveArtDanmaku(ArtDanmakuDto danmakuDto, HttpServletRequest request) {
-        long userId = -1;
-        try {
-            userId = JwtUtil.getUserId(request);
-        }catch (UserNotLoginException e) {
+        // 未登录返回 NO_LOGIN（未登录用户 ID 为 -1）
+        long userId = currentUserResolver.currentUserIdOrAnonymous(request);
+        if (userId == CurrentUser.ANONYMOUS_ID) {
             return ReturnCodeEnum.NO_LOGIN;
         }
 

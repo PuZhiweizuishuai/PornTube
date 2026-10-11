@@ -8,6 +8,11 @@ import com.buguagaoshu.tiktube.entity.*;
 import com.buguagaoshu.tiktube.enums.*;
 import com.buguagaoshu.tiktube.exception.UserNotLoginException;
 import com.buguagaoshu.tiktube.service.*;
+import com.buguagaoshu.tiktube.support.ArticleEntityFactory;
+import com.buguagaoshu.tiktube.support.ArticleViewEnricher;
+import com.buguagaoshu.tiktube.support.ArticleVisibilityResolver;
+import com.buguagaoshu.tiktube.support.CurrentUser;
+import com.buguagaoshu.tiktube.support.CurrentUserResolver;
 import com.buguagaoshu.tiktube.utils.*;
 import com.buguagaoshu.tiktube.vo.ArticleViewData;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -61,6 +66,18 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
 
     private final IpUtil ipUtil;
 
+    /** 稿件可见性判定（与文本稿件共用） */
+    private final ArticleVisibilityResolver visibilityResolver;
+
+    /** 当前登录用户解析（收敛 try{getUserId}catch 惯用法） */
+    private final CurrentUserResolver currentUserResolver;
+
+    /** 稿件实体构建（与文本稿件共用） */
+    private final ArticleEntityFactory articleEntityFactory;
+
+    /** 列表富化（作者信息 + 分类 + 缓存播放量） */
+    private final ArticleViewEnricher articleViewEnricher;
+
     @Autowired
     public ArticleServiceImpl(CategoryCache categoryCache,
                               WebSettingCache webSettingCache,
@@ -70,7 +87,11 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
                               NotificationService notificationService,
                               PlayCountRecorder playCountRecorder,
                               CountRecorder countRecorder,
-                              IpUtil ipUtil) {
+                              IpUtil ipUtil,
+                              ArticleVisibilityResolver visibilityResolver,
+                              CurrentUserResolver currentUserResolver,
+                              ArticleEntityFactory articleEntityFactory,
+                              ArticleViewEnricher articleViewEnricher) {
         this.categoryCache = categoryCache;
         this.webSettingCache = webSettingCache;
         this.fileTableService = fileTableService;
@@ -80,6 +101,10 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         this.playCountRecorder = playCountRecorder;
         this.countRecorder = countRecorder;
         this.ipUtil = ipUtil;
+        this.visibilityResolver = visibilityResolver;
+        this.currentUserResolver = currentUserResolver;
+        this.articleEntityFactory = articleEntityFactory;
+        this.articleViewEnricher = articleViewEnricher;
     }
 
     @Autowired
@@ -135,63 +160,16 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
     }
 
     /**
-     * 为文章添加用户信息
+     * 为文章添加用户信息（含分类与缓存播放量）
+     *
+     * 具体实现已抽取到 {@link ArticleViewEnricher}，与文本稿件共用同一套富化逻辑。
      */
     public PageUtils addUserInfo(IPage<ArticleEntity> page) {
-        List<ArticleViewData> articleViewData = addUserInfo(page.getRecords());
-        return new PageUtils(articleViewData, page.getTotal(), page.getSize(), page.getCurrent());
+        return articleViewEnricher.enrichPage(page);
     }
 
     public List<ArticleViewData> addUserInfo(List<ArticleEntity> articleEntityList) {
-        if (articleEntityList == null || articleEntityList.isEmpty()) {
-            return new ArrayList<>();
-        }
-
-        // 收集所有用户ID - 使用HashSet提高去重效率
-        Set<Long> userIdList = articleEntityList.stream()
-                .map(ArticleEntity::getUserId)
-                .collect(Collectors.toCollection(HashSet::new));
-
-        if (userIdList.isEmpty()) {
-            return new ArrayList<>();
-        }
-
-        // 批量获取用户信息 - 一次性查询所有用户数据
-        Map<Long, UserEntity> userEntityMap = userService.userMapList(userIdList);
-
-        // 获取所有分类的缓存以减少重复查询
-        Map<Integer, CategoryEntity> categoryMap = categoryCache.getCategoryEntityMap();
-
-        // 使用并行流处理提高性能，适合数据量大的情况
-        return articleEntityList.parallelStream().map(a -> {
-            ArticleViewData viewData = new ArticleViewData();
-            UserEntity userEntity = userEntityMap.get(a.getUserId());
-            // 数据同步
-            countRecorder.syncArticleCount(a);
-
-            // 拷贝基本属性
-            BeanUtils.copyProperties(a, viewData);
-
-            // 设置用户信息
-            if (userEntity != null) {
-                viewData.setUsername(userEntity.getUsername());
-                viewData.setAvatarUrl(userEntity.getAvatarUrl());
-            }
-
-            // 添加分类信息，使用缓存减少对CategoryCache的重复访问
-            Integer categoryId = a.getCategory();
-            CategoryEntity categoryEntity = categoryMap.get(categoryId);
-            if (categoryEntity != null) {
-                viewData.setChildrenCategory(categoryEntity);
-                if (categoryEntity.getFatherId() != 0) {
-                    CategoryEntity f = categoryMap.get(categoryEntity.getFatherId());
-                    viewData.setFatherCategory(f);
-                }
-            }
-            // 为 viewData 增加缓存中的播放量
-            viewData.setViewCount(viewData.getViewCount() + playCountRecorder.getPlayCount(a.getId()));
-            return viewData;
-        }).collect(Collectors.toList());
+        return articleViewEnricher.enrich(articleEntityList);
     }
 
     @Override
@@ -319,26 +297,14 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
     private void updateArticleEntity(ArticleEntity article, VideoArticleDto dto,
                                      FileTableEntity imageFile, FileTableEntity videoFile,
                                      HttpServletRequest request) {
-        // 更新基本信息
-        article.setTitle(dto.getTitle());
-        article.setDescribes(dto.getDescribe());
-        article.setCategory(dto.getCategory());
-        article.setImgUrl(imageFile.getFileUrl());
-        article.setUpdateTime(System.currentTimeMillis());
+        // 公共字段（标题/简介/分区/封面/标签/审核状态重置）由工厂统一处理
+        articleEntityFactory.applyUpdate(article, dto, imageFile.getFileUrl());
+
         String ip = ipUtil.getIpAddr(request);
         article.setUa(ipUtil.getUa(request));
         article.setIp(ip);
         article.setCity(ipUtil.getCity(ip));
 
-        // 设置标签
-        try {
-            article.setTag(OBJECT_MAPPER.writeValueAsString(dto.getTag()));
-        } catch (JsonProcessingException e) {
-            log.warn("用户 {} 更新的视频标签序列化失败", article.getUserId());
-        }
-
-        // 设置审核状态为待审核
-        article.setExamineStatus(ExamineTypeEnum.PENDING_REVIEW.getCode());
         article.setType(FileTypeEnum.VIDEO.getCode());
 
         // 设置视频信息
@@ -465,32 +431,12 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
 
     /**
      * 构建文章实体
+     *
+     * 公共字段（标题/简介/分区/封面/标签/时间/审核状态/计数）由
+     * {@link ArticleEntityFactory} 统一处理，这里只补视频专属字段。
      */
     private ArticleEntity buildArticleEntity(VideoArticleDto dto, long userId, FileTableEntity imageFile, FileTableEntity videoFile) {
-        ArticleEntity article = new ArticleEntity();
-        article.setTitle(dto.getTitle());
-        article.setDescribes(dto.getDescribe());
-        article.setCategory(dto.getCategory());
-        article.setImgUrl(imageFile.getFileUrl());
-        article.setUserId(userId);
-
-        long time = System.currentTimeMillis();
-        article.setCreateTime(time);
-        article.setUpdateTime(time);
-
-        // 设置标签
-        try {
-            article.setTag(OBJECT_MAPPER.writeValueAsString(dto.getTag()));
-        } catch (JsonProcessingException e) {
-            log.warn("用户 {} 添加的视频标签序列化失败", userId);
-        }
-
-        // 设置审核状态
-        if (webSettingCache.getWebConfigData().getOpenExamine()) {
-            article.setExamineStatus(ExamineTypeEnum.PENDING_REVIEW.getCode());
-        } else {
-            article.setExamineStatus(ExamineTypeEnum.SUCCESS.getCode());
-        }
+        ArticleEntity article = articleEntityFactory.create(dto, userId, imageFile.getFileUrl());
 
         // 设置视频信息
         article.setType(FileTypeEnum.VIDEO.getCode());
@@ -524,51 +470,20 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
 
     @Override
     public ArticleViewData getVideo(long id, HttpServletRequest request) {
-        // 获取用户ID，未登录用户为-1
-        long userId = -1;
-        try {
-            userId = JwtUtil.getUserId(request);
-        } catch (UserNotLoginException ignored) {
-        }
+        // 一次解析出用户 ID 与角色，未登录为匿名用户（userId = -1）
+        CurrentUser currentUser = currentUserResolver.resolve(request);
 
-        // 构建查询条件
-        QueryWrapper<ArticleEntity> wrapper = new QueryWrapper<>();
-        wrapper.eq("id", id);
-        wrapper.eq("status", ArticleStatusEnum.NORMAL.getCode());
-        wrapper.eq("type", FileTypeEnum.VIDEO.getCode());
-
-        // 判断是否为管理员
-        boolean isAdmin = false;
-        try {
-            if (RoleTypeEnum.ADMIN.getRole().equals(JwtUtil.getRole(request))) {
-                isAdmin = true;
-            }
-        } catch (Exception e) {
-            // log.error("获取用户角色失败: {}", e.getMessage());
-        }
+        // 构建查询条件（与文本稿件共用）
+        QueryWrapper<ArticleEntity> wrapper =
+                visibilityResolver.normalArticleWrapper(id, FileTypeEnum.VIDEO.getCode());
 
         ArticleEntity articleEntity = this.getOne(wrapper);
-        if (articleEntity == null) {
-            return createHiddenArticleView();
+        // 稿件不存在，或未通过审核且不是作者本人/管理员 → 返回隐藏视图
+        if (!visibilityResolver.isVisible(articleEntity, currentUser)) {
+            return visibilityResolver.hiddenView();
         }
 
-        // 如果不是管理员，且视频未通过审核
-        if (!isAdmin
-                && articleEntity.getExamineStatus() != ExamineTypeEnum.SUCCESS.getCode()
-                && !articleEntity.getUserId().equals(userId)) {
-            return createHiddenArticleView();
-        }
-
-        return buildArticleViewData(articleEntity, userId);
-    }
-
-    /**
-     * 创建隐藏的文章视图（无权查看时返回）
-     */
-    private ArticleViewData createHiddenArticleView() {
-        ArticleViewData articleViewData = new ArticleViewData();
-        articleViewData.setIsShow(false);
-        return articleViewData;
+        return buildArticleViewData(articleEntity, currentUser.getUserId());
     }
 
     /**
@@ -583,14 +498,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         BeanUtils.copyProperties(article, viewData);
 
         // 添加作者信息
-        UserEntity author = userService.getById(article.getUserId());
-        if (author != null) {
-            viewData.setUsername(author.getUsername());
-            viewData.setFollowCount(author.getFollowCount());
-            viewData.setFansCount(author.getFansCount());
-            viewData.setAvatarUrl(author.getAvatarUrl());
-            viewData.setIntroduction(author.getIntroduction());
-        }
+        articleViewEnricher.applyAuthor(viewData, article.getUserId());
         viewData.setDanmakuCount(article.getDanmakuCount());
 
         // 批量获取视频信息
@@ -618,7 +526,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         }
 
         // 添加分类信息
-        addCategoryInfo(viewData, article.getCategory());
+        articleViewEnricher.applyCategory(viewData, article.getCategory());
 
         viewData.setIsShow(true);
         // 增加播放量
@@ -686,7 +594,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         QueryWrapper<ArticleEntity> wrapper = new QueryWrapper<>();
 
         // 如果是管理员，加载所有数据
-        if ("admin".equals(type) && RoleTypeEnum.ADMIN.getRole().equals(JwtUtil.getRole(request))) {
+        if ("admin".equals(type) && currentUserResolver.isAdmin(request)) {
             String active = (String) params.get("active");
             if ("delete".equals(active)) {
                 wrapper.eq("status", ArticleStatusEnum.DELETE.getCode());
@@ -708,7 +616,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
     @Override
     public PageUtils examineList(@RequestParam Map<String, Object> params, HttpServletRequest request) {
         // 权限验证
-        if (!RoleTypeEnum.ADMIN.getRole().equals(JwtUtil.getRole(request))) {
+        if (!currentUserResolver.isAdmin(request)) {
             return null;
         }
 
@@ -843,14 +751,8 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
      * 检查是否有删除权限
      */
     private boolean hasDeletePermission(ArticleEntity article, HttpServletRequest request) {
-        // 管理员可以删除所有文章
-        if (RoleTypeEnum.ADMIN.getRole().equals(JwtUtil.getRole(request))) {
-            return true;
-        }
-
-        // 用户只能删除自己的文章
-        long userId = JwtUtil.getUserId(request);
-        return article.getUserId().equals(userId);
+        // 管理员可以删除所有文章，普通用户只能删除自己的
+        return currentUserResolver.isOwnerOrAdmin(article.getUserId(), request);
     }
 
     /**
@@ -1113,55 +1015,9 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
     }
 
     /**
-     * 为文章添加分类信息
+     * 为文章添加分类信息（不含作者信息）
      */
     public List<ArticleViewData> addArticleCategory(IPage<ArticleEntity> page) {
-        if (page == null || page.getRecords() == null || page.getRecords().isEmpty()) {
-            return new ArrayList<>();
-        }
-
-        // 获取分类缓存，避免重复查询
-        Map<Integer, CategoryEntity> categoryMap = categoryCache.getCategoryEntityMap();
-
-        // 使用并行流处理转换，提高大数据量处理效率
-        return page.getRecords().parallelStream()
-                .map(article -> {
-                    countRecorder.syncArticleCount(article);
-                    article.setViewCount(
-                            article.getViewCount() + playCountRecorder.getPlayCount(article.getId())
-                    );
-                    ArticleViewData viewData = new ArticleViewData();
-                    BeanUtils.copyProperties(article, viewData);
-
-                    // 添加分类信息
-                    Integer categoryId = article.getCategory();
-                    CategoryEntity categoryEntity = categoryMap.get(categoryId);
-                    if (categoryEntity != null) {
-                        viewData.setChildrenCategory(categoryEntity);
-                        if (categoryEntity.getFatherId() != 0) {
-                            CategoryEntity f = categoryMap.get(categoryEntity.getFatherId());
-                            viewData.setFatherCategory(f);
-                        }
-                    }
-
-                    return viewData;
-                })
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * 添加分类信息到视图数据
-     */
-    private void addCategoryInfo(ArticleViewData viewData, Integer categoryId) {
-        // 由于addUserInfo方法已集成类别信息的添加，此方法仅用于其他地方的单独调用
-        Map<Integer, CategoryEntity> categoryMap = categoryCache.getCategoryEntityMap();
-        CategoryEntity categoryEntity = categoryMap.get(categoryId);
-        if (categoryEntity != null) {
-            viewData.setChildrenCategory(categoryEntity);
-            if (categoryEntity.getFatherId() != 0) {
-                CategoryEntity f = categoryMap.get(categoryEntity.getFatherId());
-                viewData.setFatherCategory(f);
-            }
-        }
+        return articleViewEnricher.enrichPageWithCategory(page);
     }
 }

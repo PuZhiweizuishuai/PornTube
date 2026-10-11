@@ -5,6 +5,7 @@ import com.buguagaoshu.tiktube.entity.FileTableEntity;
 import com.buguagaoshu.tiktube.enums.FileStatusEnum;
 import com.buguagaoshu.tiktube.enums.FileTypeEnum;
 import com.buguagaoshu.tiktube.repository.FileRepository;
+import com.buguagaoshu.tiktube.repository.FileStorageRouter;
 import com.buguagaoshu.tiktube.service.FileTableService;
 import com.buguagaoshu.tiktube.utils.FFmpegUtils;
 import com.buguagaoshu.tiktube.utils.FileUtils;
@@ -39,12 +40,12 @@ public class FileRepositoryImpl implements FileRepository {
     private final Path location;
     private final FileTableService fileTableService;
 
-    private final FileRepositoryInOSS fileRepositoryInOSS;
+    private final FileStorageRouter fileStorageRouter;
 
     @Autowired
     public FileRepositoryImpl(FileTableService fileTableService,
-                              FileRepositoryInOSS fileRepositoryInOSS) throws IOException {
-        this.fileRepositoryInOSS = fileRepositoryInOSS;
+                              FileStorageRouter fileStorageRouter) throws IOException {
+        this.fileStorageRouter = fileStorageRouter;
         this.location = Paths.get(FileTypeEnum.ROOT);
         this.fileTableService = fileTableService;
         if (Files.notExists(this.location)) {
@@ -83,35 +84,15 @@ public class FileRepositoryImpl implements FileRepository {
                 FileTypeEnum.filePath() : FileTypeEnum.ossFilePath();
             String suffix = FileTypeEnum.getFileSuffix(file.getOriginalFilename());
             String filename = FileTypeEnum.newFilename(suffix);
-            String fileUrl = null;
-            
+
             try {
-                // 根据存储位置配置决定存储方式
-                if (WebConfig.FILE_SAVE_LOCATION == 0) {
-                    // 本地存储
-                    File dest = new File(path);
-                    if (!dest.exists() && !dest.mkdirs()) {
-                        errFiles.add(file.getOriginalFilename());
-                        continue;
-                    }
-                    
-                    Files.copy(file.getInputStream(), Paths.get(path, filename));
-                    fileUrl = "/api/upload/" + path + "/" + filename;
-                } else {
-                    // 对象存储
-                    fileUrl = fileRepositoryInOSS.saveFile(
-                            file,
-                            path + "/" + filename,
-                            file.getContentType(),
-                            WebConfig.FILE_SAVE_LOCATION
-                    );
-                    if (fileUrl == null) {
-                        log.error("文件上传到对象存储失败: {}", file.getOriginalFilename());
-                        errFiles.add(file.getOriginalFilename());
-                        continue;
-                    }
+                // 具体存到本地还是对象存储由策略决定
+                String fileUrl = fileStorageRouter.store(file, path, filename);
+                if (fileUrl == null) {
+                    errFiles.add(file.getOriginalFilename());
+                    continue;
                 }
-                
+
                 FileTableEntity fileTableEntity = FileUtils.createFileTableEntity(
                         filename, 
                         suffix, 
@@ -164,97 +145,36 @@ public class FileRepositoryImpl implements FileRepository {
             // 文件类型检查
             validateFileType(type, suffix);
             
-            String fileUrl = null;
-            
             try {
-                // 视频文件特殊处理
+                // 视频与图片共用同一套存储流程，视频额外多做一步信息解析
+                FileTableEntity fileTableEntity = FileUtils.createFileTableEntity(
+                        filename,
+                        suffix,
+                        path,
+                        file.getSize(),
+                        file.getOriginalFilename(),
+                        userId,
+                        type,
+                        WebConfig.FILE_SAVE_LOCATION
+                );
+
                 if (FileTypeEnum.VIDEO.getCode() == type) {
-                    // 创建文件实体
-                    FileTableEntity fileTableEntity = FileUtils.createFileTableEntity(
-                            filename, 
-                            suffix, 
-                            path, 
-                            file.getSize(), 
-                            file.getOriginalFilename(), 
-                            userId, 
-                            type,
-                            WebConfig.FILE_SAVE_LOCATION
-                    );
-                    
                     // 直接从 MultipartFile 处理视频文件，提取信息
                     boolean info = processVideoFile(file, fileTableEntity);
-                    if(!info) {
+                    if (!info) {
                         throw new Exception("文件格式错误，系统无法读取，请检查后重新上传！");
                     }
-                    // 根据存储位置配置决定存储方式
-                    if (WebConfig.FILE_SAVE_LOCATION == 0) {
-                        // 本地存储
-                        File dest = new File(path);
-                        if (!dest.exists() && !dest.mkdirs()) {
-                            log.warn("创建目录失败: {}", path);
-                            continue;
-                        }
-                        
-                        Files.copy(file.getInputStream(), Paths.get(path, filename));
-                        fileUrl = "/api/upload/" + path + "/" + filename;
-                    } else {
-                        // 对象存储 - 直接上传 MultipartFile
-                        fileUrl = fileRepositoryInOSS.saveFile(
-                                file,
-                                path + "/" + filename,
-                                file.getContentType(),
-                                WebConfig.FILE_SAVE_LOCATION);
-                        if (fileUrl == null) {
-                            log.error("视频文件上传到对象存储失败: {}", file.getOriginalFilename());
-                            continue;
-                        }
-                    }
-                    
-                    //fileTableEntity.setFileUrl(fileUrl);
-                    fileTableEntity.setStatus(FileStatusEnum.NOT_USE_FILE.getCode());
-                    fileTableService.save(fileTableEntity);
-                    list.add(fileTableEntity);
-                } else {
-                    // 非视频文件的处理逻辑保持不变
-                    if (WebConfig.FILE_SAVE_LOCATION == 0) {
-                        // 本地存储
-                        File dest = new File(path);
-                        if (!dest.exists() && !dest.mkdirs()) {
-                            log.warn("创建目录失败: {}", path);
-                            continue;
-                        }
-                        
-                        Files.copy(file.getInputStream(), Paths.get(path, filename));
-                        fileUrl = "/api/upload/" + path + "/" + filename;
-                    } else {
-                        // 对象存储
-                        fileUrl = fileRepositoryInOSS.saveFile(
-                                file,
-                                path + "/" + filename,
-                                file.getContentType(),
-                                WebConfig.FILE_SAVE_LOCATION
-                        );
-                        if (fileUrl == null) {
-                            log.error("文件上传到对象存储失败: {}", file.getOriginalFilename());
-                            continue;
-                        }
-                    }
-                    
-                    FileTableEntity fileTableEntity = FileUtils.createFileTableEntity(
-                            filename, 
-                            suffix, 
-                            path, 
-                            file.getSize(), 
-                            file.getOriginalFilename(), 
-                            userId, 
-                            type,
-                            WebConfig.FILE_SAVE_LOCATION
-                    );
-                    //fileTableEntity.setFileUrl(fileUrl);
-                    fileTableEntity.setStatus(FileStatusEnum.NOT_USE_FILE.getCode());
-                    fileTableService.save(fileTableEntity);
-                    list.add(fileTableEntity);
                 }
+
+                // 具体存到本地还是对象存储由策略决定
+                String fileUrl = fileStorageRouter.store(file, path, filename);
+                if (fileUrl == null) {
+                    continue;
+                }
+
+                fileTableEntity.setStatus(FileStatusEnum.NOT_USE_FILE.getCode());
+                fileTableService.save(fileTableEntity);
+                list.add(fileTableEntity);
             } catch (Exception e) {
                 log.error("文件上传失败，用户ID：{}，文件名：{}，错误：{}", userId, file.getOriginalFilename(), e.getMessage());
             }
@@ -343,19 +263,8 @@ public class FileRepositoryImpl implements FileRepository {
         }
         
         try {
-            // 根据存储位置决定删除方式
-            if (fileTableEntity.getSaveLocation() == 0) {
-                // 本地存储
-                String pathStr = fileTableEntity.getFileUrl().replace("/api/upload/" + FileTypeEnum.ROOT + "/", "");
-                Path path = load(pathStr);
-                Files.delete(path);
-            } else {
-                // 对象存储
-                // /api/upload/1/oss/2025-04-30/66e7779e7ff242959414161c2d8af639.JPG
-                String objName = fileTableEntity.getFileUrl().replace("/api/upload/" + fileTableEntity.getSaveLocation() + "/oss/", "");
-                fileRepositoryInOSS.deleteFile(objName, fileTableEntity.getSaveLocation());
-            }
-            return true;
+            // 按文件保存时使用的存储位置路由到对应策略
+            return fileStorageRouter.delete(fileTableEntity.getFileUrl(), fileTableEntity.getSaveLocation());
         } catch (Exception e) {
             log.warn("删除文件失败: {}, 原因: {}", fileTableEntity.getFileUrl(), e.getMessage());
             return false;

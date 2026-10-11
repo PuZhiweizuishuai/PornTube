@@ -58,15 +58,25 @@ public class ArticleEntityFactory {
     }
 
     /**
-     * 把投稿表单的改动应用到已有稿件上（不含类型专属字段）
+     * 把投稿表单的改动应用到已有稿件上（不含类型专属字段），修改后一律重新进入审核
      *
      * @param imgUrl 新封面地址，为 null 或空时保留原封面
      */
     public void applyUpdate(ArticleEntity article, ArticleDraft draft, String imgUrl) {
+        applyUpdate(article, draft, imgUrl, true);
+    }
+
+    /**
+     * 把投稿表单的改动应用到已有稿件上
+     *
+     * @param imgUrl        新封面地址，为 null 或空时保留原封面
+     * @param alwaysPending true 表示无论站点是否开启审核都重新进入审核（视频稿件）；
+     *                      false 表示按站点配置决定（文本稿件，保持原有行为）
+     */
+    public void applyUpdate(ArticleEntity article, ArticleDraft draft, String imgUrl, boolean alwaysPending) {
         applyCommon(article, draft, imgUrl, false);
         article.setUpdateTime(System.currentTimeMillis());
-        // 修改后一律重新进入审核
-        article.setExamineStatus(ExamineTypeEnum.PENDING_REVIEW.getCode());
+        article.setExamineStatus(resolveExamineStatus(alwaysPending));
     }
 
     /**

@@ -13,7 +13,6 @@ import org.bytedeco.javacv.Java2DFrameConverter;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.InputStream;
 import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.util.*;
@@ -32,64 +31,45 @@ public class FFmpegUtils {
      * 获取视频文件信息
      * */
     public static VideoInfo getVideoInfo(File file) {
-        VideoInfo videoInfo = new VideoInfo();
-        FFmpegFrameGrabber grabber = null;
-        try {
-            grabber = new FFmpegFrameGrabber(file);
-            grabber.start();
-
-            videoInfo.setLengthInFrames(grabber.getLengthInVideoFrames());
-
-            videoInfo.setFrameRate(grabber.getVideoFrameRate());
-
-            videoInfo.setDuration(grabber.getLengthInTime() / 1000000.00);
-
-            videoInfo.setWidth(grabber.getImageWidth());
-
-            videoInfo.setHeight(grabber.getImageHeight());
-
-            videoInfo.setAudioChannel(grabber.getAudioChannels());
-
-            videoInfo.setVideoCode(grabber.getVideoCodecName());
-
-            videoInfo.setAudioCode(grabber.getAudioCodecName());
-            // String md5 = MD5Util.getMD5ByInputStream(new FileInputStream(file));
-
-            videoInfo.setSampleRate(grabber.getSampleRate());
-            return videoInfo;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        } finally {
-            try {
-                if (grabber != null) {
-                    grabber.stop();
-                    grabber.release();
-                }
-            } catch (FFmpegFrameGrabber.Exception e) {
-                log.error("getVideoInfo grabber.release failed 获取文件信息失败：{}", e.getMessage());
-            }
-        }
+        return grabVideoInfo(() -> new FFmpegFrameGrabber(file), "本地文件");
     }
-    
+
     /**
      * 直接从 MultipartFile 获取视频文件信息，无需保存到本地
      * @param file MultipartFile 视频文件
      * @return 视频信息对象
      */
     public static VideoInfo getVideoInfoFromMultipartFile(MultipartFile file) {
-        VideoInfo videoInfo = new VideoInfo();
+        // 从 MultipartFile 获取输入流作为抓帧器数据源
+        return grabVideoInfo(() -> new FFmpegFrameGrabber(file.getInputStream()), "MultipartFile");
+    }
+
+    /**
+     * 抓帧器的构造方式（File 或 InputStream），允许抛出受检异常
+     */
+    @FunctionalInterface
+    private interface GrabberFactory {
+        FFmpegFrameGrabber create() throws Exception;
+    }
+
+    /**
+     * 视频信息读取的统一实现
+     *
+     * 原实现把「构造抓帧器 → start → 逐个字段赋值 → 释放资源」在
+     * getVideoInfo 与 getVideoInfoFromMultipartFile 里各写了一整遍（约 40 行重复），
+     * 现在只保留一份，两个入口只负责提供数据源。
+     *
+     * @param factory 抓帧器工厂
+     * @param source  来源描述，仅用于日志
+     * @return 视频信息，解析失败返回 null
+     */
+    private static VideoInfo grabVideoInfo(GrabberFactory factory, String source) {
         FFmpegFrameGrabber grabber = null;
         try {
-            // 从 MultipartFile 获取输入流
-            InputStream inputStream = file.getInputStream();
-            grabber = new FFmpegFrameGrabber(inputStream);
-            
-            // 设置输入格式（可选，通常 FFmpeg 可以自动检测）
-            // grabber.setFormat("mp4"); // 或其他格式
-            
+            grabber = factory.create();
             grabber.start();
 
+            VideoInfo videoInfo = new VideoInfo();
             videoInfo.setLengthInFrames(grabber.getLengthInVideoFrames());
             videoInfo.setFrameRate(grabber.getVideoFrameRate());
             videoInfo.setDuration(grabber.getLengthInTime() / 1000000.00);
@@ -99,21 +79,28 @@ public class FFmpegUtils {
             videoInfo.setVideoCode(grabber.getVideoCodecName());
             videoInfo.setAudioCode(grabber.getAudioCodecName());
             videoInfo.setSampleRate(grabber.getSampleRate());
-            
             return videoInfo;
         } catch (Exception e) {
-            log.error("从 MultipartFile 获取视频信息失败: {}", e.getMessage());
-            e.printStackTrace();
+            // 原实现是 e.printStackTrace()，改为落日志
+            log.error("从{}获取视频信息失败: {}", source, e.getMessage(), e);
             return null;
         } finally {
-            try {
-                if (grabber != null) {
-                    grabber.stop();
-                    grabber.release();
-                }
-            } catch (FFmpegFrameGrabber.Exception e) {
-                log.error("getVideoInfoFromMultipartFile grabber.release failed 获取文件信息失败：{}", e.getMessage());
-            }
+            releaseGrabber(grabber);
+        }
+    }
+
+    /**
+     * 释放抓帧器资源
+     */
+    private static void releaseGrabber(FFmpegFrameGrabber grabber) {
+        if (grabber == null) {
+            return;
+        }
+        try {
+            grabber.stop();
+            grabber.release();
+        } catch (FFmpegFrameGrabber.Exception e) {
+            log.error("grabber.release failed 释放视频解析器失败：{}", e.getMessage());
         }
     }
 
@@ -158,18 +145,11 @@ public class FFmpegUtils {
             }
             return images;
         } catch (Exception e) {
-            e.printStackTrace();
-            log.error("截图失败：文件名： {}， 错误信息：{}",videFile.getName(), e.getMessage());
+            // 原实现是 e.printStackTrace()，改为落日志
+            log.error("截图失败：文件名： {}， 错误信息：{}", videFile.getName(), e.getMessage(), e);
             return null;
         } finally {
-            try {
-                if (grabber != null) {
-                    grabber.stop();
-                    grabber.release();
-                }
-            } catch (FFmpegFrameGrabber.Exception e) {
-                log.error("getVideoInfo grabber.release failed 获取文件信息失败：{}", e.getMessage());
-            }
+            releaseGrabber(grabber);
         }
     }
 }
