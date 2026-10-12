@@ -1,6 +1,7 @@
 package com.buguagaoshu.tiktube.controller;
 
 import com.buguagaoshu.tiktube.cache.HotCache;
+import com.buguagaoshu.tiktube.cache.VideoCatalogCache;
 import com.buguagaoshu.tiktube.config.WebConstant;
 import com.buguagaoshu.tiktube.schedule.CountTasks;
 import com.buguagaoshu.tiktube.schedule.DeleteTempFileTasks;
@@ -36,17 +37,25 @@ public class SystemController {
 
     private final SystemInfoService systemInfoService;
 
+    private final HotCache hotCache;
+
+    private final VideoCatalogCache videoCatalogCache;
+
     @Autowired
     public SystemController(ArticleService articleService,
                             DeleteTempFileTasks deleteTempFileTasks,
                             CountTasks countTasks,
                             AdvertisementService advertisementService,
-                            SystemInfoService systemInfoService) {
+                            SystemInfoService systemInfoService,
+                            HotCache hotCache,
+                            VideoCatalogCache videoCatalogCache) {
         this.articleService = articleService;
         this.deleteTempFileTasks = deleteTempFileTasks;
         this.countTasks = countTasks;
         this.advertisementService = advertisementService;
         this.systemInfoService = systemInfoService;
+        this.hotCache = hotCache;
+        this.videoCatalogCache = videoCatalogCache;
     }
 
 
@@ -60,7 +69,8 @@ public class SystemController {
     public ResponseDetails refreshHot(HttpServletRequest request) {
         Claims user = JwtUtil.getUser(request);
         log.info("管理员：id:{} name: {} 手动刷新热门数据", user.getId(), user.getSubject());
-        HotCache.hotList = articleService.hotView(WebConstant.HOT_NUM);
+        hotCache.update(articleService.hotView(WebConstant.HOT_NUM));
+        videoCatalogCache.refresh();
         return ResponseDetails.ok();
     }
 

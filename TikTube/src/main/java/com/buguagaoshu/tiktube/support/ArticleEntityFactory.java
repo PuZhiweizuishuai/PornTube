@@ -6,12 +6,14 @@ import com.buguagaoshu.tiktube.entity.ArticleEntity;
 import com.buguagaoshu.tiktube.enums.ArticleStatusEnum;
 import com.buguagaoshu.tiktube.enums.ExamineTypeEnum;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -99,6 +101,20 @@ public class ArticleEntityFactory {
         } catch (JsonProcessingException e) {
             log.warn("稿件标签序列化失败: {}", e.getMessage());
             return "";
+        }
+    }
+
+    /** 标签反序列化，投稿与相关推荐共用一套解析规则 */
+    public static List<String> parseTag(String tagJson) {
+        if (!StringUtils.hasLength(tagJson)) {
+            return List.of();
+        }
+        try {
+            return OBJECT_MAPPER.readValue(tagJson, new TypeReference<List<String>>() {
+            });
+        } catch (IOException e) {
+            log.warn("解析标签JSON失败: {}", tagJson, e);
+            return List.of();
         }
     }
 

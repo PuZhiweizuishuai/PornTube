@@ -33,6 +33,8 @@
         <result property="ua" column="ua"/>
         <result property="ip" column="ip"/>
         <result property="city" column="city"/>
+        <!-- 热度分，只有 findTrendingVideos 会写这一列 -->
+        <result property="sort" column="sort"/>
     </resultMap>
     
     <update id="addViewCount">
@@ -62,51 +64,52 @@
         </foreach>
     </update>
 
-    <select id="findHotArticlesWithScore" resultMap="articleMap">
+    <!--
+        热门候选召回。热度表达式的权重必须与 VideoRanking 保持一致：
+        互动量 × 质量率 ÷ 发布年龄的幂律衰减（create_time，不是 update_time）
+        windowStart 非空时只扫最近一段时间的稿件，走 idx_video_create_time 范围扫描
+    -->
+    <select id="findTrendingVideos" resultMap="articleMap">
         SELECT *,
                (
-                   view_count +
-                   comment_count * 2 +
-                   favorite_count * 4 +
-                   danmaku_count * 1.5 +
-                   like_count * 2 -
-                   dislike_count * 2
-               ) AS hot_score
+                   (view_count * 0.5 + like_count * 3 + favorite_count * 6
+                       + comment_count * 4 + danmaku_count * 1.5 - dislike_count * 8)
+                       * (0.25 + (like_count + 1) / (like_count + dislike_count + 2))
+                       / POW((#{now} - create_time) / 3600000 + 2, 1.15)
+               ) AS sort
         FROM article
         WHERE status = 0
           AND examine_status = 1 AND type = #{type}
-          <if test="startTime > 0">
-              AND update_time >= #{startTime}
+          <if test="windowStart != null">
+              AND create_time >= #{windowStart}
           </if>
-        ORDER BY hot_score DESC
-        <if test="limit > 0">
-            LIMIT #{limit}
-        </if>
-    </select>
-
-    <select id="findLatestArticlesWithScore" resultMap="articleMap">
-        SELECT *,
-               (
-                   view_count +
-                   comment_count * 2 +
-                   favorite_count * 4 +
-                   danmaku_count * 1.5 +
-                   like_count * 2 -
-                   dislike_count * 2
-               ) AS hot_score
-        FROM article
-        WHERE status = 0
-          AND examine_status = 1
-        ORDER BY update_time DESC
+        ORDER BY sort DESC
         LIMIT #{limit}
     </select>
 
-    <!-- 根据标签查找相似文章 -->
+    <!-- 构建标签倒排索引用的投影查询，只取打分需要的列，按发布时间倒序取最近的稿件 -->
+    <select id="findVideosForTagIndex" resultMap="articleMap">
+        SELECT id, tag, category, user_id, create_time,
+               view_count, like_count, favorite_count, dislike_count, comment_count, danmaku_count
+        FROM article
+        WHERE status = 0
+          AND examine_status = 1
+          AND type = #{type}
+        ORDER BY create_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <!--
+        标签召回的回退路径：只有倒排索引还没建好、或源稿件不在索引里时才会走到这里。
+        tagLikeList 由服务层按 JSON 数组元素精确构造（带引号），单个标签查不到的时候
+        整条查询仍然要扫一遍标签列，所以热路径不走 SQL
+    -->
     <select id="findSimilarArticlesByTags" resultMap="articleMap">
         SELECT *
         FROM article
         WHERE status = 0
           AND examine_status = 1
+          AND type = #{type}
           <if test="articleId != null">
               AND id != #{articleId}
           </if>
@@ -115,7 +118,7 @@
                 tag LIKE #{tagPattern}
             </foreach>
           )
-        ORDER BY update_time DESC
+        ORDER BY create_time DESC
         <if test="limit > 0">
             LIMIT #{limit}
         </if>

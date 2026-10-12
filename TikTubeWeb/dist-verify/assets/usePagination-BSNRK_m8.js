@@ -1,1 +1,0 @@
-function r(e,{root:l="data"}={}){if(!e)return null;const t=l&&e[l]!==void 0?e[l]:e;return Array.isArray(t)?{list:t,currPage:null,totalPage:null,totalCount:t.length}:!t||typeof t!="object"?null:{list:t.list||t.records||[],currPage:t.currPage??t.page??null,totalPage:t.totalPage??t.totalPages??null,totalCount:t.totalCount??t.total??null}}export{r as e};

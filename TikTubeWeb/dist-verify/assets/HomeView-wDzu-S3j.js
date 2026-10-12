@@ -1,1 +1,0 @@
-import{_ as t,c as n,w as r,r as s,o as a,f as c}from"./index-6G0MuQgz.js";const _={};function p(f,e,i,d,l,m){const o=s("v-container");return a(),n(o,{fluid:""},{default:r(()=>e[0]||(e[0]=[c(" 创作者首页 ")])),_:1})}const x=t(_,[["render",p]]);export{x as default};

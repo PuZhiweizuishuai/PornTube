@@ -13,6 +13,7 @@ import com.buguagaoshu.tiktube.support.ArticleViewEnricher;
 import com.buguagaoshu.tiktube.support.ArticleVisibilityResolver;
 import com.buguagaoshu.tiktube.support.CurrentUser;
 import com.buguagaoshu.tiktube.support.CurrentUserResolver;
+import com.buguagaoshu.tiktube.support.VideoRanking;
 import com.buguagaoshu.tiktube.utils.*;
 import com.buguagaoshu.tiktube.vo.ArticleViewData;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -52,6 +53,21 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
     private static final int ONE_DAY_MILLIS = 86400000;
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
+    /**
+     * 热门榜的时间窗：只在这个窗口里召回候选，配合 create_time 索引避免每次刷新扫全库
+     */
+    private static final long TRENDING_WINDOW_MILLIS = 30L * ONE_DAY_MILLIS;
+
+    /**
+     * 一阶段多召回多少候选留给精排
+     */
+    private static final int TREND_RECALL_FACTOR = 2;
+
+    /**
+     * 播放增量键数量超过这个值就不再用它补候选，避免扫描过多 Redis 键
+     */
+    private static final int MAX_PENDING_PLAY_KEYS = 5000;
+
     private final CategoryCache categoryCache;
     private final WebSettingCache webSettingCache;
     private final FileTableService fileTableService;
@@ -78,6 +94,12 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
     /** 列表富化（作者信息 + 分类 + 缓存播放量） */
     private final ArticleViewEnricher articleViewEnricher;
 
+    /** 热门榜快照，相关推荐补位用它 */
+    private final HotCache hotCache;
+
+    /** 标签倒排索引，相关推荐的召回与打分都在内存里完成 */
+    private final VideoCatalogCache videoCatalogCache;
+
     @Autowired
     public ArticleServiceImpl(CategoryCache categoryCache,
                               WebSettingCache webSettingCache,
@@ -91,7 +113,9 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
                               ArticleVisibilityResolver visibilityResolver,
                               CurrentUserResolver currentUserResolver,
                               ArticleEntityFactory articleEntityFactory,
-                              ArticleViewEnricher articleViewEnricher) {
+                              ArticleViewEnricher articleViewEnricher,
+                              HotCache hotCache,
+                              VideoCatalogCache videoCatalogCache) {
         this.categoryCache = categoryCache;
         this.webSettingCache = webSettingCache;
         this.fileTableService = fileTableService;
@@ -105,6 +129,8 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
         this.currentUserResolver = currentUserResolver;
         this.articleEntityFactory = articleEntityFactory;
         this.articleViewEnricher = articleViewEnricher;
+        this.hotCache = hotCache;
+        this.videoCatalogCache = videoCatalogCache;
     }
 
     @Autowired
@@ -692,43 +718,80 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
 
     @Override
     public List<ArticleViewData> hotView(int num) {
-        // 获取当前时间
-        long currentTime = System.currentTimeMillis();
-        // 24小时前的时间戳
-        long ago = currentTime - ONE_DAY_MILLIS;
+        if (num <= 0) {
+            return new ArrayList<>();
+        }
+        long now = System.currentTimeMillis();
+        int videoType = FileTypeEnum.VIDEO.getCode();
 
-        // 直接从数据库获取已经计算好热度值并排序的文章列表
-        List<ArticleEntity> list = this.baseMapper.findHotArticlesWithScore(ago, num, FileTypeEnum.VIDEO.getCode());
-
-        // 如果24小时内的文章不足，获取最新发布的num条内容计算热度
-        if (list.size() < num) {
-            // 构造查询条件
-            Map<String, Object> conditions = Map.of(
-                    "status", ArticleStatusEnum.NORMAL.getCode(),
-                    "examine_status", ExamineTypeEnum.SUCCESS.getCode(),
-                    "type", FileTypeEnum.VIDEO.getCode()
-            );
-            QueryWrapper<ArticleEntity> wrapper = createQueryWrapper(conditions, true);
-            wrapper.last("LIMIT " + num);
-            list = this.list(wrapper);
-            // 计算 sort 值, 播放量加权 1， 评论 2， 收藏 4， 弹幕 1.5, 点赞 2， 不喜欢 -2
-            for (ArticleEntity vd : list) {
-                countRecorder.syncArticleCount(vd);
-                double sort = (vd.getViewCount() + playCountRecorder.getPlayCount(vd.getId()))
-                        + vd.getCommentCount() * 2
-                        + vd.getFavoriteCount() * 4
-                        + vd.getDanmakuCount() * 1.5
-                        + vd.getLikeCount() * 2
-                        - vd.getDislikeCount() * 2;
-                vd.setSort(sort);
-            }
-
-            // 按照 sort 排序
-            list.sort((vd1, vd2) -> Double.compare(vd2.getSort(), vd1.getSort()));
+        // 一阶段：数据库按衰减热度在窗口内召回候选，多取一倍留给精排
+        List<ArticleEntity> candidates = new ArrayList<>(baseMapper.findTrendingVideos(
+                now, now - TRENDING_WINDOW_MILLIS, num * TREND_RECALL_FACTOR, videoType));
+        if (candidates.size() < num) {
+            // 站内稿件少的时候窗口内凑不满榜单，退化成不带时间窗的同公式查询
+            candidates = new ArrayList<>(baseMapper.findTrendingVideos(
+                    now, null, num * TREND_RECALL_FACTOR, videoType));
+        } else {
+            // 带时间窗的召回只看得见新稿件，老稿件今天突然火起来的情况靠播放增量补一路候选
+            candidates.addAll(recentSurgeCandidates(num, videoType));
         }
 
+        // 二阶段：叠加还没同步回数据库的计数增量，用同一套公式精排
+        Map<Long, ArticleEntity> uniqueCandidates = new LinkedHashMap<>();
+        for (ArticleEntity candidate : candidates) {
+            if (candidate.getId() != null) {
+                uniqueCandidates.putIfAbsent(candidate.getId(), candidate);
+            }
+        }
+        List<ArticleEntity> ranked = new ArrayList<>(uniqueCandidates.values());
+        for (ArticleEntity candidate : ranked) {
+            candidate.setSort(liveTrendScore(candidate, now));
+        }
+        ranked.sort(Comparator.comparingDouble(ArticleEntity::getSort).reversed());
+
         // 为获取的列表增加用户信息
-        return addUserInfo(list);
+        return addUserInfo(ranked.size() > num ? ranked.subList(0, num) : ranked);
+    }
+
+    /**
+     * 播放增量缓存里存的是「上一次落库以来」的播放数，正是当下最活跃的信号，
+     * 取增量最多的一批稿件作为第二路候选
+     */
+    private List<ArticleEntity> recentSurgeCandidates(int limit, int videoType) {
+        Map<Long, Long> pendingPlays = playCountRecorder.getPlayMap();
+        if (pendingPlays.isEmpty() || pendingPlays.size() > MAX_PENDING_PLAY_KEYS) {
+            return List.of();
+        }
+        List<Long> hottestIds = pendingPlays.entrySet().stream()
+                .filter(entry -> entry.getValue() > 0)
+                .sorted(Map.Entry.<Long, Long>comparingByValue().reversed())
+                .limit(limit)
+                .map(Map.Entry::getKey)
+                .toList();
+        if (hottestIds.isEmpty()) {
+            return List.of();
+        }
+        List<ArticleEntity> surge = new ArrayList<>(hottestIds.size());
+        for (ArticleEntity video : this.listByIds(hottestIds)) {
+            if (isPublicVideo(video, videoType)) {
+                surge.add(video);
+            }
+        }
+        return surge;
+    }
+
+    /**
+     * 叠加缓存计数增量后的实时热度分，口径与 SQL 里的衰减公式一致
+     */
+    private double liveTrendScore(ArticleEntity article, long now) {
+        Long id = article.getId();
+        return VideoRanking.trendScore(article, new VideoRanking.PendingCounts(
+                playCountRecorder.getPlayCount(id),
+                countRecorder.getArticleLikeCount(id),
+                countRecorder.getArticleFavoriteCount(id),
+                countRecorder.getArticleCommentCount(id),
+                countRecorder.getDanmakuCount(id),
+                countRecorder.getArticleDislikeCount(id)), now);
     }
 
     @Override
@@ -929,89 +992,131 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
     @Override
     public List<ArticleViewData> getRecommendationsByArticleId(Long articleId, int limit) {
         if (articleId == null || articleId <= 0) {
-            return Collections.emptyList();
+            return new ArrayList<>();
         }
 
-        // 获取文章信息
         ArticleEntity article = this.getById(articleId);
         if (article == null) {
-            return Collections.emptyList();
+            return new ArrayList<>();
         }
-
-        // 解析标签
-        List<String> tags = parseTagsFromJson(article.getTag());
-        if (tags.isEmpty()) {
-            // 如果没有标签，返回热门文章作为推荐
-            return hotView(limit);
-        }
-
-        // 根据标签获取推荐
-        return getRecommendationsByTags(tags, articleId, limit);
+        return recommend(ArticleEntityFactory.parseTag(article.getTag()), article.getCategory(), articleId, limit);
     }
 
     @Override
     public List<ArticleViewData> getRecommendationsByTags(List<String> tags, Long excludeArticleId, int limit) {
-        if (tags == null || tags.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        // 构建标签模糊匹配条件
-        List<String> tagLikePatterns = new ArrayList<>(tags.size());
-        for (String tag : tags) {
-            // 使用模糊匹配查找包含该标签的文章
-            tagLikePatterns.add("%" + tag + "%");
-        }
-
-        // 查询数据库获取相似文章
-        List<ArticleEntity> similarArticles = baseMapper.findSimilarArticlesByTags(tagLikePatterns, excludeArticleId, limit);
-
-        // 如果没有找到足够的相似文章，补充一些热门文章
-        if (similarArticles.size() < limit) {
-            int remainingCount = limit - similarArticles.size();
-            List<ArticleViewData> hotArticles = HotCache.hotList; // 获取更多热门文章以便过滤
-
-            // 过滤掉已经在相似文章中的文章
-            Set<Long> existingIds = similarArticles.stream()
-                    .map(ArticleEntity::getId)
-                    .collect(Collectors.toSet());
-
-            if (excludeArticleId != null) {
-                existingIds.add(excludeArticleId);
-            }
-
-            List<ArticleViewData> filteredHotArticles = hotArticles.stream()
-                    .filter(article -> !existingIds.contains(article.getId()))
-                    .limit(remainingCount)
-                    .toList();
-
-            // 将相似文章转换为ArticleViewData
-            List<ArticleViewData> result = addUserInfo(similarArticles);
-
-            // 添加热门文章补充
-            result.addAll(filteredHotArticles);
-
-            return result;
-        }
-
-        // 将查询结果转换为ArticleViewData并返回
-        return addUserInfo(similarArticles);
+        return recommend(tags, null, excludeArticleId, limit);
     }
 
     /**
-     * 从JSON字符串中解析标签列表
+     * 相关推荐：先在内存里的标签倒排索引召回并打分，请求路径不扫 article 表；
+     * 候选不足时用热门榜补位，补位条目带 sort 热度分，前端据此区分「相似」与「热门补位」
+     *
+     * @param sourceCategory 源稿件分区，为 null 时跳过同分区加分这一路信号
      */
-    private List<String> parseTagsFromJson(String tagJson) {
-        if (!StringUtils.hasLength(tagJson)) {
-            return Collections.emptyList();
+    private List<ArticleViewData> recommend(List<String> tags, Integer sourceCategory,
+                                            Long excludeArticleId, int limit) {
+        if (limit <= 0) {
+            return new ArrayList<>();
+        }
+        Set<Long> picked = new HashSet<>();
+        if (excludeArticleId != null) {
+            picked.add(excludeArticleId);
         }
 
-        try {
-            return OBJECT_MAPPER.readValue(tagJson, new TypeReference<List<String>>() {
-            });
-        } catch (IOException e) {
-            log.warn("解析标签JSON失败: {}", tagJson, e);
-            return Collections.emptyList();
+        List<ArticleViewData> result = new ArrayList<>(limit);
+        List<String> sourceTags = tags == null ? List.of() : tags;
+        if (!sourceTags.isEmpty()) {
+            result.addAll(loadRankedVideos(
+                    videoCatalogCache.recommend(sourceTags, sourceCategory, excludeArticleId, limit), picked));
+
+            if (result.size() < limit && !videoCatalogCache.isReady()) {
+                // 只在进程刚启动、索引还没建好时走这条扫表路径
+                result.addAll(loadVideos(baseMapper.findSimilarArticlesByTags(
+                        buildTagLikePatterns(sourceTags), excludeArticleId,
+                        limit - result.size(), FileTypeEnum.VIDEO.getCode()), picked));
+            }
         }
+
+        if (result.size() < limit) {
+            result.addAll(hotPadding(hotCache.getHotList(), limit - result.size(), picked));
+        }
+        return result;
+    }
+
+    /**
+     * 按召回顺序取回展示字段，一次主键批量查询
+     */
+    private List<ArticleViewData> loadRankedVideos(List<Long> rankedIds, Set<Long> picked) {
+        if (rankedIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        Map<Long, ArticleEntity> videosById = new HashMap<>(rankedIds.size() * 2);
+        for (ArticleEntity video : this.listByIds(rankedIds)) {
+            videosById.put(video.getId(), video);
+        }
+        List<ArticleEntity> ordered = new ArrayList<>(rankedIds.size());
+        for (Long id : rankedIds) {
+            ArticleEntity video = videosById.get(id);
+            if (video != null && isPublicVideo(video, FileTypeEnum.VIDEO.getCode()) && picked.add(id)) {
+                ordered.add(video);
+            }
+        }
+        return addUserInfo(ordered);
+    }
+
+    private List<ArticleViewData> loadVideos(List<ArticleEntity> videos, Set<Long> picked) {
+        List<ArticleEntity> kept = new ArrayList<>(videos.size());
+        for (ArticleEntity video : videos) {
+            if (isPublicVideo(video, FileTypeEnum.VIDEO.getCode()) && picked.add(video.getId())) {
+                kept.add(video);
+            }
+        }
+        return addUserInfo(kept);
+    }
+
+    /**
+     * 热门榜补位，条目本身的 sort 就是热度分
+     */
+    private List<ArticleViewData> hotPadding(List<ArticleViewData> hotList, int need, Set<Long> picked) {
+        List<ArticleViewData> padding = new ArrayList<>(need);
+        for (ArticleViewData hot : hotList) {
+            if (padding.size() >= need) {
+                break;
+            }
+            if (hot.getId() != null && picked.add(hot.getId())) {
+                padding.add(hot);
+            }
+        }
+        return padding;
+    }
+
+    /**
+     * 标签在库里存成 {@code ["a","b"]} 形式的 JSON 数组，匹配模式带上引号，
+     * 这样「小猫」不会命中「猫」；转义 LIKE 的通配符，避免标签里的 % 把条件变成全匹配
+     */
+    private List<String> buildTagLikePatterns(List<String> tags) {
+        List<String> patterns = new ArrayList<>(tags.size());
+        for (String tag : tags) {
+            if (!StringUtils.hasText(tag)) {
+                continue;
+            }
+            String escaped = tag.trim()
+                    .replace("\\", "\\\\")
+                    .replace("%", "\\%")
+                    .replace("_", "\\_");
+            patterns.add("%\"" + escaped + "\"%");
+        }
+        return patterns;
+    }
+
+    /**
+     * 是否能出现在公开列表里
+     */
+    private boolean isPublicVideo(ArticleEntity article, int videoType) {
+        return article != null
+                && article.getType() != null && article.getType() == videoType
+                && Objects.equals(article.getStatus(), ArticleStatusEnum.NORMAL.getCode())
+                && Objects.equals(article.getExamineStatus(), ExamineTypeEnum.SUCCESS.getCode());
     }
 
     /**

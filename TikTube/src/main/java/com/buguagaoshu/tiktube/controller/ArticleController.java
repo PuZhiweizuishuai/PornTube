@@ -32,12 +32,16 @@ public class ArticleController {
 
     private final APICurrentLimitingRepository apiCurrentLimitingRepository;
 
+    private final HotCache hotCache;
+
 
     @Autowired
     public ArticleController(ArticleService articleService,
-                             APICurrentLimitingRepository apiCurrentLimitingRepository) {
+                             APICurrentLimitingRepository apiCurrentLimitingRepository,
+                             HotCache hotCache) {
         this.articleService = articleService;
         this.apiCurrentLimitingRepository = apiCurrentLimitingRepository;
+        this.hotCache = hotCache;
     }
 
 
@@ -48,8 +52,7 @@ public class ArticleController {
 
     @GetMapping("/api/article/hot")
     public ResponseDetails hot() {
-        // TODO 同步缓存数据
-        return ResponseDetails.ok().put("data", HotCache.hotList);
+        return ResponseDetails.ok().put("data", hotCache.getHotList());
     }
 
 
@@ -81,8 +84,7 @@ public class ArticleController {
                                     HttpServletRequest request) {
         ArticleViewData video = articleService.getVideo(id, request);
         // 获取推荐内容
-        List<ArticleViewData> recommendationsByTags = articleService.getRecommendationsByTags(video.getTag(), video.getId(), 10);
-        video.setSimilar(recommendationsByTags);
+        video.setSimilar(articleService.getRecommendationsByArticleId(video.getId(), 10));
         return ResponseDetails.ok().put("data", video);
     }
 

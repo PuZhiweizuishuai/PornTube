@@ -452,19 +452,25 @@ export default {
     }
   },
   methods: {
-    /** 统一的写操作：成功后自动刷新列表并提示 */
-    async doAction(promise, successText) {
+    /**
+     * 统一的写操作：成功后自动刷新列表并提示
+     * @param {string} successText
+     * @param {object} [opts] { isSuccess, errorText }
+     *   isSuccess 用于判定成功（审核类接口只回 status/message，不带 data）
+     */
+    async doAction(promise, successText, opts = {}) {
+      const { isSuccess, errorText = '操作失败' } = opts
       try {
         const json = await promise
-        if (json?.data) {
+        if (isSuccess ? isSuccess(json) : !!json?.data) {
           this.showMessage(successText, 'success')
           this.closeAllDialogs()
           await this.table.refresh()
         } else {
-          this.showMessage(json?.message || '操作失败', 'error')
+          this.showMessage(json?.message || errorText, 'error')
         }
       } catch (error) {
-        this.showMessage(error?.message || '操作失败', 'error')
+        this.showMessage(error?.message || errorText, 'error')
       }
     },
     closeAllDialogs() {
@@ -492,7 +498,12 @@ export default {
     approveItem() {
       if (!this.selectedItem) return
       const entity = { ...this.selectedItem, status: 0 }
-      return this.doAction(http.post('/admin/examine/comment', entity), '评论已通过审核')
+      return this.doAction(
+        http.post('/admin/examine/comment', entity),
+        '评论已通过审核',
+        // 审核接口返回 { status, message }，不带 data 信封
+        { isSuccess: (json) => json?.status === 200 }
+      )
     },
     handleTabChange() {
       return this.table.reload()

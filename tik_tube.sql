@@ -38,7 +38,9 @@ CREATE TABLE `article`  (
   INDEX `find_video_by_title`(`title`) USING BTREE,
   INDEX `find_video_by_user`(`user_id`) USING BTREE,
   INDEX `find_video_by_type`(`type`) USING BTREE,
-  INDEX `find_video_by_tag`(`tag`) USING BTREE
+  INDEX `find_video_by_tag`(`tag`) USING BTREE,
+  -- 热门榜、首页 feed、标签索引构建都按 type+status+examine_status 过滤再按 create_time 排序/取范围
+  INDEX `idx_video_create_time`(`type`, `status`, `examine_status`, `create_time`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '视频，图片，文章 发帖表\r\n\r\nTODO 回复消息可见，加密帖子，视频等' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------

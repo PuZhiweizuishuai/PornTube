@@ -1,1 +1,0 @@
-import{_ as t,c as n,w as r,r as s,o as a,f as c}from"./index-6G0MuQgz.js";const p={};function _(i,e,f,l,d,u){const o=s("v-container");return a(),n(o,null,{default:r(()=>e[0]||(e[0]=[c(" VIP 开发中 ")])),_:1})}const x=t(p,[["render",_]]);export{x as default};

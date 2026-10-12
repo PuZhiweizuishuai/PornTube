@@ -35,28 +35,36 @@ public interface ArticleDao extends BaseMapper<ArticleEntity> {
     int batchUpdateCount(@Param("col") String col, @Param("countMap") Map<Long, Long> countMap);
     
     /**
-     * 查询热门文章，直接在数据库层计算热度值
-     * @param startTime 开始时间（24小时内）
-     * @param limit 限制数量
-     * @return 热门文章列表
+     * 召回热门候选，热度分由数据库按时间衰减公式算好并排序
+     *
+     * @param now         查询时刻的毫秒时间戳，衰减以它为零点
+     * @param windowStart 只取该时间之后发布的稿件，传 null 表示不加时间窗
+     * @param limit       候选数量
+     * @param type        稿件类型
      */
-    List<ArticleEntity> findHotArticlesWithScore(@Param("startTime") long startTime, @Param("limit") int limit, @Param("type") int type);
-    
+    List<ArticleEntity> findTrendingVideos(@Param("now") long now,
+                                           @Param("windowStart") Long windowStart,
+                                           @Param("limit") int limit,
+                                           @Param("type") int type);
+
     /**
-     * 查询最新发布的文章并计算热度值
-     * @param limit 限制数量
-     * @return 按创建时间排序的最新文章列表
+     * 标签倒排索引的投影查询，只取打分需要的列
+     *
+     * @param type  稿件类型
+     * @param limit 最多加载多少篇
      */
-    List<ArticleEntity> findLatestArticlesWithScore(@Param("limit") int limit);
-    
+    List<ArticleEntity> findVideosForTagIndex(@Param("type") int type, @Param("limit") int limit);
+
     /**
-     * 根据标签查找相似文章
-     * @param tagLikeList 标签模糊匹配列表
-     * @param articleId 当前文章ID（排除自身）
-     * @param limit 限制数量
-     * @return 相似文章列表
+     * 根据标签查找相似文章，只在倒排索引不可用时作为回退路径
+     *
+     * @param tagLikeList 标签匹配模式，服务层按 JSON 数组元素精确构造
+     * @param articleId   当前文章ID（排除自身）
+     * @param limit       限制数量
+     * @param type        稿件类型
      */
-    List<ArticleEntity> findSimilarArticlesByTags(@Param("tagLikeList") List<String> tagLikeList, 
-                                                 @Param("articleId") Long articleId,
-                                                 @Param("limit") int limit);
+    List<ArticleEntity> findSimilarArticlesByTags(@Param("tagLikeList") List<String> tagLikeList,
+                                                  @Param("articleId") Long articleId,
+                                                  @Param("limit") int limit,
+                                                  @Param("type") int type);
 }
