@@ -1,28 +1,19 @@
 <template>
   <v-app-bar flat color="background" height="64" class="app-header px-2">
     <template #prepend>
-      <v-app-bar-nav-icon variant="text" @click="emit('toggle-nav')" />
+      <v-app-bar-nav-icon v-if="!mobileSearchOpen" variant="text" @click="emit('toggle-nav')" />
+      <v-btn v-else icon="mdi-arrow-left" variant="text" aria-label="返回" @click="closeMobileSearch" />
     </template>
 
-    <!-- 品牌区 -->
-    <router-link
-      :to="homePath"
-      class="app-header__brand d-flex align-center ga-2 text-decoration-none flex-shrink-0"
+    <!-- 移动端搜索态：顶栏整条让位给输入框 -->
+    <div
+      v-if="mobileSearchOpen"
+      class="app-header__mobile-search d-flex align-center ga-1 flex-grow-1"
     >
-      <v-avatar size="30" rounded="lg" color="primary">
-        <v-img v-if="webInfoStore.getLogoUrl" :src="webInfoStore.getLogoUrl" :alt="webInfoStore.getName" />
-        <v-icon v-else size="18">mdi-play</v-icon>
-      </v-avatar>
-      <span class="text-h6 font-weight-bold d-none d-sm-inline">{{ webInfoStore.getName }}</span>
-      <span v-if="suffix" class="text-caption text-medium-emphasis d-none d-md-inline">{{ suffix }}</span>
-    </router-link>
-
-    <v-spacer />
-
-    <!-- 搜索区：YouTube 式的居中胶囊输入框 -->
-    <div class="app-header__search d-none d-sm-flex align-center ga-1 flex-grow-0">
       <v-text-field
+        ref="mobileSearchField"
         v-model="searchText"
+        class="flex-grow-1"
         density="compact"
         variant="solo-filled"
         flat
@@ -33,75 +24,132 @@
         placeholder="搜索"
         prepend-inner-icon="mdi-magnify"
         @keydown="onSearchKeydown"
+        @keydown.esc="closeMobileSearch"
       />
-      <v-tooltip location="bottom" text="搜索">
-        <template #activator="{ props }">
-          <v-btn v-bind="props" icon="mdi-magnify" variant="text" @click="doSearch" />
-        </template>
-      </v-tooltip>
+      <v-btn icon="mdi-magnify" variant="text" aria-label="搜索" @click="doSearch" />
     </div>
 
-    <v-spacer />
-
-    <!-- 右侧操作区 -->
-    <div class="d-flex align-center ga-1">
-      <slot name="actions" />
-
-      <ThemeToggle />
-
-      <v-tooltip v-if="showGithub" location="bottom" text="Github 开源地址">
-        <template #activator="{ props }">
-          <v-btn v-bind="props" icon variant="text" @click="openGithub">
-            <v-icon>mdi-github</v-icon>
-          </v-btn>
-        </template>
-      </v-tooltip>
-
-      <v-tooltip location="bottom" text="投稿">
-        <template #activator="{ props }">
-          <v-btn v-bind="props" icon variant="text" @click="goTo(publishPath)">
-            <v-icon>mdi-video-plus</v-icon>
-          </v-btn>
-        </template>
-      </v-tooltip>
-
-      <v-tooltip location="bottom" text="通知">
-        <template #activator="{ props }">
-          <v-btn v-bind="props" icon variant="text" @click="goTo('/notification')">
-            <v-badge
-              v-if="notificationCount > 0"
-              color="error"
-              :content="String(notificationCount)"
-              offset-x="4"
-              offset-y="4"
-            >
-              <v-icon>mdi-bell</v-icon>
-            </v-badge>
-            <v-icon v-else>mdi-bell</v-icon>
-          </v-btn>
-        </template>
-      </v-tooltip>
-
-      <AppBarHead v-if="userStore.isLogin" />
-
-      <v-btn
-        v-else
-        class="ml-1"
-        prepend-icon="mdi-account-circle"
-        variant="tonal"
-        color="primary"
-        rounded="pill"
-        @click="goTo('/login')"
+    <template v-else>
+      <!-- 品牌区 -->
+      <router-link
+        :to="homePath"
+        class="app-header__brand d-flex align-center ga-2 text-decoration-none flex-shrink-0"
       >
-        登录
-      </v-btn>
-    </div>
+        <v-avatar size="30" rounded="lg" color="primary">
+          <v-img v-if="webInfoStore.getLogoUrl" :src="webInfoStore.getLogoUrl" :alt="webInfoStore.getName" />
+          <v-icon v-else size="18">mdi-play</v-icon>
+        </v-avatar>
+        <span class="text-h6 font-weight-bold d-none d-sm-inline">{{ webInfoStore.getName }}</span>
+        <span v-if="suffix" class="text-caption text-medium-emphasis d-none d-md-inline">{{ suffix }}</span>
+      </router-link>
+
+      <v-spacer />
+
+      <!-- 搜索区：YouTube 式的居中胶囊输入框 -->
+      <div class="app-header__search d-none d-sm-flex align-center ga-1 flex-grow-0">
+        <v-text-field
+          v-model="searchText"
+          density="compact"
+          variant="solo-filled"
+          flat
+          hide-details
+          single-line
+          rounded="pill"
+          bg-color="surface-variant"
+          placeholder="搜索"
+          prepend-inner-icon="mdi-magnify"
+          @keydown="onSearchKeydown"
+        />
+        <v-tooltip location="bottom" text="搜索">
+          <template #activator="{ props }">
+            <v-btn v-bind="props" icon="mdi-magnify" variant="text" @click="doSearch" />
+          </template>
+        </v-tooltip>
+      </div>
+
+      <v-spacer />
+
+      <!-- 右侧操作区 -->
+      <div class="d-flex align-center ga-1">
+        <slot name="actions" />
+
+        <!-- 移动端放不下搜索框，用按钮唤起搜索条 -->
+        <v-btn
+          class="d-sm-none"
+          icon="mdi-magnify"
+          variant="text"
+          aria-label="搜索"
+          @click="openMobileSearch"
+        />
+
+        <ThemeToggle />
+
+        <!-- 移动端顶栏宽度不够，Github 只在 sm 及以上显示 -->
+        <v-tooltip v-if="showGithub" location="bottom" text="Github 开源地址">
+          <template #activator="{ props }">
+            <v-btn v-bind="props" class="d-none d-sm-inline-flex" icon variant="text" @click="openGithub">
+              <v-icon>mdi-github</v-icon>
+            </v-btn>
+          </template>
+        </v-tooltip>
+
+        <v-tooltip location="bottom" text="投稿">
+          <template #activator="{ props }">
+            <v-btn v-bind="props" icon variant="text" @click="goTo(publishPath)">
+              <v-icon>mdi-video-plus</v-icon>
+            </v-btn>
+          </template>
+        </v-tooltip>
+
+        <v-tooltip location="bottom" text="通知">
+          <template #activator="{ props }">
+            <v-btn v-bind="props" icon variant="text" @click="goTo('/notification')">
+              <v-badge
+                v-if="notificationCount > 0"
+                color="error"
+                :content="String(notificationCount)"
+                offset-x="4"
+                offset-y="4"
+              >
+                <v-icon>mdi-bell</v-icon>
+              </v-badge>
+              <v-icon v-else>mdi-bell</v-icon>
+            </v-btn>
+          </template>
+        </v-tooltip>
+
+        <AppBarHead v-if="userStore.isLogin" />
+
+        <v-btn
+          v-else-if="smAndUp"
+          class="ml-1"
+          prepend-icon="mdi-account-circle"
+          variant="tonal"
+          color="primary"
+          rounded="pill"
+          @click="goTo('/login')"
+        >
+          登录
+        </v-btn>
+
+        <!-- 移动端只留图标，避免顶栏被挤出横向滚动 -->
+        <v-btn
+          v-else
+          icon="mdi-account-circle"
+          variant="text"
+          color="primary"
+          aria-label="登录"
+          @click="goTo('/login')"
+        />
+      </div>
+    </template>
   </v-app-bar>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useDisplay } from 'vuetify'
 import http from '@/api/index'
 import { useUserStore } from '@/stores/userStore'
 import { useWebInfoStore } from '@/stores/webInfoStore'
@@ -123,9 +171,17 @@ const emit = defineEmits(['toggle-nav', 'search'])
 const router = useRouter()
 const userStore = useUserStore()
 const webInfoStore = useWebInfoStore()
+const { smAndUp } = useDisplay()
 
 const searchText = ref('')
 const notificationCount = ref(0)
+const mobileSearchOpen = ref(false)
+const mobileSearchField = ref(null)
+
+// 切回桌面档位后搜索条不再有意义
+watch(smAndUp, (isDesktop) => {
+  if (isDesktop) mobileSearchOpen.value = false
+})
 
 async function fetchNotificationCount() {
   if (!userStore.isLogin) {
@@ -147,11 +203,22 @@ function goTo(path) {
   router.push(path)
 }
 
+async function openMobileSearch() {
+  mobileSearchOpen.value = true
+  await nextTick()
+  mobileSearchField.value?.focus()
+}
+
+function closeMobileSearch() {
+  mobileSearchOpen.value = false
+}
+
 function doSearch() {
   const key = searchText.value.trim()
   if (!key) return
   emit('search', key)
   searchText.value = ''
+  closeMobileSearch()
 }
 
 function onSearchKeydown(event) {
@@ -175,5 +242,9 @@ function openGithub() {
 .app-header__search {
   width: min(46%, 520px);
   min-width: 180px;
+}
+
+.app-header__mobile-search {
+  min-width: 0;
 }
 </style>

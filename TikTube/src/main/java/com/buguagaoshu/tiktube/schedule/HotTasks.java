@@ -22,14 +22,14 @@ import org.springframework.stereotype.Component;
 public class HotTasks {
 
     /**
-     * 排行榜刷新间隔，榜单本身只是把快照换成新的一份，五分钟内没人看第二次也不浪费查询
+     * 排行榜刷新间隔，榜单本身只是把快照换成新的一份，半小时内没人看第二次也不浪费查询
      */
-    private static final long HOT_REFRESH_MILLIS = 300_000L;
+    private static final long HOT_REFRESH_MILLIS = 1_800_000L;
 
     /**
      * 标签倒排索引重建间隔，比榜单低频，一次要投影扫上万行
      */
-    private static final long TAG_INDEX_REFRESH_MILLIS = 600_000L;
+    private static final long TAG_INDEX_REFRESH_MILLIS = 7_200_000L;
 
     private final ArticleService articleService;
 
@@ -44,14 +44,14 @@ public class HotTasks {
         this.videoCatalogCache = videoCatalogCache;
     }
 
-    @Scheduled(fixedRate = HOT_REFRESH_MILLIS, initialDelay = 3000)
+    @Scheduled(fixedDelay = HOT_REFRESH_MILLIS, initialDelay = 3000)
     public void hotTask() {
         log.info("开始计算当前热门内容......");
         hotCache.update(articleService.hotView(WebConstant.HOT_NUM));
         log.info("热门内容计算完成。");
     }
 
-    @Scheduled(fixedRate = TAG_INDEX_REFRESH_MILLIS, initialDelay = 1000)
+    @Scheduled(fixedDelay = TAG_INDEX_REFRESH_MILLIS, initialDelay = 1000)
     public void tagIndexTask() {
         log.info("开始重建视频标签索引......");
         videoCatalogCache.refresh();

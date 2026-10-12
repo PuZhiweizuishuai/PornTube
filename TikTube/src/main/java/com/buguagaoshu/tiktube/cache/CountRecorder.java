@@ -4,13 +4,11 @@ import com.buguagaoshu.tiktube.config.MyConfigProperties;
 import com.buguagaoshu.tiktube.entity.ArticleEntity;
 import com.buguagaoshu.tiktube.entity.CommentEntity;
 import com.buguagaoshu.tiktube.repository.RedisRepository;
-import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -18,20 +16,39 @@ import java.util.concurrent.ConcurrentMap;
  * @author Pu Zhiwei {@literal puzhiweipuzhiwei@foxmail.com}
  * @create 2025-04-22
  * 缓存计数器
+ * <p>
+ * 计数先写入内存/Redis 缓冲，由定时任务批量落库。
+ * 落库方通过 {@link #drain(CountFamily)} 原子取走当前缓冲（取走后新计数写入全新缓冲，
+ * 不会丢失窗口），落库失败再 {@link #restore(CountFamily, Map)} 并回，下一轮重试。
  */
 @Component
 public class CountRecorder {
-    // Redis中存储的键名前缀
-    private static final String ARTICLE_COMMENT_COUNT_KEY_PREFIX = "count:article:comment:";
-    private static final String ARTICLE_LIKE_COUNT_KEY_PREFIX = "count:article:like:";
-    private static final String ARTICLE_FAVORITE_COUNT_KEY_PREFIX = "count:article:favorite:";
-    private static final String ARTICLE_DISLIKE_COUNT_KEY_PREFIX = "count:article:dislike:";
-    private static final String COMMENT_LIKE_COUNT_KEY_PREFIX = "count:comment:like:";
-    private static final String COMMENT_DISLIKE_COUNT_KEY_PREFIX = "count:comment:dislike:";
-    private static final String COMMENT_COUNT_KEY_PREFIX = "count:comment:count:";
-    private static final String DANMAKU_COUNT_KEY_PREFIX = "count:danmaku:";
-    private static final String AI_MODEL_TOKEN_COUNT_KEY_PREFIX = "count:ai:token:";
-    
+
+    /**
+     * 计数族，枚举值与落库目标一一对应；Redis 模式下每个族是一个 Hash（field 为对象 ID）
+     */
+    public enum CountFamily {
+        ARTICLE_COMMENT("count:article:comment"),
+        ARTICLE_LIKE("count:article:like"),
+        ARTICLE_FAVORITE("count:article:favorite"),
+        ARTICLE_DISLIKE("count:article:dislike"),
+        COMMENT_COUNT("count:comment:count"),
+        COMMENT_LIKE("count:comment:like"),
+        COMMENT_DISLIKE("count:comment:dislike"),
+        DANMAKU("count:danmaku"),
+        AI_TOKEN("count:ai:token");
+
+        private final String redisHashKey;
+
+        CountFamily(String redisHashKey) {
+            this.redisHashKey = redisHashKey;
+        }
+
+        public String redisHashKey() {
+            return redisHashKey;
+        }
+    }
+
     private final CountStorage countStorage;
 
     @Autowired
@@ -61,552 +78,230 @@ public class CountRecorder {
         comment.setDislikeCount(comment.getDislikeCount() + getCommentDislikeCount(comment.getId()));
     }
 
-    public void clear() {
-        countStorage.clear();
+    /**
+     * 原子取走某个计数族的当前缓冲，返回的 Map 与后续写入完全隔离
+     */
+    public Map<Long, Long> drain(CountFamily family) {
+        return countStorage.drain(family);
+    }
+
+    /**
+     * 落库失败时把快照并回当前缓冲，等待下一轮重试
+     */
+    public void restore(CountFamily family, Map<Long, Long> snapshot) {
+        countStorage.restore(family, snapshot);
     }
 
     // 文章评论计数相关方法
     public void recordArticleComment(long articleId, long count) {
-        countStorage.recordArticleComment(articleId, count);
+        countStorage.record(CountFamily.ARTICLE_COMMENT, articleId, count);
     }
 
     public long getArticleCommentCount(long articleId) {
-        return countStorage.getArticleCommentCount(articleId);
+        return countStorage.get(CountFamily.ARTICLE_COMMENT, articleId);
     }
 
     public Map<Long, Long> getArticleCommentCountMap() {
-        return countStorage.getArticleCommentCountMap();
+        return countStorage.getSnapshot(CountFamily.ARTICLE_COMMENT);
     }
 
     // 评论计数相关方法
     public void recordComment(long commentId, Long count) {
-        countStorage.recordComment(commentId, count);
+        countStorage.record(CountFamily.COMMENT_COUNT, commentId, count);
     }
 
     public long getCommentCount(long commentId) {
-        return countStorage.getCommentCount(commentId);
+        return countStorage.get(CountFamily.COMMENT_COUNT, commentId);
     }
 
     public Map<Long, Long> getCommentCountMap() {
-        return countStorage.getCommentCountMap();
+        return countStorage.getSnapshot(CountFamily.COMMENT_COUNT);
     }
 
     // 弹幕计数相关方法
     public void recordDanmaku(long articleId, Long count) {
-        countStorage.recordDanmaku(articleId, count);
+        countStorage.record(CountFamily.DANMAKU, articleId, count);
     }
 
     public long getDanmakuCount(long articleId) {
-        return countStorage.getDanmakuCount(articleId);
+        return countStorage.get(CountFamily.DANMAKU, articleId);
     }
 
     public Map<Long, Long> getDanmakuCountMap() {
-        return countStorage.getDanmakuCountMap();
+        return countStorage.getSnapshot(CountFamily.DANMAKU);
     }
 
     // 文章点赞计数相关方法
     public void recordArticleLike(long articleId, long count) {
-        countStorage.recordArticleLike(articleId, count);
+        countStorage.record(CountFamily.ARTICLE_LIKE, articleId, count);
     }
 
     public long getArticleLikeCount(long articleId) {
-        return countStorage.getArticleLikeCount(articleId);
+        return countStorage.get(CountFamily.ARTICLE_LIKE, articleId);
     }
 
     public Map<Long, Long> getArticleLikeCountMap() {
-        return countStorage.getArticleLikeCountMap();
+        return countStorage.getSnapshot(CountFamily.ARTICLE_LIKE);
     }
 
     // 文章收藏计数相关方法
     public void recordArticleFavorite(long articleId, long count) {
-        countStorage.recordArticleFavorite(articleId, count);
+        countStorage.record(CountFamily.ARTICLE_FAVORITE, articleId, count);
     }
 
     public long getArticleFavoriteCount(long articleId) {
-        return countStorage.getArticleFavoriteCount(articleId);
+        return countStorage.get(CountFamily.ARTICLE_FAVORITE, articleId);
     }
 
     public Map<Long, Long> getArticleFavoriteCountMap() {
-        return countStorage.getArticleFavoriteCountMap();
+        return countStorage.getSnapshot(CountFamily.ARTICLE_FAVORITE);
     }
 
     // 文章点踩计数相关方法
     public void recordArticleDislike(long articleId, long count) {
-        countStorage.recordArticleDislike(articleId, count);
+        countStorage.record(CountFamily.ARTICLE_DISLIKE, articleId, count);
     }
 
     public long getArticleDislikeCount(long articleId) {
-        return countStorage.getArticleDislikeCount(articleId);
+        return countStorage.get(CountFamily.ARTICLE_DISLIKE, articleId);
     }
 
     public Map<Long, Long> getArticleDislikeCountMap() {
-        return countStorage.getArticleDislikeCountMap();
+        return countStorage.getSnapshot(CountFamily.ARTICLE_DISLIKE);
     }
 
     // 评论点赞计数相关方法
     public void recordCommentLike(long commentId, long count) {
-        countStorage.recordCommentLike(commentId, count);
+        countStorage.record(CountFamily.COMMENT_LIKE, commentId, count);
     }
 
     public long getCommentLikeCount(long commentId) {
-        return countStorage.getCommentLikeCount(commentId);
+        return countStorage.get(CountFamily.COMMENT_LIKE, commentId);
     }
 
     public Map<Long, Long> getCommentLikeCountMap() {
-        return countStorage.getCommentLikeCountMap();
+        return countStorage.getSnapshot(CountFamily.COMMENT_LIKE);
     }
 
     // 评论点踩计数相关方法
     public void recordCommentDislike(long commentId, long count) {
-        countStorage.recordCommentDislike(commentId, count);
+        countStorage.record(CountFamily.COMMENT_DISLIKE, commentId, count);
     }
 
     public long getCommentDislikeCount(long commentId) {
-        return countStorage.getCommentDislikeCount(commentId);
+        return countStorage.get(CountFamily.COMMENT_DISLIKE, commentId);
     }
 
     public Map<Long, Long> getCommentDislikeCountMap() {
-        return countStorage.getCommentDislikeCountMap();
+        return countStorage.getSnapshot(CountFamily.COMMENT_DISLIKE);
     }
 
     public void recordAiModelToken(Long modelId, long count) {
-        countStorage.recordAiModelToken(modelId, count);
+        countStorage.record(CountFamily.AI_TOKEN, modelId, count);
     }
 
     public long getAiModelTokenCount(Long modelId) {
-        return countStorage.getAiModelTokenCount(modelId);
+        return countStorage.get(CountFamily.AI_TOKEN, modelId);
     }
 
     public Map<Long, Long> getAiModelTokenCountMap() {
-        return countStorage.getAiModelTokenCountMap();
+        return countStorage.getSnapshot(CountFamily.AI_TOKEN);
     }
-    
+
     // 计数存储接口
     private interface CountStorage {
-        // 清除所有计数
-        void clear();
-        
-        // 文章评论计数
-        void recordArticleComment(long articleId, long count);
-        long getArticleCommentCount(long articleId);
-        Map<Long, Long> getArticleCommentCountMap();
-        
-        // 评论计数
-        void recordComment(long commentId, long count);
-        long getCommentCount(long commentId);
-        Map<Long, Long> getCommentCountMap();
-        
-        // 弹幕计数
-        void recordDanmaku(long articleId, long count);
-        long getDanmakuCount(long articleId);
-        Map<Long, Long> getDanmakuCountMap();
-        
-        // 文章点赞计数
-        void recordArticleLike(long articleId, long count);
-        long getArticleLikeCount(long articleId);
-        Map<Long, Long> getArticleLikeCountMap();
-        
-        // 文章收藏计数
-        void recordArticleFavorite(long articleId, long count);
-        long getArticleFavoriteCount(long articleId);
-        Map<Long, Long> getArticleFavoriteCountMap();
-        
-        // 文章点踩计数
-        void recordArticleDislike(long articleId, long count);
-        long getArticleDislikeCount(long articleId);
-        Map<Long, Long> getArticleDislikeCountMap();
-        
-        // 评论点赞计数
-        void recordCommentLike(long commentId, long count);
-        long getCommentLikeCount(long commentId);
-        Map<Long, Long> getCommentLikeCountMap();
-        
-        // 评论点踩计数
-        void recordCommentDislike(long commentId, long count);
-        long getCommentDislikeCount(long commentId);
-        Map<Long, Long> getCommentDislikeCountMap();
-        
-        // AI大模型token计数
-        void recordAiModelToken(Long modelId, long count);
-        long getAiModelTokenCount(Long modelId);
-        Map<Long, Long> getAiModelTokenCountMap();
+        void record(CountFamily family, long id, long delta);
+
+        long get(CountFamily family, long id);
+
+        Map<Long, Long> getSnapshot(CountFamily family);
+
+        Map<Long, Long> drain(CountFamily family);
+
+        void restore(CountFamily family, Map<Long, Long> snapshot);
     }
-    
+
     // 内存存储实现
     private static class MemoryCountStorage implements CountStorage {
-        private final ConcurrentMap<Long, Long> articleCommentCount = new ConcurrentHashMap<>();
-        private final ConcurrentMap<Long, Long> articleLikeCount = new ConcurrentHashMap<>();
-        private final ConcurrentMap<Long, Long> articleFavoriteCount = new ConcurrentHashMap<>();
-        private final ConcurrentMap<Long, Long> articleDislikeCount = new ConcurrentHashMap<>();
-        private final ConcurrentMap<Long, Long> commentLikeCount = new ConcurrentHashMap<>();
-        private final ConcurrentMap<Long, Long> commentDislikeCount = new ConcurrentHashMap<>();
-        private final ConcurrentMap<Long, Long> commentCount = new ConcurrentHashMap<>();
-        private final ConcurrentMap<Long, Long> danmakuCount = new ConcurrentHashMap<>();
+        // ConcurrentHashMap 保证 drain 换表与 record 写入之间的可见性与原子性
+        private final ConcurrentMap<CountFamily, ConcurrentMap<Long, Long>> buffers = new ConcurrentHashMap<>();
 
-        private final ConcurrentMap<Long, Long> aiModelTokenCount = new ConcurrentHashMap<>();
-        
-        @Override
-        public void clear() {
-            articleCommentCount.clear();
-            articleLikeCount.clear();
-            articleFavoriteCount.clear();
-            articleDislikeCount.clear();
-            commentLikeCount.clear();
-            commentDislikeCount.clear();
-            commentCount.clear();
-            danmakuCount.clear();
-            aiModelTokenCount.clear();
-        }
-        
-        // 文章评论计数
-        @Override
-        public void recordArticleComment(long articleId, long count) {
-            articleCommentCount.compute(articleId, (k, v) -> v == null ? count : v + count);
-        }
-        
-        @Override
-        public long getArticleCommentCount(long articleId) {
-            return articleCommentCount.getOrDefault(articleId, 0L);
-        }
-        
-        @Override
-        public Map<Long, Long> getArticleCommentCountMap() {
-            return articleCommentCount;
-        }
-        
-        // 评论计数
-        @Override
-        public void recordComment(long commentId, long count) {
-            commentCount.compute(commentId, (k, v) -> v == null ? count : v + count);
-        }
-        
-        @Override
-        public long getCommentCount(long commentId) {
-            return commentCount.getOrDefault(commentId, 0L);
-        }
-        
-        @Override
-        public Map<Long, Long> getCommentCountMap() {
-            return commentCount;
-        }
-        
-        // 弹幕计数
-        @Override
-        public void recordDanmaku(long articleId, long count) {
-            danmakuCount.compute(articleId, (k, v) -> v == null ? count : v + count);
-        }
-        
-        @Override
-        public long getDanmakuCount(long articleId) {
-            return danmakuCount.getOrDefault(articleId, 0L);
-        }
-        
-        @Override
-        public Map<Long, Long> getDanmakuCountMap() {
-            return danmakuCount;
-        }
-        
-        // 文章点赞计数
-        @Override
-        public void recordArticleLike(long articleId, long count) {
-            articleLikeCount.compute(articleId, (k, v) -> v == null ? count : v + count);
-        }
-        
-        @Override
-        public long getArticleLikeCount(long articleId) {
-            return articleLikeCount.getOrDefault(articleId, 0L);
-        }
-        
-        @Override
-        public Map<Long, Long> getArticleLikeCountMap() {
-            return articleLikeCount;
-        }
-        
-        // 文章收藏计数
-        @Override
-        public void recordArticleFavorite(long articleId, long count) {
-            articleFavoriteCount.compute(articleId, (k, v) -> v == null ? count : v + count);
-        }
-        
-        @Override
-        public long getArticleFavoriteCount(long articleId) {
-            return articleFavoriteCount.getOrDefault(articleId, 0L);
-        }
-        
-        @Override
-        public Map<Long, Long> getArticleFavoriteCountMap() {
-            return articleFavoriteCount;
-        }
-        
-        // 文章点踩计数
-        @Override
-        public void recordArticleDislike(long articleId, long count) {
-            articleDislikeCount.compute(articleId, (k, v) -> v == null ? count : v + count);
-        }
-        
-        @Override
-        public long getArticleDislikeCount(long articleId) {
-            return articleDislikeCount.getOrDefault(articleId, 0L);
-        }
-        
-        @Override
-        public Map<Long, Long> getArticleDislikeCountMap() {
-            return articleDislikeCount;
-        }
-        
-        // 评论点赞计数
-        @Override
-        public void recordCommentLike(long commentId, long count) {
-            commentLikeCount.compute(commentId, (k, v) -> v == null ? count : v + count);
-        }
-        
-        @Override
-        public long getCommentLikeCount(long commentId) {
-            return commentLikeCount.getOrDefault(commentId, 0L);
-        }
-        
-        @Override
-        public Map<Long, Long> getCommentLikeCountMap() {
-            return commentLikeCount;
-        }
-        
-        // 评论点踩计数
-        @Override
-        public void recordCommentDislike(long commentId, long count) {
-            commentDislikeCount.compute(commentId, (k, v) -> v == null ? count : v + count);
-        }
-        
-        @Override
-        public long getCommentDislikeCount(long commentId) {
-            return commentDislikeCount.getOrDefault(commentId, 0L);
-        }
-        
-        @Override
-        public Map<Long, Long> getCommentDislikeCountMap() {
-            return commentDislikeCount;
-        }
-
-        // AI大模型token计数
-        @Override
-        public void recordAiModelToken(Long modelId, long count) {
-            aiModelTokenCount.compute(modelId, (k, v) -> v == null ? count : v + count);
+        MemoryCountStorage() {
+            for (CountFamily family : CountFamily.values()) {
+                buffers.put(family, new ConcurrentHashMap<>());
+            }
         }
 
         @Override
-        public long getAiModelTokenCount(Long modelId) {
-            return aiModelTokenCount.getOrDefault(modelId, 0L);
+        public void record(CountFamily family, long id, long delta) {
+            buffers.get(family).compute(id, (k, v) -> v == null ? delta : v + delta);
         }
 
         @Override
-        public Map<Long, Long> getAiModelTokenCountMap() {
-            return aiModelTokenCount;
+        public long get(CountFamily family, long id) {
+            return buffers.get(family).getOrDefault(id, 0L);
+        }
+
+        @Override
+        public Map<Long, Long> getSnapshot(CountFamily family) {
+            return buffers.get(family);
+        }
+
+        @Override
+        public Map<Long, Long> drain(CountFamily family) {
+            return buffers.replace(family, new ConcurrentHashMap<>());
+        }
+
+        @Override
+        public void restore(CountFamily family, Map<Long, Long> snapshot) {
+            ConcurrentMap<Long, Long> current = buffers.get(family);
+            snapshot.forEach((id, delta) -> current.compute(id, (k, v) -> v == null ? delta : v + delta));
         }
     }
-    
-    // Redis存储实现
+
+    // Redis存储实现：每个计数族一个 Hash，读写均为单命令，不再 SCAN/逐键往返
     private static class RedisCountStorage implements CountStorage {
         private final RedisRepository redisRepository;
-        
+
         public RedisCountStorage(RedisRepository redisRepository) {
             this.redisRepository = redisRepository;
         }
-        
+
         @Override
-        public void clear() {
-            // 清除所有计数数据
-            clearKeysByPrefix(ARTICLE_COMMENT_COUNT_KEY_PREFIX);
-            clearKeysByPrefix(ARTICLE_LIKE_COUNT_KEY_PREFIX);
-            clearKeysByPrefix(ARTICLE_FAVORITE_COUNT_KEY_PREFIX);
-            clearKeysByPrefix(ARTICLE_DISLIKE_COUNT_KEY_PREFIX);
-            clearKeysByPrefix(COMMENT_LIKE_COUNT_KEY_PREFIX);
-            clearKeysByPrefix(COMMENT_DISLIKE_COUNT_KEY_PREFIX);
-            clearKeysByPrefix(COMMENT_COUNT_KEY_PREFIX);
-            clearKeysByPrefix(DANMAKU_COUNT_KEY_PREFIX);
-            clearKeysByPrefix(AI_MODEL_TOKEN_COUNT_KEY_PREFIX);
+        public void record(CountFamily family, long id, long delta) {
+            redisRepository.hIncrBy(family.redisHashKey(), Long.toString(id), delta);
         }
-        
-        private void clearKeysByPrefix(String prefix) {
-            Set<String> keys = redisRepository.scan(prefix + "*");
-            if (keys != null && !keys.isEmpty()) {
-                for (String key : keys) {
-                    redisRepository.del(key);
+
+        @Override
+        public long get(CountFamily family, long id) {
+            return redisRepository.hGetCount(family.redisHashKey(), Long.toString(id));
+        }
+
+        @Override
+        public Map<Long, Long> getSnapshot(CountFamily family) {
+            return toIdMap(redisRepository.hGetAllCounts(family.redisHashKey()));
+        }
+
+        @Override
+        public Map<Long, Long> drain(CountFamily family) {
+            // Lua HGETALL+DEL 原子排空，多实例并发刷库也不会重复计数
+            return toIdMap(redisRepository.hDrain(family.redisHashKey()));
+        }
+
+        @Override
+        public void restore(CountFamily family, Map<Long, Long> snapshot) {
+            snapshot.forEach((id, delta) -> record(family, id, delta));
+        }
+
+        private Map<Long, Long> toIdMap(Map<String, Long> raw) {
+            Map<Long, Long> result = new HashMap<>(raw.size());
+            raw.forEach((field, count) -> {
+                try {
+                    result.put(Long.parseLong(field), count);
+                } catch (NumberFormatException e) {
+                    // 忽略无法解析为整数的 field
                 }
-            }
-        }
-        
-        // 文章评论计数
-        @Override
-        public void recordArticleComment(long articleId, long count) {
-            redisRepository.incr(ARTICLE_COMMENT_COUNT_KEY_PREFIX + articleId, count);
-        }
-        
-        @Override
-        public long getArticleCommentCount(long articleId) {
-            Object count = redisRepository.get(ARTICLE_COMMENT_COUNT_KEY_PREFIX + articleId);
-            return count != null ? Long.parseLong(count.toString()) : 0L;
-        }
-        
-        @Override
-        public Map<Long, Long> getArticleCommentCountMap() {
-            return getCountMapByPrefix(ARTICLE_COMMENT_COUNT_KEY_PREFIX);
-        }
-        
-        // 评论计数
-        @Override
-        public void recordComment(long commentId, long count) {
-            redisRepository.incr(COMMENT_COUNT_KEY_PREFIX + commentId, count);
-        }
-        
-        @Override
-        public long getCommentCount(long commentId) {
-            Object count = redisRepository.get(COMMENT_COUNT_KEY_PREFIX + commentId);
-            return count != null ? Long.parseLong(count.toString()) : 0L;
-        }
-        
-        @Override
-        public Map<Long, Long> getCommentCountMap() {
-            return getCountMapByPrefix(COMMENT_COUNT_KEY_PREFIX);
-        }
-        
-        // 弹幕计数
-        @Override
-        public void recordDanmaku(long articleId, long count) {
-            redisRepository.incr(DANMAKU_COUNT_KEY_PREFIX + articleId, count);
-        }
-        
-        @Override
-        public long getDanmakuCount(long articleId) {
-            Object count = redisRepository.get(DANMAKU_COUNT_KEY_PREFIX + articleId);
-            return count != null ? Long.parseLong(count.toString()) : 0L;
-        }
-        
-        @Override
-        public Map<Long, Long> getDanmakuCountMap() {
-            return getCountMapByPrefix(DANMAKU_COUNT_KEY_PREFIX);
-        }
-        
-        // 文章点赞计数
-        @Override
-        public void recordArticleLike(long articleId, long count) {
-            redisRepository.incr(ARTICLE_LIKE_COUNT_KEY_PREFIX + articleId, count);
-        }
-        
-        @Override
-        public long getArticleLikeCount(long articleId) {
-            Object count = redisRepository.get(ARTICLE_LIKE_COUNT_KEY_PREFIX + articleId);
-            return count != null ? Long.parseLong(count.toString()) : 0L;
-        }
-        
-        @Override
-        public Map<Long, Long> getArticleLikeCountMap() {
-            return getCountMapByPrefix(ARTICLE_LIKE_COUNT_KEY_PREFIX);
-        }
-        
-        // 文章收藏计数
-        @Override
-        public void recordArticleFavorite(long articleId, long count) {
-            redisRepository.incr(ARTICLE_FAVORITE_COUNT_KEY_PREFIX + articleId, count);
-        }
-        
-        @Override
-        public long getArticleFavoriteCount(long articleId) {
-            Object count = redisRepository.get(ARTICLE_FAVORITE_COUNT_KEY_PREFIX + articleId);
-            return count != null ? Long.parseLong(count.toString()) : 0L;
-        }
-        
-        @Override
-        public Map<Long, Long> getArticleFavoriteCountMap() {
-            return getCountMapByPrefix(ARTICLE_FAVORITE_COUNT_KEY_PREFIX);
-        }
-        
-        // 文章点踩计数
-        @Override
-        public void recordArticleDislike(long articleId, long count) {
-            redisRepository.incr(ARTICLE_DISLIKE_COUNT_KEY_PREFIX + articleId, count);
-        }
-        
-        @Override
-        public long getArticleDislikeCount(long articleId) {
-            Object count = redisRepository.get(ARTICLE_DISLIKE_COUNT_KEY_PREFIX + articleId);
-            return count != null ? Long.parseLong(count.toString()) : 0L;
-        }
-        
-        @Override
-        public Map<Long, Long> getArticleDislikeCountMap() {
-            return getCountMapByPrefix(ARTICLE_DISLIKE_COUNT_KEY_PREFIX);
-        }
-        
-        // 评论点赞计数
-        @Override
-        public void recordCommentLike(long commentId, long count) {
-            redisRepository.incr(COMMENT_LIKE_COUNT_KEY_PREFIX + commentId, count);
-        }
-        
-        @Override
-        public long getCommentLikeCount(long commentId) {
-            Object count = redisRepository.get(COMMENT_LIKE_COUNT_KEY_PREFIX + commentId);
-            return count != null ? Long.parseLong(count.toString()) : 0L;
-        }
-        
-        @Override
-        public Map<Long, Long> getCommentLikeCountMap() {
-            return getCountMapByPrefix(COMMENT_LIKE_COUNT_KEY_PREFIX);
-        }
-        
-        // 评论点踩计数
-        @Override
-        public void recordCommentDislike(long commentId, long count) {
-            redisRepository.incr(COMMENT_DISLIKE_COUNT_KEY_PREFIX + commentId, count);
-        }
-        
-        @Override
-        public long getCommentDislikeCount(long commentId) {
-            Object count = redisRepository.get(COMMENT_DISLIKE_COUNT_KEY_PREFIX + commentId);
-            return count != null ? Long.parseLong(count.toString()) : 0L;
-        }
-        
-        @Override
-        public Map<Long, Long> getCommentDislikeCountMap() {
-            return getCountMapByPrefix(COMMENT_DISLIKE_COUNT_KEY_PREFIX);
-        }
-
-
-        @Override
-        public void recordAiModelToken(Long modelId, long count) {
-            redisRepository.incr(AI_MODEL_TOKEN_COUNT_KEY_PREFIX + modelId, count);
-        }
-
-        @Override
-        public long getAiModelTokenCount(Long modelId) {
-            Object count = redisRepository.get(AI_MODEL_TOKEN_COUNT_KEY_PREFIX + modelId);
-            return count != null ? Long.parseLong(count.toString()) : 0L;
-        }
-
-        @Override
-        public Map<Long, Long> getAiModelTokenCountMap() {
-            return getCountMapByPrefix(AI_MODEL_TOKEN_COUNT_KEY_PREFIX);
-        }
-        
-        // 通用方法：根据前缀获取计数映射
-        private Map<Long, Long> getCountMapByPrefix(String prefix) {
-            Map<Long, Long> result = new HashMap<>();
-            Set<String> keys = redisRepository.scan(prefix + "*");
-            if (keys != null && !keys.isEmpty()) {
-                for (String keyStr : keys) {
-                    try {
-                        // 提取ID
-                        Long id = Long.parseLong(keyStr.substring(prefix.length()));
-                        // 获取计数
-                        Object value = redisRepository.get(keyStr);
-                        if (value != null) {
-                            result.put(id, Long.parseLong(value.toString()));
-                        }
-                    } catch (NumberFormatException e) {
-                        // 忽略无法解析为整数的键
-                        continue;
-                    }
-                }
-            }
+            });
             return result;
         }
     }

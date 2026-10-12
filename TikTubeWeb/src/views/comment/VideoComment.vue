@@ -19,7 +19,13 @@
         <v-col class="mb-4">
           <Vditor ref="commentVditor" :height="150" @vditor-input="getCommentText" />
           <div class="d-flex justify-end mt-3">
-            <v-btn color="primary" :loading="comments.submitting" @click="submitComment">发表评论</v-btn>
+            <v-btn
+              color="primary"
+              rounded="pill"
+              :loading="comments.submitting"
+              @click="submitComment"
+              >发表评论</v-btn
+            >
           </div>
         </v-col>
       </v-row>
@@ -38,9 +44,9 @@
 
       <v-divider></v-divider>
 
-      <v-row v-if="comments.isEmpty" justify="center" class="my-6">
-        <v-icon icon="mdi-message-text-outline" size="large" color="grey-lighten-1" class="mr-2" />
-        <h3 class="text-grey-lighten-1">暂无评论</h3>
+      <v-row v-if="comments.isEmpty" justify="center" align="center" class="my-8">
+        <v-icon icon="mdi-message-text-outline" size="28" class="text-medium-emphasis me-2" />
+        <span class="text-body-2 text-medium-emphasis">暂无评论，来抢个沙发吧！</span>
       </v-row>
 
       <template v-else>

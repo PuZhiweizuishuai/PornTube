@@ -12,7 +12,7 @@
       <v-row>
         <v-col :cols="colsWidth">
           <!-- 文本标题 -->
-          <v-card flat>
+          <v-card flat class="px-4 pt-3 pb-2">
             <v-card-title class="text-h5 px-0">
               {{ textData.title }}
             </v-card-title>
@@ -107,7 +107,7 @@
 
           <!-- 文本内容显示区域 -->
           <v-card class="my-2" variant="elevated">
-            <v-card-title>文章内容</v-card-title>
+            <v-card-title class="pt-4">文章内容</v-card-title>
             <v-divider></v-divider>
             <v-card-text>
               <!-- 循环展示所有段落内容 -->
@@ -196,7 +196,7 @@
             <!-- 文本描述 -->
             <v-card-text class="py-2">
               <div class="d-flex align-start">
-                <div class="text-body-2">{{ textData.describes }}</div>
+                <div class="text-body-2 text-desc">{{ textData.describes }}</div>
               </div>
             </v-card-text>
 
@@ -533,5 +533,14 @@ export default {
 <style>
 .category-link {
   color: #1867c0;
+}
+
+/* 文本描述：长串无空格内容也要换行，不被 flex 撑破 */
+.text-desc {
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  word-break: break-all;
+  overflow-wrap: anywhere;
 }
 </style>

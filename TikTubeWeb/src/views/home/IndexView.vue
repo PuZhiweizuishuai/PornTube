@@ -49,32 +49,34 @@
         />
       </v-row>
     </v-container>
-    <v-col> &nbsp; </v-col>
-    <!-- 文章卡片 -->
-    <v-row>
-      <v-col cols="12">
-        <v-row class="d-flex align-center">
-          <v-col>
-            <h2 class="text-h5">文章</h2>
-          </v-col>
-          <v-col class="text-right">
-            <v-btn
-              variant="text"
-              color="primary"
-              prepend-icon="mdi-arrow-right"
-              @click="goToArticleList"
-            >
-              查看更多
-            </v-btn>
-          </v-col>
-        </v-row>
+    <!-- 文章 -->
+    <v-row class="align-center mt-2 mb-1">
+      <v-col>
+        <h2 class="text-h6 font-weight-medium">文章</h2>
+      </v-col>
+      <v-col class="text-right" cols="auto">
+        <v-btn
+          variant="text"
+          color="primary"
+          density="compact"
+          append-icon="mdi-chevron-right"
+          :to="`/articles`"
+        >
+          查看全部
+        </v-btn>
       </v-col>
     </v-row>
-    <v-row>
-      <v-col cols="12" v-for="item in textList" :key="item.id">
-        <TextInfoCard :text="item" />
-      </v-col>
-    </v-row>
+    <v-slide-group show-arrows class="article-strip">
+      <v-slide-group-item
+        v-for="item in textList"
+        :key="item.id"
+      >
+        <!-- v-slide-group-item 是 renderless 的，挂在其上的 class 会被丢弃，宽高与间距只能写在内层元素 -->
+        <div class="article-strip__item py-2 pe-3">
+          <ArticleCard :text="item" compact />
+        </div>
+      </v-slide-group-item>
+    </v-slide-group>
 
 
 
@@ -90,14 +92,14 @@
 <script>
 import VideoCared from '@/components/card/VideoCard.vue'
 import NoticeDialogCard from '@/components/card/NoticeDialogCard.vue'
-import TextInfoCard from '@/components/card/TextInfoCard.vue'
+import ArticleCard from '@/components/card/ArticleCard.vue'
 import Pagination from '@/components/common/Pagination.vue'
 
 export default {
   components: {
     VideoCared,
     NoticeDialogCard,
-    TextInfoCard,
+    ArticleCard,
     Pagination
   },
   data() {
@@ -191,10 +193,6 @@ export default {
         behavior: 'smooth',
       })
     },
-        // 跳转到文章列表页面
-    goToArticleList() {
-      this.$router.push('/articles')
-    },
   },
 }
 </script>
@@ -202,5 +200,11 @@ export default {
 <style scoped>
 a {
   text-decoration: none;
+}
+
+/* 文章横滑行：宽度含 pe-3 的 12px 间距，卡片净宽 300px */
+.article-strip__item {
+  width: 312px;
+  max-width: 80vw;
 }
 </style>

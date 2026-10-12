@@ -11,7 +11,7 @@
       <v-row>
         <v-col>
           <div class="d-flex align-center">
-            <h3 class="text-h5 font-weight-medium">评论</h3>
+            <h3 class="text-h6 font-weight-medium">{{ comments.total }} 条回复</h3>
             <v-spacer></v-spacer>
           </div>
         </v-col>
@@ -27,7 +27,13 @@
             @vditor-input="getSecondCommentText"
           />
           <div class="d-flex justify-end mt-3">
-            <v-btn color="success" :loading="comments.submitting" @click="submit">提交评论</v-btn>
+            <v-btn
+              color="primary"
+              rounded="pill"
+              :loading="comments.submitting"
+              @click="submit"
+              >回复</v-btn
+            >
           </div>
         </v-col>
       </v-row>
@@ -47,14 +53,9 @@
 
       <v-divider class="mb-4"></v-divider>
 
-      <v-row v-if="comments.isEmpty" justify="center" class="my-6">
-        <v-icon
-          icon="mdi-message-text-outline"
-          size="large"
-          color="grey-lighten-1"
-          class="mr-2"
-        ></v-icon>
-        <h3 class="text-grey-lighten-1">暂无评论，来抢个沙发吧！</h3>
+      <v-row v-if="comments.isEmpty" justify="center" align="center" class="my-8">
+        <v-icon icon="mdi-message-text-outline" size="28" class="text-medium-emphasis me-2" />
+        <span class="text-body-2 text-medium-emphasis">暂无评论，来抢个沙发吧！</span>
       </v-row>
 
       <template v-else>

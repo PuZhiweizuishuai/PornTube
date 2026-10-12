@@ -5,7 +5,11 @@
 <script>
 import Vditor from 'vditor'
 import 'vditor/dist/index.css'
+import { useVditorTheme } from '@/composables/useVditorTheme'
 export default {
+  setup() {
+    return { vditorTheme: useVditorTheme() }
+  },
   props: {
     placeholder: {
       type: String,
@@ -106,6 +110,7 @@ export default {
     },
     newVditor() {
       this.contentEditor = new Vditor(this.idName, {
+        theme: this.vditorTheme.themeName.value,
         toolbarConfig: {
           pin: false,
         },
@@ -157,6 +162,7 @@ export default {
         after: () => {
           // 编辑器初始化完成后的回调
           this.editorReady = true
+          this.vditorTheme.bind(this.contentEditor)
 
           // 如果有待设置的值，设置它
           if (this.pendingValue !== null && this.pendingValue !== undefined) {

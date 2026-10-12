@@ -1,41 +1,70 @@
 <template>
-  <v-container fill-height>
-    <v-row justify="center" align="center">
-      <v-col cols="12" sm="8" md="6" lg="5">
-        <v-card class="mx-auto elevation-6 rounded-lg" color="surface">
-          <v-card-item>
-            <v-row class="mt-2 mb-2" justify="start">
-              <v-btn color="primary" variant="text" prepend-icon="mdi-arrow-left" @click="backHome">
-                返回
+  <div class="login-page">
+    <!-- 返回主页：固定在页面左上角 -->
+    <v-btn
+      class="login-page__back"
+      variant="text"
+      color="primary"
+      prepend-icon="mdi-arrow-left"
+      @click="backHome"
+    >
+      返回主页
+    </v-btn>
+
+    <v-container maxWidth="1140" class="w-100 py-8">
+      <v-row align="center" justify="center">
+        <!-- 品牌区：桌面端左侧，登录与注册共用 -->
+        <v-col cols="12" md="6" class="d-none d-md-flex flex-column align-start ps-4 ps-lg-8">
+          <v-img :src="webInfo.logoUrl" height="64" max-width="64" contain class="mb-8 rounded-lg" />
+          <h1 class="text-h3 font-weight-bold mb-4">{{ webInfo.name }} {{ type }}</h1>
+          <p class="text-body-1 text-medium-emphasis mb-6 login-page__slogan">
+            {{ showLogin ? '登录后即可观看视频、阅读文章、参与弹幕与评论。' : '注册后即可发布视频与文章，管理自己的订阅与收藏。' }}
+          </p>
+          <div class="d-flex flex-wrap ga-3">
+            <v-chip prepend-icon="mdi-play-box-outline" variant="tonal" color="primary" size="small">
+              视频与文章
+            </v-chip>
+            <v-chip prepend-icon="mdi-bell-outline" variant="tonal" color="primary" size="small">
+              消息通知
+            </v-chip>
+            <v-chip prepend-icon="mdi-shield-lock-outline" variant="tonal" color="primary" size="small">
+              两步验证
+            </v-chip>
+          </div>
+        </v-col>
+
+        <v-col cols="12" sm="9" md="6" lg="5" class="py-8">
+          <v-card class="mx-auto elevation-8 border" color="surface" rounded="lg">
+            <div class="text-center pa-6 pb-2">
+              <v-img
+                :src="webInfo.logoUrl"
+                height="44"
+                max-width="44"
+                contain
+                class="rounded-circle mb-4 mx-auto"
+              />
+              <h2 class="text-h5 font-weight-bold text-primary">{{ formTitle }}</h2>
+              <p class="text-body-2 text-medium-emphasis mt-1">{{ formHint }}</p>
+            </div>
+
+            <v-card-text>
+              <LoginFrom v-if="showLogin" @login="userLogin" />
+              <RegisterFrom v-else @register="register" />
+            </v-card-text>
+
+            <v-card-actions class="px-6 mb-3">
+              <v-btn variant="text" color="primary" @click="openForgotPasswordDialog">
+                忘记密码
               </v-btn>
-            </v-row>
-            <v-row justify="center" class="mb-4">
-              <v-img :src="webInfo.logoUrl" height="40" class="mx-auto" contain></v-img>
-            </v-row>
-            <v-row justify="center" class="mb-6">
-              <h1 class="text-h4 font-weight-bold primary--text text-center">
-                {{ webInfo.name }} {{ type }}
-              </h1>
-            </v-row>
-          </v-card-item>
-
-          <v-card-text>
-            <LoginFrom v-if="showLogin" @login="userLogin" />
-            <RegisterFrom v-else @register="register" />
-          </v-card-text>
-
-          <v-card-actions class="px-6 mb-3">
-            <v-btn variant="text" color="primary" @click="openForgotPasswordDialog">
-              忘记密码
-            </v-btn>
-            <v-spacer></v-spacer>
-            <v-btn variant="text" color="primary" @click="moveRegister">
-              {{ moveMessage }}
-            </v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-col>
-    </v-row>
+              <v-spacer></v-spacer>
+              <v-btn variant="text" color="primary" @click="moveRegister">
+                {{ moveMessage }}
+              </v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-col>
+      </v-row>
+    </v-container>
     <v-snackbar v-model="showMessage" :timeout="3000" color="error" location="top" rounded="pill">
       {{ message }}
       <template v-slot:actions>
@@ -200,7 +229,7 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
-  </v-container>
+  </div>
 </template>
 
 <script>
@@ -244,6 +273,17 @@ export default {
   },
   created() {
     this.webInfo = useWebInfoStore().webInfo
+  },
+  computed: {
+    formTitle() {
+      return this.showLogin ? '登录你的账号' : '创建新账号'
+    },
+    formHint() {
+      const name = this.webInfo.name || 'TikTube'
+      return this.showLogin
+        ? `使用邮箱或手机号继续访问 ${name}`
+        : `注册 ${name}，开始发布视频与文章`
+    },
   },
   methods: {
     getVerifyImage() {
@@ -472,5 +512,28 @@ export default {
 }
 </script>
 
-<style>
+<style scoped>
+/* 登录 / 注册页底色：主题色光晕 + 纵向渐变，浅深两套主题都走 CSS 变量 */
+.login-page {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 100vh;
+  background-color: rgb(var(--v-theme-background));
+  background-image:
+    radial-gradient(60% 55% at 8% 0%, rgba(var(--v-theme-primary), 0.22), transparent 62%),
+    radial-gradient(55% 50% at 95% 100%, rgba(var(--v-theme-primary), 0.14), transparent 65%),
+    linear-gradient(180deg, rgb(var(--v-theme-surface-variant)) 0%, rgb(var(--v-theme-background)) 55%);
+}
+
+.login-page__slogan {
+  max-width: 460px;
+}
+
+.login-page__back {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 1;
+}
 </style>

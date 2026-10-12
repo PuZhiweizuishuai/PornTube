@@ -794,12 +794,13 @@
 
 <script>
 import AppSnackbar from '@/components/common/AppSnackbar.vue'
+import Pagination from '@/components/common/Pagination.vue'
 import { useMessage } from '@/composables/useMessage'
 import { formatDate } from '@/utils/format'
 
 export default {
   name: 'UserList',
-  components: { AppSnackbar },
+  components: { AppSnackbar, Pagination },
   setup() {
     const { toast, showMessage } = useMessage()
 

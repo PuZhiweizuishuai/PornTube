@@ -1,9 +1,13 @@
 package com.buguagaoshu.tiktube.repository;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.connection.ReturnType;
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -102,6 +106,74 @@ public class RedisRepository {
     public Object get(String key) {
         if (!isAvailable()) return null;
         return key == null ? null : redisTemplate.opsForValue().get(key);
+    }
+
+    // =========================计数 Hash（原始字节序列化，与 HINCRBY 写入格式一致）=========================
+
+    /**
+     * 原子取走整个 Hash 并删除，多实例并发排空时每个 field 的增量只会被取走一次
+     */
+    private static final byte[] DRAIN_HASH_SCRIPT =
+            ("local v = redis.call('HGETALL', KEYS[1]) " +
+                    "redis.call('DEL', KEYS[1]) " +
+                    "return v").getBytes(StandardCharsets.UTF_8);
+
+    private static byte[] toBytes(String value) {
+        return value.getBytes(StandardCharsets.UTF_8);
+    }
+
+    private static String fromBytes(Object raw) {
+        return new String((byte[]) raw, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * 计数自增（HINCRBY），支持负数回退
+     */
+    public long hIncrBy(String key, String field, long delta) {
+        if (!isAvailable()) return 0;
+        Long value = redisTemplate.execute((RedisCallback<Long>) connection ->
+                connection.hashCommands().hIncrBy(toBytes(key), toBytes(field), delta));
+        return value == null ? 0 : value;
+    }
+
+    /**
+     * 读取单个计数，不存在返回 0
+     */
+    public long hGetCount(String key, String field) {
+        if (!isAvailable()) return 0;
+        byte[] raw = redisTemplate.execute((RedisCallback<byte[]>) connection ->
+                connection.hashCommands().hGet(toBytes(key), toBytes(field)));
+        return raw == null ? 0 : Long.parseLong(fromBytes(raw));
+    }
+
+    /**
+     * 读取整个计数 Hash
+     */
+    public Map<String, Long> hGetAllCounts(String key) {
+        if (!isAvailable()) return Map.of();
+        Map<byte[], byte[]> raw = redisTemplate.execute((RedisCallback<Map<byte[], byte[]>>) connection ->
+                connection.hashCommands().hGetAll(toBytes(key)));
+        Map<String, Long> result = new HashMap<>();
+        if (raw != null) {
+            raw.forEach((k, v) -> result.put(fromBytes(k), Long.parseLong(fromBytes(v))));
+        }
+        return result;
+    }
+
+    /**
+     * Lua 原子地取走整个计数 Hash 并删除，后续写入落在全新 Hash 上，无丢数窗口
+     */
+    public Map<String, Long> hDrain(String key) {
+        if (!isAvailable()) return Map.of();
+        List<Object> raw = redisTemplate.execute((RedisCallback<List<Object>>) connection ->
+                connection.scriptingCommands().eval(DRAIN_HASH_SCRIPT, ReturnType.MULTI, 1, toBytes(key)));
+        Map<String, Long> result = new HashMap<>();
+        if (raw != null) {
+            for (int i = 0; i + 1 < raw.size(); i += 2) {
+                result.put(fromBytes(raw.get(i)), Long.parseLong(fromBytes(raw.get(i + 1))));
+            }
+        }
+        return result;
     }
 
     /**

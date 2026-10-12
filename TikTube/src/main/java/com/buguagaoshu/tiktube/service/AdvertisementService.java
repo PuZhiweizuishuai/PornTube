@@ -75,9 +75,11 @@ public class AdvertisementService extends ServiceImpl<AdvertisementDao, Advertis
         return new PageUtils(page);
     }
 
-    public void syncCount() {
-        this.baseMapper.batchUpdateCount("view_count", adsCountRecorder.getAdsMap());
-        adsCountRecorder.clean();
+    /**
+     * 由 CountTasks 在独立事务中调用，写入已 drain 出来的广告浏览增量快照
+     */
+    public void updateViewCounts(Map<Integer, Long> adsCountSnapshot) {
+        this.baseMapper.batchUpdateCount("view_count", adsCountSnapshot);
     }
 
 

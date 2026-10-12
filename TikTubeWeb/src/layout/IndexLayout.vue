@@ -28,7 +28,7 @@ const items = [
   { icon: 'mdi-history', text: '历史记录', to: '/history' },
   { icon: 'mdi-heart', text: '我的收藏', to: '/playlist' },
   { icon: 'mdi-text-box-outline', text: '文章', to: '/articles' },
-  { icon: 'mdi-cog-outline', text: '设置', to: '/settings' },
+  // { icon: 'mdi-cog-outline', text: '设置', to: '/settings' },
   { icon: 'mdi-help-circle', text: '关于', to: '/about' },
 ]
 

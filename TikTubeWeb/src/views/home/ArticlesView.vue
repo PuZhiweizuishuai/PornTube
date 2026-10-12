@@ -1,22 +1,32 @@
 <template>
   <v-container fluid>
-    <v-row align="center" class="mb-4">
+    <v-row align="center" class="mb-2">
       <v-col>
         <h2 class="text-h5 font-weight-bold">
-          <v-icon icon="mdi-text" color="red" class="mr-2"></v-icon>
+          <v-icon icon="mdi-text-box-multiple-outline" color="red" class="me-2" />
           文章列表
         </h2>
-        <p class="text-body-2 text-grey">查看最新文章投稿</p>
+        <p class="text-body-2 text-medium-emphasis mt-1">查看最新文章投稿</p>
       </v-col>
     </v-row>
-    
+    <v-row>
+      <v-divider />
+    </v-row>
+
     <!-- 文章卡片 -->
     <v-row>
-      <v-col cols="12" v-for="item in textList" :key="item.id">
-        <TextInfoCard :text="item" />
+      <v-col
+        cols="12"
+        sm="6"
+        md="4"
+        lg="3"
+        xxl="2"
+        v-for="item in textList"
+        :key="item.id"
+      >
+        <ArticleCard :text="item" />
       </v-col>
     </v-row>
-    
     <v-container>
       <v-row justify="center">
         <Pagination
@@ -33,12 +43,12 @@
 </template>
 
 <script>
-import TextInfoCard from '@/components/card/TextInfoCard.vue'
+import ArticleCard from '@/components/card/ArticleCard.vue'
 import Pagination from '@/components/common/Pagination.vue'
 
 export default {
   components: {
-    TextInfoCard,
+    ArticleCard,
     Pagination
   },
   data() {

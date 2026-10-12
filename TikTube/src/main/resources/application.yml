@@ -6,6 +6,10 @@ tiktube:
   ip-db-path: C:\\data\\code\\Spring\\PornTube\\TikTube\\ip2region_v4.xdb
   # 是否启用 redis 缓存，默认 false，开启后需在配置文件中增加 redis 配置项目
   open-redis: false
+  # 计数缓存（点赞/播放/弹幕等）批量落库间隔，毫秒，默认 5 分钟
+  # count-sync-interval-millis: 300000
+  # 同一 IP 对同一视频/广告的播放去重窗口，毫秒，默认 6 小时
+  # play-dedup-window-millis: 21600000
 
 server:
   port: 8080
@@ -13,6 +17,11 @@ server:
     enabled: true
 
 spring:
+  task:
+    scheduling:
+      pool:
+        # 默认只有 1 个调度线程，批量落库会阻塞热门刷新等其他定时任务
+        size: 4
   web:
     resources:
       chain:

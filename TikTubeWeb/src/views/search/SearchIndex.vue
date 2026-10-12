@@ -63,7 +63,7 @@
     <v-row>
       <v-col cols="12" sm="6" md="4" xl="3" v-for="item in videoList" :key="item.id">
         <VideoCared v-if="item.type == 0" :video="item" />
-        <TextInfoCard v-if="item.type == 2" :text="item"/>
+        <ArticleCard v-if="item.type == 2" :text="item" />
       </v-col>
     </v-row>
     <v-row justify="center">
@@ -161,12 +161,12 @@
 
 <script>
 import VideoCared from '@/components/card/VideoCard.vue'
-import TextInfoCard from '@/components/card/TextInfoCard.vue'
+import ArticleCard from '@/components/card/ArticleCard.vue'
 import Pagination from '@/components/common/Pagination.vue'
 export default {
   components: {
     VideoCared,
-    TextInfoCard,
+    ArticleCard,
     Pagination
   },
   data() {

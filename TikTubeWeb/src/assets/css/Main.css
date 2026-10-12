@@ -163,6 +163,75 @@ html[data-theme='dark'] ::-webkit-scrollbar-thumb {
   background-color: rgba(var(--v-theme-on-surface), 0.04) !important;
 }
 
+/* ---------- Markdown 预览（ShowMarkdown / Vditor.preview）配色跟随主题 ----------
+   vditor 的 .vditor-reset 把正文、分隔线、引用、表格写死成浅色系（#24292e、
+   #eaecef、#fafbfc），深色模式下评论正文就是「黑底糊成一团」；它自带的 dark
+   内容主题要靠 CDN 加载，站内不依赖外网。这里只覆盖预览容器 .markdown-view，
+   编辑器本体（.vditor 内部，走 vditor 自己的 CSS 变量）不受影响。 */
+.vditor-reset.markdown-view {
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.markdown-view a {
+  color: rgb(var(--v-theme-primary));
+}
+
+.markdown-view hr {
+  background-color: rgb(var(--v-theme-outline));
+}
+
+.markdown-view blockquote {
+  color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+  border-left-color: rgb(var(--v-theme-outline));
+}
+
+.markdown-view code:not(.hljs):not(.highlight-chroma) {
+  background-color: rgba(var(--v-theme-on-surface), 0.06);
+}
+
+.markdown-view pre > code:not(.hljs):not(.highlight-chroma) {
+  background-color: rgb(var(--v-theme-surface-variant));
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.markdown-view table tr,
+.markdown-view table tbody tr:nth-child(2n) {
+  background-color: rgba(var(--v-theme-on-surface), 0.03);
+  border-top-color: rgb(var(--v-theme-outline));
+}
+
+.markdown-view table td,
+.markdown-view table th {
+  border-color: rgb(var(--v-theme-outline));
+}
+
+/* Vditor 编辑器切到深色后（.vditor--dark）面板变成 #24292e，可它的正文颜色仍然
+   写死成 #24292e —— 暗色内容主题要靠 CDN 加载，站内不依赖外网，于是「黑底黑字」。
+   这里改用编辑器自带的 CSS 变量，浅色模式不受影响。 */
+.vditor--dark .vditor-reset {
+  color: var(--textarea-text-color);
+}
+
+.vditor--dark .vditor-reset hr {
+  background-color: var(--border-color);
+}
+
+.vditor--dark .vditor-reset blockquote {
+  color: var(--blockquote-color);
+  border-left-color: var(--border-color);
+}
+
+.vditor--dark .vditor-reset table tr,
+.vditor--dark .vditor-reset table tbody tr:nth-child(2n) {
+  background-color: var(--textarea-background-color);
+  border-top-color: var(--border-color);
+}
+
+.vditor--dark .vditor-reset table td,
+.vditor--dark .vditor-reset table th {
+  border-color: var(--border-color);
+}
+
 /* ---------- 通用文本截断 ---------- */
 .title-wrap {
   white-space: normal;

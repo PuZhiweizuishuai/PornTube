@@ -20,7 +20,7 @@
         :title="item.title"
         :prepend-icon="item.icon"
         :active="store.mode === item.value"
-        active-color="primary"
+        color="primary"
         rounded="lg"
         @click="store.setMode(item.value)"
       >

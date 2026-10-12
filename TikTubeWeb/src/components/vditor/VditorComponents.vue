@@ -5,9 +5,13 @@
   <script>
 import Vditor from 'vditor'
 import 'vditor/dist/index.css'
+import { useVditorTheme } from '@/composables/useVditorTheme'
 
 export default {
   name: 'VditorComponents',
+  setup() {
+    return { vditorTheme: useVditorTheme() }
+  },
   props: {
     idname: {
       type: String,
@@ -123,6 +127,7 @@ export default {
   },
   mounted() {
     this.contentEditor = new Vditor(this.idName, {
+      theme: this.vditorTheme.themeName.value,
       // cdn: '/vditor',
       // theme: {
       //   path: '/vditor/dist/css/content-theme'
@@ -183,6 +188,8 @@ export default {
       //   }
       // },
       after: () => {
+        // setTheme 依赖 vditor 内部实例，只有 after 之后才存在
+        this.vditorTheme.bind(this.contentEditor)
         this.contentEditor.setValue(this.markdownStr)
         this.$emit('after', true)
       },

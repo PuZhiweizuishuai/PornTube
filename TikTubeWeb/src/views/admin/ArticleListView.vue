@@ -52,7 +52,7 @@
               max-width="213px"
               class="rounded-lg elevation-1 my-2"
             />
-            <span v-text="item.describes" v-if="item.type == 2"> </span>
+            <span v-if="item.type == 2" class="desc-wrap" v-text="item.describes"> </span>
           </template>
 
           <template #[`item.info`]="{ item }">
@@ -546,5 +546,14 @@ export default {
   transform: scale(1.02);
 }
 
-
+/* 文本稿件简介：长串无空格内容也要在封面列内换行 */
+.desc-wrap {
+  display: block;
+  max-width: 220px;
+  margin: 0 auto;
+  text-align: left;
+  white-space: normal;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+}
 </style>

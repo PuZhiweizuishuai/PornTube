@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div ref="markdownView" />
+    <div ref="markdownView" class="markdown-view" />
   </div>
 </template>
   
@@ -33,7 +33,12 @@ export default {
   mounted() {
     this.previevMarkdown()
   },
-  updated() {},
+  watch: {
+    markdown(value) {
+      this.markdownText = value
+      this.previevMarkdown()
+    },
+  },
   methods: {
     previevMarkdown() {
       Vditor.preview(this.$refs.markdownView, this.markdownText, {

@@ -21,7 +21,7 @@
     "pinia": "^3.0.1",
     "qrcode": "^1.5.4",
     "ua-parser-js": "^2.0.3",
-    "vditor": "^3.10.9",
+    "vditor": "^4.0.0",
     "vue": "^3.5.13",
     "vue-cropper": "^1.1.4",
     "vue-filepond": "^7.0.4",

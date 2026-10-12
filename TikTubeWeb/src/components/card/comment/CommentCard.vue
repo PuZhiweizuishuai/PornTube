@@ -13,7 +13,12 @@
       @open="$emit('open', $event)"
     >
       <template #header-extra>
-        <v-chip v-if="comment && comment.userId == authorId" class="ml-2" color="green" size="x-small" text-color="white">
+        <v-chip
+          v-if="comment && comment.userId == authorId"
+          size="x-small"
+          variant="tonal"
+          color="primary"
+        >
           楼主
         </v-chip>
       </template>
