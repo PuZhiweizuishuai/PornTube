@@ -17,17 +17,19 @@
 
 主要界面参考了 [Youtube](https://www.youtube.com/)，部分功能借鉴了 [哔哩哔哩](https://www.bilibili.com/)
 
-后端 Spring Boot， MySQL
+后端 Spring Boot 4， MySQL
 
-前端 Vue， Vuetifyjs
+前端 Vue 3， Vuetify 3（Vite 构建）
 
 已经完成所有核心功能，比如：
 
 - 视频投稿
+- 文章（文本稿件）投稿，支持多段落上传与标签分类展示
 - 弹幕
 - 视频播放
 - 播放历史，收藏，评论，点赞
-- 自动生成封面图
+- 自动生成封面图，封面手动上传
+- 创作者中心数据统计
 - 数据管理
 - 登录 TOTP 两步验证
 - 配置多存储库，支持兼容 S3 API 的对象存储已测试：MinIO，Cloudflare R2- 
@@ -68,35 +70,40 @@ PS：使用 CloudflareSpeedTest 修改 HOST，除了要改 tiktube.buguagaoshu.c
 
 ### 主页 
 
-<img src="/img/home.png" title="首页" alt="首页">
+<img src="/img/home.jpg" title="首页" alt="首页">
 
 ### 播放页
 
-<img src="/img/video.png" title="播放页" alt="播放页">
+<img src="/img/video.jpg" title="播放页" alt="播放页">
 
 ### 评论
 
-<img src="/img/comment.png" title="评论" alt="评论">
+<img src="/img/comment.jpg" title="评论" alt="评论">
 
 ### 播放历史
 
-<img src="/img/history.png" title="历史记录" alt="历史记录">
+<img src="/img/history.jpg" title="历史记录" alt="历史记录">
 
 ### 订阅
 
-<img src="/img/subscribe.png" title="订阅" alt="订阅">
+<img src="/img/subscribe.jpg" title="订阅" alt="订阅">
 
 ### 用户主页
 
-<img src="/img/user.png" title="个人主页" alt="个人主页">
+<img src="/img/user.jpg" title="个人主页" alt="个人主页">
 
 ### 消息通知
 
-<img src="/img/notification.png" title="消息通知" alt="消息通知">
+<img src="/img/notification.jpg" title="消息通知" alt="消息通知">
+
+
+### 创作者中心
+
+<img src="/img/data.jpg" title="studio" alt="studio">
 
 ### 投稿
 
-<img src="/img/publish.png" title="投稿" alt="投稿">
+<img src="/img/publish.jpg" title="投稿" alt="投稿">
 
 #### 稿件自动截图
 
@@ -113,9 +120,11 @@ PS：使用 CloudflareSpeedTest 修改 HOST，除了要改 tiktube.buguagaoshu.c
 
 ## 快速运行
 
-**运行环境: Java17+, Node 20+, Maven 3.9+， MySQL 8.0+**
+**运行环境: Java25, Node 20+, Maven 3.9+， MySQL 8.0+**
 
 使用 tik_tube.sql 创建数据库，配置数据库地址
+
+已有旧版数据库时，可按 `SQL_upgrade` 目录中的升级脚本增量升级表结构
 
 如果你有 Reids 服务，可以通过设置 `application.yml` 中 `open-redis` 选项为 true，此时系统将使用 Redis 缓存
 
@@ -132,6 +141,12 @@ mvn clean package
 
 ```bash
 java -jar target/tiktube-*
+```
+
+生产部署（Linux x86_64）可使用打包脚本，自动剔除 javacv 中非 x86_64 的 native 库：
+
+```bash
+./package-linux-x86_64.sh
 ```
 
 **运行前端服务**
