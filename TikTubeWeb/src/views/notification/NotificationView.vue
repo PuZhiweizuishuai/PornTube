@@ -74,8 +74,8 @@
             <v-tab value="all" class="text-body-1">全部通知</v-tab>
             <v-tab value="0" class="text-body-1">
               <v-badge
-                v-if="unreadCount > 0"
-                :content="unreadCount"
+                v-if="notificationStore.unreadCount > 0"
+                :content="notificationStore.unreadCount"
                 color="error"
                 inline
                 class="mr-2"
@@ -395,6 +395,7 @@ import ShowMarkdown from '@/components/vditor/ShowMarkdown.vue'
 import CommentVditor from '@/components/vditor/VditorComment.vue'
 import Pagination from '@/components/common/Pagination.vue'
 import { useUserStore } from '@/stores/userStore'
+import { useNotificationStore } from '@/stores/notificationStore'
 
 export default {
   name: 'NotificationView',
@@ -402,6 +403,10 @@ export default {
     ShowMarkdown,
     CommentVditor,
     Pagination,
+  },
+  setup() {
+    // 未读总数以 store（服务端全量）为准，页面上按当前页算出来的数字翻页会跳
+    return { notificationStore: useNotificationStore() }
   },
   data() {
     return {
@@ -429,7 +434,6 @@ export default {
       replyPlaceholder: '',
       replyComment: '',
       userInfo: useUserStore(),
-      unreadCount: 0,
       markingAllRead: false,
       submittingReply: false,
       seeOinionId: 0,
@@ -454,19 +458,11 @@ export default {
   },
   computed: {
     hasUnreadNotifications() {
+      // 以服务端总数为准；再或上当前页，避免未读数拉取失败时页面上明明有未读却不见「全部已读」
       return (
-        this.unreadCount > 0 ||
-        (this.statusTab === '0' && this.notificationList.length > 0) ||
+        this.notificationStore.unreadCount > 0 ||
         this.notificationList.some((item) => item.notification.status === 0)
       )
-    },
-  },
-  watch: {
-    notificationList: {
-      handler(newVal) {
-        this.updateUnreadCount(newVal)
-      },
-      deep: true,
     },
   },
   created() {
@@ -546,15 +542,11 @@ export default {
           this.pageSize = json.data.pageSize
           this.totalPage = json.data.totalPage
           this.currPage = json.data.currPage
-          this.updateUnreadCount(this.notificationList)
         } else {
           this.showErrorMessage(json.message || '获取消息失败')
         }
         this.loading = false
       })
-    },
-    updateUnreadCount(notifications) {
-      this.unreadCount = notifications.filter((item) => item.notification.status === 0).length
     },
     handlePageChange(page) {
       this.currPage = page
@@ -606,7 +598,7 @@ export default {
         if (json.data) {
           // 更新本地状态
           this.notificationList[index].notification.status = 1
-          this.updateUnreadCount(this.notificationList)
+          this.notificationStore.refreshUnreadCount()
           this.showSuccessMessage('已标记为已读')
         } else {
           this.showErrorMessage(json.message || '操作失败')
@@ -628,7 +620,8 @@ export default {
               item.notification.status = 1
             }
           })
-          this.updateUnreadCount(this.notificationList)
+          // 后端已把该用户全部未读置为已读，直接归零不用再拉一次
+          this.notificationStore.clearUnreadCount()
           this.showSuccessMessage('已将所有消息标记为已读')
         } else {
           this.showErrorMessage(json.message || '操作失败')

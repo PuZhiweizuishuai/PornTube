@@ -1,235 +1,174 @@
 <template>
-  <v-container fluid class="pa-0">
-    <v-row justify="center" class="ma-0">
-      <v-col cols="12" class="pa-0">
-        <v-card class="mx-auto rounded-lg elevation-3" variant="elevated">
-          <v-card-title class="text-h5 font-weight-bold px-6 pt-6 pb-4">
-            <v-icon icon="mdi-file-document-edit" size="large" class="mr-2" color="primary"></v-icon>
-            上传文章
-          </v-card-title>
+  <div class="upload-form">
+    <!-- 基本信息 -->
+    <UploadSectionCard
+      class="mb-4"
+      icon="mdi-information-outline"
+      title="基本信息"
+      hint="分区决定稿件出现在哪个频道，标题和简介会展示在文章卡片上"
+      :done="basicDone"
+    >
+      <div class="d-flex ga-4 flex-wrap">
+        <v-select
+          v-model="selectedMainCategory"
+          class="flex-grow-1"
+          style="min-width: 220px"
+          :items="category"
+          label="主分区"
+          placeholder="请选择主分区"
+          prepend-inner-icon="mdi-shape-outline"
+          @update:model-value="getMainCategory"
+        ></v-select>
+        <v-select
+          v-model="selectedSubCategory"
+          class="flex-grow-1"
+          style="min-width: 220px"
+          :items="categoryChildren"
+          label="子分区"
+          placeholder="请选择子分区"
+          prepend-inner-icon="mdi-tag-outline"
+          :disabled="!categoryChildren.length"
+          @update:model-value="getArticleCategory"
+        ></v-select>
+      </div>
 
-          <v-divider></v-divider>
+      <v-text-field
+        v-model="article.title"
+        class="mt-4"
+        placeholder="为你的文章添加一个吸引人的标题"
+        label="标题"
+        counter="100"
+        :rules="[(v) => !!v || '标题不能为空', (v) => (v && v.length <= 100) || '标题不能超过100个字符']"
+        prepend-inner-icon="mdi-format-title"
+      ></v-text-field>
 
-          <!-- 基本信息区域 -->
-          <v-container fluid>
-            <!-- 分区选择 -->
-            <v-row>
-              <v-col cols="12" md="6">
-                <v-select
-                  v-model="selectedMainCategory"
-                  :items="category"
-                  label="主分区"
-                  variant="outlined"
-                  density="comfortable"
-                  @update:model-value="getMainCategory"
-                  prepend-inner-icon="mdi-shape-outline"
-                  placeholder="请选择主分区"
-                ></v-select>
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-select
-                  v-model="selectedSubCategory"
-                  :items="categoryChildren"
-                  label="子分区"
-                  variant="outlined"
-                  density="comfortable"
-                  @update:model-value="getArticleCategory"
-                  prepend-inner-icon="mdi-tag-outline"
-                  placeholder="请选择子分区"
-                  :disabled="!categoryChildren.length"
-                ></v-select>
-              </v-col>
-            </v-row>
+      <v-textarea
+        v-model="article.describe"
+        label="简介"
+        auto-grow
+        rows="3"
+        counter="1000"
+        placeholder="填写更全面的文章信息，让更多人找到你的文章"
+        prepend-inner-icon="mdi-text-box-outline"
+        :rules="[(v) => !v || v.length <= 1000 || '简介不能超过1000个字符']"
+      ></v-textarea>
+    </UploadSectionCard>
 
-            <!-- 标题和简介 -->
-            <v-row>
-              <v-col cols="12">
-                <v-text-field
-                  v-model="article.title"
-                  placeholder="为你的文章添加一个吸引人的标题"
-                  label="标题"
-                  variant="outlined"
-                  density="comfortable"
-                  counter="100"
-                  :rules="[
-                    (v) => !!v || '标题不能为空',
-                    (v) => (v && v.length <= 100) || '标题不能超过100个字符',
-                  ]"
-                  prepend-inner-icon="mdi-format-title"
-                ></v-text-field>
-              </v-col>
-            </v-row>
+    <!-- 封面图 -->
+    <UploadSectionCard
+      class="mb-4"
+      icon="mdi-image-outline"
+      title="封面图"
+      hint="可不填，也能随时换图或移除，保存后生效；有封面时文章卡片显示封面，没有则显示默认渐变底图"
+      :done="!!article.imgUrl"
+    >
+      <CoverUploadPanel
+        v-model:img-url="article.imgUrl"
+        v-model:image-id="article.imageId"
+        endpoint="/upload/article/cover"
+        empty-message="请先选择文章封面，然后上传！"
+        clearable
+        @notify="showMessage"
+      />
+    </UploadSectionCard>
 
-            <v-row>
-              <v-col cols="12">
-                <v-textarea
-                  v-model="article.describe"
-                  label="简介"
-                  variant="outlined"
-                  counter="1000"
-                  auto-grow
-                  rows="3"
-                  placeholder="填写更全面的文章信息，让更多人找到你的文章"
-                  prepend-inner-icon="mdi-text-box-outline"
-                  :rules="[(v) => !v || v.length <= 1000 || '简介不能超过1000个字符']"
-                ></v-textarea>
-              </v-col>
-            </v-row>
+    <!-- 正文内容 -->
+    <UploadSectionCard
+      class="mb-4"
+      icon="mdi-file-document-edit-outline"
+      title="正文内容"
+      hint="支持 Markdown 与图片，最多 3 个段落；加密段落必须设置访问密码"
+      :done="contentDone"
+    >
+      <template #actions>
+        <v-btn
+          v-if="articleSegments.length < 3"
+          size="small"
+          variant="tonal"
+          color="primary"
+          prepend-icon="mdi-plus"
+          @click="addNewSegment"
+        >
+          添加段落
+        </v-btn>
+      </template>
 
+      <article-segment
+        v-for="(segment, index) in articleSegments"
+        :key="index"
+        :ref="`segment${index}`"
+        :segment="segment"
+        :index="index"
+        :segments="articleSegments"
+        :article-type-options="articleTypeOptions"
+        @update-content="updateSegmentContent"
+        @update-type="updateSegmentType"
+        @remove-segment="removeSegment"
+      ></article-segment>
+      <div v-if="!articleSegments.length" class="text-body-2 text-medium-emphasis">
+        还没有段落，点击右上角「添加段落」开始写作。
+      </div>
+    </UploadSectionCard>
 
-            <!-- 封面图上传 -->
-            <!-- <v-row class="my-3">
-              <v-col cols="12" md="6">
-                <v-card
-                  variant="outlined"
-                  class="thumbnail-preview"
-                  :color="article.imgUrl ? 'background' : 'grey-lighten-3'"
-                  height="200"
-                >
-                  <v-img
-                    v-if="article.imgUrl"
-                    :src="article.imgUrl"
-                    aspect-ratio="16/9"
-                    height="200"
-                    alt="封面图预览"
-                  >
-                  </v-img>
-                  <div v-else class="d-flex align-center justify-center fill-height text-grey">
-                    <v-icon icon="mdi-image" size="large" class="mr-2"></v-icon>
-                    <span>封面预览（可选）</span>
-                  </div>
-                </v-card>
-              </v-col>
+    <!-- 标签 -->
+    <UploadSectionCard
+      class="mb-4"
+      icon="mdi-tag-multiple-outline"
+      title="标签"
+      hint="最多 6 个，标签越准确越容易被搜到"
+      :done="tagDone"
+    >
+      <v-combobox
+        v-model="article.tag"
+        label="标签"
+        placeholder="添加标签让更多人找到你的文章（最多6个）"
+        multiple
+        chips
+        closable-chips
+        prepend-inner-icon="mdi-tag-multiple-outline"
+        :rules="[
+          (v) => (v && v.length > 0) || '至少添加一个标签',
+          (v) => !v || v.length <= 6 || '最多只能添加6个标签',
+        ]"
+      ></v-combobox>
+    </UploadSectionCard>
 
-              <v-col cols="12" md="6">
-                <v-card variant="outlined" class="pa-4">
-                  <v-file-input
-                    :rules="rules"
-                    accept="image/png, image/jpeg, image/bmp"
-                    placeholder="选择图片文件"
-                    prepend-icon="mdi-camera"
-                    label="自定义封面（可选）"
-                    variant="outlined"
-                    density="comfortable"
-                    chips
-                    show-size
-                    @update:model-value="setFile"
-                  ></v-file-input>
-                  <v-btn
-                    block
-                    color="primary"
-                    class="mt-2"
-                    :disabled="!files.length"
-                    @click="uploadFile"
-                  >
-                    <v-icon icon="mdi-cloud-upload" class="mr-1"></v-icon>
-                    上传
-                  </v-btn>
-                </v-card>
-              </v-col>
-            </v-row> -->
-
-            <v-divider class="my-4"></v-divider>
-
-            <!-- Markdown编辑器 -->
-            <v-row>
-              <v-col cols="12">
-                <div class="d-flex justify-space-between align-center mb-3">
-                  <h3 class="text-h6 font-weight-medium">
-                    <v-icon icon="mdi-file-document-edit-outline" class="mr-2"></v-icon>
-                    文章内容
-                  </h3>
-                  <v-btn
-                    v-if="articleSegments.length < 3"
-                    color="primary"
-                    variant="outlined"
-                    prepend-icon="mdi-plus"
-                    @click="addNewSegment"
-                  >
-                    添加段落
-                  </v-btn>
-                </div>
-                
-                <!-- 文章段落列表 -->
-                <article-segment
-                  v-for="(segment, index) in articleSegments"
-                  :key="index"
-                  :segment="segment"
-                  :index="index"
-                  :segments="articleSegments"
-                  :article-type-options="articleTypeOptions"
-                  @update-content="updateSegmentContent"
-                  @update-type="updateSegmentType"
-                  @remove-segment="removeSegment"
-                  :ref="`segment${index}`"
-                ></article-segment>
-              </v-col>
-            </v-row>
-
-            
-            <!-- 标签 -->
-            <v-row>
-              <v-col cols="12">
-                <v-combobox
-                  v-model="article.tag"
-                  label="标签"
-                  placeholder="添加标签让更多人找到你的文章（最多6个）"
-                  multiple
-                  chips
-                  closable-chips
-                  variant="outlined"
-                  density="comfortable"
-                  prepend-inner-icon="mdi-tag-multiple-outline"
-                  :rules="[(v) => v && v.length > 0 || '至少添加一个标签', (v) => !v || v.length <= 6 || '最多只能添加6个标签']"
-                ></v-combobox>
-              </v-col>
-            </v-row>
-
-            <!-- 提交按钮 -->
-            <v-row class="mt-4">
-              <v-col cols="12" class="d-flex justify-end">
-                <v-btn
-                  color="primary"
-                  size="large"
-                  rounded
-                  min-width="120"
-                  :loading="isSubmitting"
-                  :disabled="isSubmitting || !isFormValid"
-                  @click="publishArticle"
-                >
-                  <v-icon icon="mdi-send" class="mr-1"></v-icon>
-                  立即投稿
-                </v-btn>
-              </v-col>
-            </v-row>
-          </v-container>
-        </v-card>
-      </v-col>
-    </v-row>
+    <UploadSubmitBar
+      :missing="missingLabels"
+      :ready="isFormValid"
+      :submitting="isSubmitting"
+      :submit-text="editCode !== -1 ? '保存修改' : '立即投稿'"
+      @submit="publishArticle"
+    />
 
     <!-- 消息提示：统一由 useMessage + AppSnackbar 承载 -->
     <AppSnackbar :state="toast" />
-  </v-container>
+  </div>
 </template>
 
 <script>
 import ArticleSegment from '@/components/upload/ArticleSegment.vue'
 import AppSnackbar from '@/components/common/AppSnackbar.vue'
+import UploadSectionCard from '@/components/upload/UploadSectionCard.vue'
+import CoverUploadPanel from '@/components/upload/CoverUploadPanel.vue'
+import UploadSubmitBar from '@/components/upload/UploadSubmitBar.vue'
 import { useMessage } from '@/composables/useMessage'
-import { uploadCover } from '@/utils/upload'
 
 export default {
   components: {
     ArticleSegment,
-    AppSnackbar
+    AppSnackbar,
+    UploadSectionCard,
+    CoverUploadPanel,
+    UploadSubmitBar,
   },
+  emits: ['checklist'],
   setup() {
-    const { toast, showSuccessMessage, showErrorMessage } = useMessage()
-    return { toast, showSuccessMessage, showErrorMessage }
+    const { toast, showMessage, showSuccessMessage, showErrorMessage } = useMessage()
+    return { toast, showMessage, showSuccessMessage, showErrorMessage }
   },
   data() {
     return {
-      rules: [(value) => !value || value.size < 2000000 || '封面图大小不能超过2MB'],
       article: {
         title: '',
         describe: '',
@@ -239,12 +178,7 @@ export default {
         imageId: '',
         textList: []
       },
-      articleSegments: [
-        
-      ],
-      markdownContent: '',
-      articleType: 0, // 默认为普通文章
-      articlePassword: '', // 加密文章密码
+      articleSegments: [],
       articleTypeOptions: [
         { title: '普通文章', value: 0 },
         { title: '回复可见', value: 1 },
@@ -269,20 +203,50 @@ export default {
       selectedMainCategory: null,
       selectedSubCategory: null,
       nowCategory: {},
-      files: [],
       isSubmitting: false,
       editCode: -1
     }
   },
   computed: {
-    isFormValid() {
+    basicDone() {
+      return this.article.category !== -1 && !!(this.article.title || '').trim()
+    },
+    tagDone() {
+      return this.article.tag.length > 0 && this.article.tag.length <= 6
+    },
+    contentDone() {
       return (
-        this.article.title &&
-        this.article.tag.length > 0 &&
-        this.article.category !== -1 &&
-        this.articleSegments.every(segment => segment.content && segment.content.trim() !== '') &&
-        !this.articleSegments.some(segment => segment.type === 2 && !segment.password)
+        this.articleSegments.length > 0 &&
+        this.articleSegments.every(
+          (segment) =>
+            (segment.content || '').trim() !== '' && (segment.type !== 2 || segment.password)
+        )
       )
+    },
+    isFormValid() {
+      return this.basicDone && this.tagDone && this.contentDone
+    },
+    /** 右侧「发布检查清单」的数据源，封面是可选项 */
+    checklist() {
+      return [
+        { key: 'category', label: '选择分区', done: this.article.category !== -1 },
+        { key: 'title', label: '填写标题', done: !!(this.article.title || '').trim() },
+        { key: 'cover', label: '上传封面', done: !!this.article.imgUrl, optional: true },
+        { key: 'content', label: '撰写正文', done: this.contentDone },
+        { key: 'tag', label: '添加标签', done: this.tagDone },
+      ]
+    },
+    missingLabels() {
+      return this.checklist.filter((item) => !item.done && !item.optional).map((item) => item.label)
+    },
+  },
+  watch: {
+    checklist: {
+      immediate: true,
+      deep: true,
+      handler(value) {
+        this.$emit('checklist', value)
+      },
     },
   },
   created() {
@@ -392,13 +356,6 @@ export default {
                 sort: item.sort !== undefined ? item.sort : index
               })
             })
-            
-            // 设置Markdown编辑器内容
-            // this.$nextTick(() => {
-            //   this.articleSegments.forEach((segment, index) => {
-            //     this.$refs[`segment${index}`][0].setTextValue(segment.content)
-            //   })
-            // })
           }
 
           this.showSuccessMessage('文章数据加载成功，可以进行编辑')
@@ -411,17 +368,13 @@ export default {
     
     // 修改发布文章方法
     publishArticle() {
-      if (
-        this.article.title === '' ||
-        this.article.tag.length === 0 ||
-        this.article.category === -1
-      ) {
+      if (!this.article.title || this.article.tag.length === 0 || this.article.category === -1) {
         this.showErrorMessage('标题、标签和分区不能为空')
         return
       }
       
       // 检查是否有内容为空的段落
-      const emptySegments = this.articleSegments.filter(segment => !segment.content.trim())
+      const emptySegments = this.articleSegments.filter((segment) => !(segment.content || '').trim())
       if (emptySegments.length > 0) {
         this.showErrorMessage('文章段落内容不能为空')
         return
@@ -429,7 +382,7 @@ export default {
       
       // 检查加密文章是否设置了密码
       const encryptedSegmentsWithoutPassword = this.articleSegments.filter(
-        segment => segment.type === 2 && !segment.password
+        (segment) => segment.type === 2 && !segment.password
       )
       if (encryptedSegmentsWithoutPassword.length > 0) {
         this.showErrorMessage('加密段落必须设置访问密码')
@@ -464,26 +417,6 @@ export default {
       })
     },
 
-    // showSuccessMessage / showErrorMessage 由 useMessage 提供（见 setup），此处不再重复实现
-
-    setFile(value) {
-      this.files = []
-      if (value) this.files.push(value)
-    },
-
-    async uploadFile() {
-      try {
-        const { imageId, imgUrl } = await uploadCover(this.files, {
-          emptyMessage: '请先选择文章封面，然后上传！',
-        })
-        this.article.imageId = imageId
-        this.article.imgUrl = imgUrl
-        this.showSuccessMessage('封面上传成功')
-      } catch (error) {
-        this.showErrorMessage(error?.message || '封面上传失败')
-      }
-    },
-
     getCategory() {
       this.httpGet('/category/list', (json) => {
         for (let i = 0; i < json.data.length; i++) {
@@ -516,21 +449,6 @@ export default {
         }
       }
     },
-    handleArticleTypeChange(value) {
-      this.articleType = value
-      // 如果不是加密文章，清空密码
-      if (value !== 2) {
-        this.articlePassword = ''
-      }
-    },
   },
 }
 </script>
-
-<style>
-.thumbnail-preview {
-  border-radius: 8px;
-  overflow: hidden;
-  transition: all 0.3s;
-}
-</style>

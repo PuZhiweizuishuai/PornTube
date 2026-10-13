@@ -148,11 +148,17 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationDao, Notifi
 
     @Override
     public long countNotification(Long userId) {
+        return countUnread(userId);
+    }
+
+    @Override
+    public long countUnread(Long userId) {
+        if (userId == null) {
+            return 0;
+        }
         QueryWrapper<NotificationEntity> wrapper = new QueryWrapper<>();
         wrapper.eq("receiver", userId);
         wrapper.eq("status", NotificationType.UNREAD.getType());
-        wrapper.orderByDesc("create_time");
-        wrapper.last("limit 10");
-        return this.list(wrapper).size();
+        return this.count(wrapper);
     }
 }

@@ -43,6 +43,9 @@ import java.util.List;
 @Controller
 public class FileController {
 
+    /** 封面图大小上限，与头像一致 */
+    private static final long MAX_COVER_SIZE = 2 * 1024 * 1024;
+
     private final FileRepository fileRepository;
 
     private final ArticleService articleService;
@@ -93,6 +96,27 @@ public class FileController {
     public ResponseDetails savePhoto(@RequestParam(value = "file[]") MultipartFile[] files,
                                      HttpServletRequest request) throws FileNotFoundException {
         long userId = JwtUtil.getUserId(request);
+        return ResponseDetails.ok()
+                .put("data",
+                        fileRepository.videoAndPhotoSave(files, FileTypeEnum.PHOTO.getCode(), userId));
+    }
+
+    /**
+     * 文章封面上传。
+     * 与 {@code /api/upload/photo} 的区别：那条在 VipInterceptor 名单里属于 VIP 权益，
+     * 而文章投稿是所有登录用户都能用的，所以封面单独走这条只做登录校验、并限制 2MB 的通道。
+     */
+    @PostMapping("/api/upload/article/cover")
+    @ResponseBody
+    public ResponseDetails saveArticleCover(@RequestParam(value = "file[]") MultipartFile[] files,
+                                            HttpServletRequest request) throws FileNotFoundException {
+        long userId = JwtUtil.getUserId(request);
+        for (MultipartFile file : files) {
+            if (file.getSize() > MAX_COVER_SIZE) {
+                return ResponseDetails.ok(ReturnCodeEnum.DATA_VALID_EXCEPTION.getCode(),
+                        "封面图大小不能超过 " + (MAX_COVER_SIZE / 1024 / 1024) + "MB");
+            }
+        }
         return ResponseDetails.ok()
                 .put("data",
                         fileRepository.videoAndPhotoSave(files, FileTypeEnum.PHOTO.getCode(), userId));

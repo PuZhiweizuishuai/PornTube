@@ -53,6 +53,14 @@ public interface NotificationService extends IService<NotificationEntity> {
 
     boolean readAllNotification(Long userId);
 
+    /**
+     * 未读通知数（原实现带 limit 10，最多只会返回 10，不适合做角标）
+     * */
     long countNotification(Long userId);
+
+    /**
+     * 未读通知数，真实计数
+     * */
+    long countUnread(Long userId);
 }
 

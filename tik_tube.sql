@@ -89,7 +89,9 @@ CREATE TABLE `comment`  (
   INDEX `find_comment_by_artice`(`article_id`) USING BTREE,
   INDEX `find_comment_by_user`(`user_id`) USING BTREE,
   INDEX `find_comment_by_type`(`type`) USING BTREE,
-  INDEX `find_comment_by_status`(`status`) USING BTREE
+  INDEX `find_comment_by_status`(`status`) USING BTREE,
+  -- 创作中心按天统计评论新增：(稿件, 正常评论, 时间)
+  INDEX `idx_comment_article_time`(`article_id`, `status`, `create_time`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -115,7 +117,9 @@ CREATE TABLE `danmaku`  (
   `ai_examine_id` int NULL DEFAULT NULL COMMENT '使用的模型ID',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `find_danmaku_by_vido_id`(`video_id`) USING BTREE,
-  INDEX `find_danmaku_by_userID`(`video_id`) USING BTREE
+  INDEX `find_danmaku_by_userID`(`video_id`) USING BTREE,
+  -- 创作中心按天统计弹幕新增
+  INDEX `idx_danmaku_video_time`(`video_id`, `create_time`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '弹幕表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -145,7 +149,9 @@ CREATE TABLE `favorites_table`  (
   `create_time` bigint NOT NULL,
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `find_like_by_user`(`user_id`) USING BTREE,
-  INDEX `find_like_bu_artice`(`artice_id`) USING BTREE
+  INDEX `find_like_bu_artice`(`artice_id`) USING BTREE,
+  -- 创作中心按天统计收藏新增
+  INDEX `idx_fav_article_time`(`artice_id`, `create_time`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '收藏夹' ROW_FORMAT = DYNAMIC;
 
 
@@ -227,7 +233,9 @@ CREATE TABLE `like_table`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `find_like_by_user`(`user_id`) USING BTREE,
   INDEX `find_like_bu_artice`(`like_obj_id`) USING BTREE,
-  INDEX `find_like_by_type`(`type`) USING BTREE
+  INDEX `find_like_by_type`(`type`) USING BTREE,
+  -- 创作中心按天统计点赞新增：(对象, 稿件/评论, 时间)
+  INDEX `idx_like_obj_time`(`like_obj_id`, `type`, `create_time`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '点赞' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -289,7 +297,9 @@ CREATE TABLE `play_recording`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `find_play_by_user_id`(`user_id`) USING BTREE,
   INDEX `find_play_by_artice`(`article_id`) USING BTREE,
-  INDEX `find_play_by_vido`(`user_id`) USING BTREE
+  INDEX `find_play_by_vido`(`user_id`) USING BTREE,
+  -- 创作中心按天统计观看人数：(稿件, 更新时间)
+  INDEX `idx_play_article_update`(`article_id`, `update_time`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '播放记录' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -362,7 +372,9 @@ CREATE TABLE `follow`  (
   `create_time` bigint NULL DEFAULT NULL COMMENT '关注时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `find_follow_user`(`follow_user`) USING BTREE,
-  UNIQUE INDEX `uk_follow_create_user`(`create_user`, `follow_user`) USING BTREE
+  UNIQUE INDEX `uk_follow_create_user`(`create_user`, `follow_user`) USING BTREE,
+  -- 创作中心按天统计涨粉
+  INDEX `idx_follow_user_time`(`follow_user`, `create_time`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 

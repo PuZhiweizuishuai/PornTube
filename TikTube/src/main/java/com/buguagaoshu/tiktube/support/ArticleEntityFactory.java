@@ -62,7 +62,7 @@ public class ArticleEntityFactory {
     /**
      * 把投稿表单的改动应用到已有稿件上（不含类型专属字段），修改后一律重新进入审核
      *
-     * @param imgUrl 新封面地址，为 null 或空时保留原封面
+     * @param imgUrl 新封面地址，null 表示保留原封面，空串表示清除封面
      */
     public void applyUpdate(ArticleEntity article, ArticleDraft draft, String imgUrl) {
         applyUpdate(article, draft, imgUrl, true);
@@ -71,7 +71,7 @@ public class ArticleEntityFactory {
     /**
      * 把投稿表单的改动应用到已有稿件上
      *
-     * @param imgUrl        新封面地址，为 null 或空时保留原封面
+     * @param imgUrl        新封面地址，null 表示保留原封面，空串表示清除封面
      * @param alwaysPending true 表示无论站点是否开启审核都重新进入审核（视频稿件）；
      *                      false 表示按站点配置决定（文本稿件，保持原有行为）
      */
@@ -125,8 +125,8 @@ public class ArticleEntityFactory {
         if (creating) {
             // 新建时封面为空写空串（字段为 NOT NULL）
             article.setImgUrl(imgUrl == null ? "" : imgUrl);
-        } else if (StringUtils.hasText(imgUrl)) {
-            // 修改时允许「不传封面」表示保留原封面
+        } else if (imgUrl != null) {
+            // 修改时 null 表示「本次不动封面」，空串表示作者主动清掉了封面
             article.setImgUrl(imgUrl);
         }
         article.setTag(serializeTag(draft.getTag()));

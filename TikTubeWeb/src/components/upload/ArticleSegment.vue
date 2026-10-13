@@ -1,52 +1,54 @@
 <template>
-  <v-card class="mb-6" variant="outlined">
-    <v-card-title class="d-flex justify-space-between align-center">
-      <div class="d-flex align-center">
-        <v-icon icon="mdi-file-document-outline" class="mr-2" color="primary"></v-icon>
-        <span>段落 {{ index + 1 }}</span>
-      </div>
+  <v-card class="article-segment rounded-lg" :class="index === segments.length - 1 ? '' : 'mb-4'" variant="outlined">
+    <div class="d-flex align-center ga-2 px-3 py-2">
+      <v-chip size="x-small" variant="tonal" color="primary">段落 {{ index + 1 }}</v-chip>
+      <v-icon v-if="segment.type === 1" icon="mdi-comment-alert-outline" size="18" color="warning" />
+      <v-icon v-if="segment.type === 2" icon="mdi-lock-outline" size="18" color="warning" />
+      <span v-if="segment.type !== 0" class="text-caption text-medium-emphasis">
+        {{ segment.type === 1 ? '回复可见' : '加密段落' }}
+      </span>
+      <v-spacer />
       <v-btn
         v-if="segments.length > 1"
-        icon="mdi-delete"
+        icon="mdi-delete-outline"
+        size="small"
         variant="text"
         color="error"
-        density="comfortable"
         @click="$emit('remove-segment', index)"
       ></v-btn>
-    </v-card-title>
-    
-    <v-divider></v-divider>
-    
+    </div>
+
+    <v-divider />
+
     <v-card-text>
       <!-- 文章类型选择 -->
-      <v-row class="mb-4">
-        <v-col cols="12" md="6">
-          <v-select
-            v-model="segment.type"
-            :items="articleTypeOptions"
-            label="段落类型"
-            variant="outlined"
-            density="comfortable"
-            prepend-inner-icon="mdi-format-list-text"
-            @update:model-value="handleTypeChange"
-          ></v-select>
-        </v-col>
-        
+      <div class="d-flex ga-4 flex-wrap mb-4">
+        <v-select
+          v-model="segment.type"
+          class="flex-grow-1"
+          style="min-width: 220px"
+          :items="articleTypeOptions"
+          label="段落类型"
+          item-title="title"
+          item-value="value"
+          prepend-inner-icon="mdi-format-list-text"
+          @update:model-value="handleTypeChange"
+        ></v-select>
+
         <!-- 加密文章密码输入框 -->
-        <v-col cols="12" md="6" v-if="segment.type === 2">
-          <v-text-field
-            v-model="segment.password"
-            label="访问密码"
-            variant="outlined"
-            density="comfortable"
-            prepend-inner-icon="mdi-lock"
-            placeholder="请设置段落访问密码"
-            :rules="[(v) => segment.type !== 2 || !!v || '密码不能为空']"
-            type="password"
-          ></v-text-field>
-        </v-col>
-      </v-row>
-      
+        <v-text-field
+          v-if="segment.type === 2"
+          v-model="segment.password"
+          class="flex-grow-1"
+          style="min-width: 220px"
+          label="访问密码"
+          placeholder="请设置段落访问密码"
+          prepend-inner-icon="mdi-lock"
+          :rules="[(v) => segment.type !== 2 || !!v || '密码不能为空']"
+          type="password"
+        ></v-text-field>
+      </div>
+
       <!-- Markdown编辑器 -->
       <ArticleTextEdit
         :ref="`markdownEditor${index}`"
@@ -87,6 +89,7 @@ export default {
       required: true
     }
   },
+  emits: ['remove-segment', 'update-content', 'update-type'],
   created() {
   },
   methods: {
@@ -107,3 +110,9 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.article-segment :deep(.v-card-text) {
+  padding-top: 16px;
+}
+</style>

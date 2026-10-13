@@ -46,7 +46,7 @@
           <v-col cols="12" sm="6" md="3">
             <v-btn
               color="success"
-              prepend-icon="mdi-advertisement"
+              prepend-icon="mdi-advertisements"
               variant="outlined"
               block
               @click="syscAds"

@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org/DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    创作中心数据统计
+
+    口径约定（改动前务必先读）：
+    1. 只统计未删除稿件 article.status = 0，删除稿件的数据不计入任何图表。
+    2. 「累计值」直接取 article 表的计数列。
+    3. 「区间新增」按事件表的 create_time 落桶：
+         播放   play_recording.update_time（用户 × 分P 唯一一条 → 观看人数去重）
+         点赞   like_table.create_time     （type = 0 表示稿件，1 是评论）
+         评论   comment.create_time       （status = 0 正常）
+         收藏   favorites_table.create_time
+         弹幕   danmaku.create_time
+         涨粉   follow.create_time        （follow_user = 创作者）
+    4. 按天分桶统一用 (时间 + tzOffset) DIV dayMillis 算「天序号」，
+       不用任何数据库日期函数，时区偏移由 Java 传入，保证各库行为一致。
+       天序号到时间戳的还原在 CreatorStatsServiceImpl 里做。
+    5. 排序列 orderSql 只能来自服务层白名单常量，绝不接受前端字符串。
+-->
+<mapper namespace="com.buguagaoshu.tiktube.dao.CreatorStatsDao">
+
+    <!-- 区间内的「每篇稿件观看人数」子查询，稿件榜与分区分布共用 -->
+    <sql id="periodViewSubQuery">
+        LEFT JOIN (
+            SELECT p.article_id AS article_id, COUNT(*) AS cnt
+            FROM play_recording p
+            WHERE p.update_time &gt;= #{startTime}
+              AND p.update_time &lt; #{endTime}
+            GROUP BY p.article_id
+        ) pv ON pv.article_id = a.id
+    </sql>
+
+    <sql id="periodLikeSubQuery">
+        LEFT JOIN (
+            SELECT l.like_obj_id AS article_id, COUNT(*) AS cnt
+            FROM like_table l
+            WHERE l.type = 0
+              AND l.create_time &gt;= #{startTime}
+              AND l.create_time &lt; #{endTime}
+            GROUP BY l.like_obj_id
+        ) pl ON pl.article_id = a.id
+    </sql>
+
+    <sql id="periodCommentSubQuery">
+        LEFT JOIN (
+            SELECT c.article_id AS article_id, COUNT(*) AS cnt
+            FROM comment c
+            WHERE c.status = 0
+              AND c.create_time &gt;= #{startTime}
+              AND c.create_time &lt; #{endTime}
+            GROUP BY c.article_id
+        ) pc ON pc.article_id = a.id
+    </sql>
+
+    <sql id="periodFavoriteSubQuery">
+        LEFT JOIN (
+            SELECT f.artice_id AS article_id, COUNT(*) AS cnt
+            FROM favorites_table f
+            WHERE f.create_time &gt;= #{startTime}
+              AND f.create_time &lt; #{endTime}
+            GROUP BY f.artice_id
+        ) pf ON pf.article_id = a.id
+    </sql>
+
+    <sql id="periodDanmakuSubQuery">
+        LEFT JOIN (
+            SELECT d.video_id AS article_id, COUNT(*) AS cnt
+            FROM danmaku d
+            WHERE d.create_time &gt;= #{startTime}
+              AND d.create_time &lt; #{endTime}
+            GROUP BY d.video_id
+        ) pd ON pd.article_id = a.id
+    </sql>
+
+    <!-- 累计统计与审核状态分布 -->
+    <select id="selectTotals" resultType="com.buguagaoshu.tiktube.model.CreatorTotals">
+        SELECT COUNT(*)                                                              AS articleCount,
+               IFNULL(SUM(CASE WHEN examine_status = 0 THEN 1 ELSE 0 END), 0)        AS pendingCount,
+               IFNULL(SUM(CASE WHEN examine_status = 1 THEN 1 ELSE 0 END), 0)        AS passedCount,
+               IFNULL(SUM(CASE WHEN examine_status &gt; 1 THEN 1 ELSE 0 END), 0)        AS rejectedCount,
+               IFNULL(SUM(view_count), 0)                                            AS viewCount,
+               IFNULL(SUM(like_count), 0)                                            AS likeCount,
+               IFNULL(SUM(comment_count), 0)                                         AS commentCount,
+               IFNULL(SUM(favorite_count), 0)                                        AS favoriteCount,
+               IFNULL(SUM(danmaku_count), 0)                                         AS danmakuCount,
+               IFNULL(MAX(create_time), 0)                                           AS lastPublishTime
+        FROM article
+        WHERE user_id = #{userId}
+          AND status = #{status}
+    </select>
+
+    <!--
+        六项指标按天聚合，一条 SQL 出结果（UNION ALL 六个分支，各分支自己 GROUP BY）。
+        每个分支的 GROUP BY 必须写完整表达式：UNION 里分支之间不共享列别名。
+    -->
+    <select id="selectDailyCounts" resultType="com.buguagaoshu.tiktube.model.DailyCountRow">
+        SELECT 'view' AS metric,
+               (p.update_time + #{tzOffset}) DIV #{dayMillis} AS dayIndex,
+               COUNT(*) AS cnt
+        FROM play_recording p
+        INNER JOIN article a ON a.id = p.article_id
+        WHERE a.user_id = #{userId} AND a.status = #{status}
+          AND p.update_time &gt;= #{startTime} AND p.update_time &lt; #{endTime}
+        GROUP BY (p.update_time + #{tzOffset}) DIV #{dayMillis}
+
+        UNION ALL
+
+        SELECT 'like',
+               (l.create_time + #{tzOffset}) DIV #{dayMillis},
+               COUNT(*)
+        FROM like_table l
+        INNER JOIN article a ON a.id = l.like_obj_id
+        WHERE a.user_id = #{userId} AND a.status = #{status}
+          AND l.type = 0
+          AND l.create_time &gt;= #{startTime} AND l.create_time &lt; #{endTime}
+        GROUP BY (l.create_time + #{tzOffset}) DIV #{dayMillis}
+
+        UNION ALL
+
+        SELECT 'comment',
+               (c.create_time + #{tzOffset}) DIV #{dayMillis},
+               COUNT(*)
+        FROM comment c
+        INNER JOIN article a ON a.id = c.article_id
+        WHERE a.user_id = #{userId} AND a.status = #{status}
+          AND c.status = 0
+          AND c.create_time &gt;= #{startTime} AND c.create_time &lt; #{endTime}
+        GROUP BY (c.create_time + #{tzOffset}) DIV #{dayMillis}
+
+        UNION ALL
+
+        SELECT 'favorite',
+               (f.create_time + #{tzOffset}) DIV #{dayMillis},
+               COUNT(*)
+        FROM favorites_table f
+        INNER JOIN article a ON a.id = f.artice_id
+        WHERE a.user_id = #{userId} AND a.status = #{status}
+          AND f.create_time &gt;= #{startTime} AND f.create_time &lt; #{endTime}
+        GROUP BY (f.create_time + #{tzOffset}) DIV #{dayMillis}
+
+        UNION ALL
+
+        SELECT 'danmaku',
+               (d.create_time + #{tzOffset}) DIV #{dayMillis},
+               COUNT(*)
+        FROM danmaku d
+        INNER JOIN article a ON a.id = d.video_id
+        WHERE a.user_id = #{userId} AND a.status = #{status}
+          AND d.create_time &gt;= #{startTime} AND d.create_time &lt; #{endTime}
+        GROUP BY (d.create_time + #{tzOffset}) DIV #{dayMillis}
+
+        UNION ALL
+
+        SELECT 'fans',
+               (fw.create_time + #{tzOffset}) DIV #{dayMillis},
+               COUNT(*)
+        FROM follow fw
+        WHERE fw.follow_user = #{userId}
+          AND fw.create_time &gt;= #{startTime} AND fw.create_time &lt; #{endTime}
+        GROUP BY (fw.create_time + #{tzOffset}) DIV #{dayMillis}
+    </select>
+
+    <!-- 稿件表现榜。orderSql 由服务层白名单给出，不是用户输入 -->
+    <select id="selectArticleStats" resultType="com.buguagaoshu.tiktube.vo.CreatorArticleStat">
+        SELECT a.id                          AS id,
+               a.title                       AS title,
+               a.img_url                     AS imgUrl,
+               a.type                        AS type,
+               a.category                    AS category,
+               a.create_time                 AS createTime,
+               a.update_time                 AS updateTime,
+               a.duration                    AS duration,
+               a.examine_status              AS examineStatus,
+               IFNULL(a.view_count, 0)       AS viewCount,
+               IFNULL(a.like_count, 0)       AS likeCount,
+               IFNULL(a.comment_count, 0)    AS commentCount,
+               IFNULL(a.favorite_count, 0)   AS favoriteCount,
+               IFNULL(a.danmaku_count, 0)    AS danmakuCount,
+               IFNULL(a.dislike_count, 0)    AS dislikeCount,
+               IFNULL(pv.cnt, 0)             AS periodView,
+               IFNULL(pl.cnt, 0)             AS periodLike,
+               IFNULL(pc.cnt, 0)             AS periodComment,
+               IFNULL(pf.cnt, 0)             AS periodFavorite,
+               IFNULL(pd.cnt, 0)             AS periodDanmaku
+        FROM article a
+        <include refid="periodViewSubQuery"/>
+        <include refid="periodLikeSubQuery"/>
+        <include refid="periodCommentSubQuery"/>
+        <include refid="periodFavoriteSubQuery"/>
+        <include refid="periodDanmakuSubQuery"/>
+        WHERE a.user_id = #{userId}
+          AND a.status = #{status}
+        ORDER BY ${orderSql}
+    </select>
+
+    <!-- 分区分布：稿件数 + 区间观看人数 + 累计播放 -->
+    <select id="selectCategoryStats" resultType="com.buguagaoshu.tiktube.vo.CreatorCategoryStat">
+        SELECT a.category                  AS category,
+               COUNT(*)                    AS articleCount,
+               IFNULL(SUM(IFNULL(pv.cnt, 0)), 0) AS periodView,
+               IFNULL(SUM(a.view_count), 0)      AS viewCount
+        FROM article a
+        <include refid="periodViewSubQuery"/>
+        WHERE a.user_id = #{userId}
+          AND a.status = #{status}
+        GROUP BY a.category
+        ORDER BY periodView DESC, viewCount DESC
+    </select>
+</mapper>

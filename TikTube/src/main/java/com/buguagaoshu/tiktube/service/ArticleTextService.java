@@ -218,6 +218,9 @@ public class ArticleTextService extends ServiceImpl<ArticleTextDao, ArticleTextE
         // 保存文章内容
         saveArticleTextList(textArticleDto.getTextList(), articleEntity.getId(), userId);
 
+        // 关联封面文件，否则它一直是未引用的临时文件，会被定时任务删掉
+        attachCoverFile(articleEntity.getId(), articleEntity.getImgUrl(), userId);
+
         return ReturnCodeEnum.SUCCESS;
     }
 
@@ -253,6 +256,9 @@ public class ArticleTextService extends ServiceImpl<ArticleTextDao, ArticleTextE
 
         // 更新文章内容（不删除原有内容，直接更新）
         updateArticleTextList(textArticleDto.getTextList(), originalArticle.getId(), userId);
+
+        // 换封面 / 清封面：解除旧封面的引用，把当前封面转成正式文件
+        attachCoverFile(originalArticle.getId(), originalArticle.getImgUrl(), userId);
         return ReturnCodeEnum.SUCCESS;
     }
 
@@ -277,6 +283,55 @@ public class ArticleTextService extends ServiceImpl<ArticleTextDao, ArticleTextE
     private boolean hasEditPermission(ArticleEntity article, long userId, HttpServletRequest request) {
         // 作者本人或管理员可以修改
         return currentUserResolver.isOwnerOrAdmin(article.getUserId(), request);
+    }
+
+    /**
+     * 把封面图片文件（file_table）正式挂到稿件下，和视频稿件一致。
+     * 上传后文件是 article_id 为空、状态为「未使用」的临时文件，不关联就会被清理任务删除；
+     * 以 article.img_url 为准来找回文件，这样不依赖前端是否回传 imageId。
+     * imgUrl 为空表示作者清掉了封面，此时只解除旧封面的引用，让它回到临时文件等回收。
+     */
+    private void attachCoverFile(Long articleId, String imgUrl, Long userId) {
+        if (articleId == null) {
+            return;
+        }
+        String cover = imgUrl == null ? "" : imgUrl;
+
+        // 1. 不再是当前封面的图片解除引用，交回临时文件回收（正文插图是 ARTICLE 类型，不受影响）
+        QueryWrapper<FileTableEntity> staleWrapper = new QueryWrapper<>();
+        staleWrapper.eq("article_id", articleId);
+        staleWrapper.eq("type", FileTypeEnum.PHOTO.getCode());
+        staleWrapper.ne("file_url", cover);
+        List<FileTableEntity> staleFiles = fileTableService.list(staleWrapper);
+        if (!staleFiles.isEmpty()) {
+            staleFiles.forEach(file -> {
+                file.setArticleId(null);
+                file.setStatus(FileStatusEnum.NOT_USE_FILE.getCode());
+            });
+            fileTableService.updateBatchById(staleFiles);
+        }
+
+        // 2. 封面被清空：没有要转正的文件
+        if (!StringUtils.hasText(cover)) {
+            return;
+        }
+
+        // 3. 关联当前封面：只认自己上传的、或本来就挂在本稿件下的文件，
+        //    且不能是从别处复制来的、已被别的稿件引用的 URL
+        QueryWrapper<FileTableEntity> wrapper = new QueryWrapper<>();
+        wrapper.eq("file_url", cover);
+        wrapper.eq("type", FileTypeEnum.PHOTO.getCode());
+        wrapper.and(owner -> owner.eq("upload_user_id", userId).or().eq("article_id", articleId));
+        wrapper.and(ref -> ref.isNull("article_id").or().eq("article_id", articleId));
+        List<FileTableEntity> covers = fileTableService.list(wrapper);
+        if (covers.isEmpty()) {
+            return;
+        }
+        covers.forEach(file -> {
+            file.setArticleId(articleId);
+            file.setStatus(FileStatusEnum.USED.getCode());
+        });
+        fileTableService.updateBatchById(covers);
     }
 
 

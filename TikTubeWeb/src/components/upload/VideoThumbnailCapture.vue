@@ -3,7 +3,7 @@
     <v-dialog v-model="showDialog" max-width="800" persistent>
       <v-card class="video-thumbnail-capture">
         <v-card-title class="text-h5 font-weight-bold d-flex align-center">
-          <v-icon icon="mdi-image-filter" class="mr-2" color="primary"></v-icon>
+          <v-icon icon="mdi-image-filter-frames" class="mr-2" color="primary"></v-icon>
           截取视频封面
           <v-spacer></v-spacer>
           <v-btn icon variant="text" @click="closeDialog">

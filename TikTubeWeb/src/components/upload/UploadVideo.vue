@@ -1,297 +1,170 @@
 <template>
-  <v-container fluid class="pa-0">
-    <v-row justify="center" class="ma-0">
-      <v-col cols="12" class="pa-0">
-        <v-card class="mx-auto rounded-lg elevation-3" variant="elevated">
-          <v-card-title class="text-h5 font-weight-bold px-6 pt-6 pb-4">
-            <v-icon icon="mdi-upload" size="large" class="mr-2" color="primary"></v-icon>
-            上传视频
-          </v-card-title>
+  <div class="upload-form">
+    <!-- 视频文件 -->
+    <UploadSectionCard
+      class="mb-4"
+      icon="mdi-movie-open-outline"
+      title="视频文件"
+      hint="上传成功后会自动用文件名填充标题"
+      :done="!!article.video.id"
+    >
+      <template #actions>
+        <v-btn
+          v-if="!showUploadFlie"
+          size="small"
+          variant="tonal"
+          prepend-icon="mdi-repeat"
+          @click="changeVideo"
+        >
+          更换视频
+        </v-btn>
+      </template>
 
-          <v-divider></v-divider>
+      <FilePondUpdate
+        v-if="showUploadFlie"
+        ref="videoUploadTool"
+        @video="videoUploadSuccess"
+        @file-selected="fileAdd"
+      />
 
-          <!-- 上传视频区域 -->
-          <v-container fluid>
-            <v-row v-if="showUploadFlie">
-              <v-col cols="12">
-                <FilePondUpdate
-                  ref="videoUploadTool"
-                  @video="videoUploadSuccess"
-                  @file-selected="fileAdd"
-                />
-              </v-col>
-            </v-row>
+      <div v-else class="video-file d-flex align-center ga-3 pa-3 rounded-lg">
+        <v-avatar color="success" variant="tonal" size="40" rounded="lg">
+          <v-icon icon="mdi-video-box" size="22" />
+        </v-avatar>
+        <div class="flex-grow-1" style="min-width: 0">
+          <div class="text-body-2 font-weight-medium text-truncate">
+            {{ article.video.fileOriginalName || '视频文件' }}
+          </div>
+          <div class="d-flex align-center flex-wrap ga-2 mt-2">
+            <v-chip size="x-small" variant="tonal" prepend-icon="mdi-clock-outline">
+              {{ (article.video.duration || 0).toFixed(1) }} 秒
+            </v-chip>
+            <v-chip size="x-small" variant="tonal" prepend-icon="mdi-resize">
+              {{ article.video.width || 0 }}x{{ article.video.height || 0 }}
+            </v-chip>
+            <v-chip size="x-small" variant="tonal" prepend-icon="mdi-harddisk">
+              {{ formatFileSize(article.video.size || 0) }}
+            </v-chip>
+          </div>
+        </div>
+      </div>
+    </UploadSectionCard>
 
-            <!-- 编辑模式下显示已上传视频列表 -->
-            <v-row v-if="editCode && editCode !== -1 && article.video && showUploadFlie == false">
-              <v-col cols="12">
-                <v-card variant="outlined" class="pa-3 mb-4">
-                  <v-card-subtitle class="text-subtitle-1 font-weight-medium pb-2">
-                    <v-icon icon="mdi-video" class="mr-2" color="primary"></v-icon>
-                    已上传视频文件
-                  </v-card-subtitle>
+    <!-- 封面图 -->
+    <UploadSectionCard
+      class="mb-4"
+      icon="mdi-image-outline"
+      title="封面图"
+      hint="必填。视频卡片的封面，建议 16:9、2MB 以内"
+      :done="!!article.imgUrl"
+    >
+      <CoverUploadPanel
+        ref="coverPanel"
+        v-model:img-url="article.imgUrl"
+        v-model:image-id="article.imageId"
+        empty-message="请先选择视频封面，然后上传！"
+        @notify="showMessage"
+      >
+        <template #extra>
+          <v-btn
+            class="mb-3"
+            block
+            variant="tonal"
+            color="primary"
+            prepend-icon="mdi-image-frame"
+            :disabled="!videoFile"
+            @click="openThumbnailCapture"
+          >
+            {{ videoFile ? '从视频截取封面' : '上传视频后可截取封面' }}
+          </v-btn>
+        </template>
+      </CoverUploadPanel>
+    </UploadSectionCard>
 
-                  <v-list>
-                    <v-list-item>
-                      <template v-slot:prepend>
-                        <v-icon icon="mdi-video-box" color="primary"></v-icon>
-                      </template>
+    <!-- 基本信息 -->
+    <UploadSectionCard
+      class="mb-4"
+      icon="mdi-information-outline"
+      title="基本信息"
+      hint="分区决定稿件出现在哪个频道，标题和简介会展示在视频卡片上"
+      :done="basicDone"
+    >
+      <div class="d-flex ga-4 flex-wrap">
+        <v-select
+          v-model="selectedMainCategory"
+          class="flex-grow-1"
+          style="min-width: 220px"
+          :items="category"
+          label="主分区"
+          placeholder="请选择主分区"
+          prepend-inner-icon="mdi-shape-outline"
+          @update:model-value="getMainCategory"
+        ></v-select>
+        <v-select
+          v-model="selectedSubCategory"
+          class="flex-grow-1"
+          style="min-width: 220px"
+          :items="categoryChildren"
+          label="子分区"
+          placeholder="请选择子分区"
+          prepend-inner-icon="mdi-tag-outline"
+          :disabled="!categoryChildren.length"
+          @update:model-value="getVideoCategory"
+        ></v-select>
+      </div>
 
-                      <v-list-item-title class="text-body-1">
-                        {{ article.video.fileOriginalName || '视频文件' }}
-                      </v-list-item-title>
+      <v-text-field
+        v-model="article.title"
+        class="mt-4"
+        placeholder="为你的视频添加一个吸引人的标题"
+        label="标题"
+        counter="100"
+        :rules="[(v) => !!v || '标题不能为空', (v) => (v && v.length <= 100) || '标题不能超过100个字符']"
+        prepend-inner-icon="mdi-format-title"
+      ></v-text-field>
 
-                      <v-list-item-subtitle>
-                        <v-chip size="small" color="primary" class="mr-2">
-                          {{ (article.video.duration || 0).toFixed(1) }}秒
-                        </v-chip>
-                        <v-chip size="small" color="info" class="mr-2">
-                          {{ article.video.width || 0 }}x{{ article.video.height || 0 }}
-                        </v-chip>
-                        <v-chip size="small" color="success">
-                          {{ formatFileSize(article.video.size || 0) }}
-                        </v-chip>
-                      </v-list-item-subtitle>
+      <v-textarea
+        v-model="article.describe"
+        label="简介"
+        auto-grow
+        rows="5"
+        counter="1000"
+        placeholder="填写更全面的视频信息，让更多人找到你的视频"
+        prepend-inner-icon="mdi-text-box-outline"
+        :rules="[(v) => !v || v.length <= 1000 || '简介不能超过1000个字符']"
+      ></v-textarea>
+    </UploadSectionCard>
 
-                      <template v-slot:append>
-                        <v-btn
-                          color="error"
-                          variant="text"
-                          size="small"
-                          prepend-icon="mdi-delete"
-                          @click="confirmDeleteVideo"
-                        >
-                          删除
-                        </v-btn>
-                      </template>
-                    </v-list-item>
-                  </v-list>
-                </v-card>
-              </v-col>
-            </v-row>
+    <!-- 标签 -->
+    <UploadSectionCard
+      class="mb-4"
+      icon="mdi-tag-multiple-outline"
+      title="标签"
+      hint="最多 6 个，标签越准确越容易被搜到"
+      :done="tagDone"
+    >
+      <v-combobox
+        v-model="article.tag"
+        label="标签"
+        placeholder="添加标签让更多人找到你的视频（最多6个）"
+        multiple
+        chips
+        closable-chips
+        prepend-inner-icon="mdi-tag-multiple-outline"
+        :rules="[
+          (v) => (v && v.length > 0) || '至少添加一个标签',
+          (v) => !v || v.length <= 6 || '最多只能添加6个标签',
+        ]"
+      ></v-combobox>
+    </UploadSectionCard>
 
-            <!-- 自动生成的封面图 -->
-            <!-- <v-sheet v-if="videPhotoList.length > 0" class="mt-4 pa-2">
-              <v-card-subtitle class="text-subtitle-1 font-weight-medium pb-2">
-                系统生成的封面图
-              </v-card-subtitle>
-              <v-row>
-                <v-col v-for="item in videPhotoList" :key="item.id" cols="12" sm="6" md="4" lg="3">
-                  <v-card
-                    variant="outlined"
-                    :elevation="article.imageId === item.id ? 4 : 0"
-                    :class="article.imageId === item.id ? 'border border-primary' : ''"
-                    class="transition-swing thumbnail-card"
-                  >
-                    <v-img
-                      :src="item.fileUrl"
-                      aspect-ratio="16/9"
-                      cover
-                      class="thumbnail-img"
-                      height="150"
-                      :alt="'封面图'"
-                    ></v-img>
-                    <v-card-actions class="justify-center pa-2">
-                      <v-btn
-                        :color="article.imageId === item.id ? 'primary' : 'success'"
-                        :variant="article.imageId === item.id ? 'flat' : 'outlined'"
-                        size="small"
-                        @click="setAutoFaceImage(item)"
-                      >
-                        {{ article.imageId === item.id ? '已选择' : '选择' }}
-                      </v-btn>
-                    </v-card-actions>
-                  </v-card>
-                </v-col>
-              </v-row>
-            </v-sheet> -->
-
-            <!-- 自定义上传封面按钮 -->
-            <v-row class="mt-2">
-              <v-col cols="12" class="text-center">
-                <v-btn
-                  color="primary"
-                  prepend-icon="mdi-image-sync"
-                  variant="outlined"
-                  class="mr-2"
-                  @click="openThumbnailCapture"
-                >
-                  从视频截取封面
-                </v-btn>
-                <v-btn
-                  color="success"
-                  prepend-icon="mdi-image-plus"
-                  variant="outlined"
-                  @click="isShowUploadFaceImage = true"
-                >
-                  自定义上传封面
-                </v-btn>
-              </v-col>
-            </v-row>
-
-            <v-divider class="my-6"></v-divider>
-
-            <!-- 基本信息区域 -->
-            <v-card-subtitle class="text-h6 font-weight-bold">
-              <v-icon icon="mdi-information-outline" class="mr-2"></v-icon>
-              基本信息
-            </v-card-subtitle>
-
-            <!-- 封面预览和上传 -->
-            <v-row class="my-3">
-              <v-col cols="12" md="6">
-                <v-card
-                  variant="outlined"
-                  class="thumbnail-preview"
-                  :color="article.imgUrl ? 'background' : 'grey-lighten-3'"
-                  height="200"
-                >
-                  <v-img
-                    v-if="article.imgUrl"
-                    :src="article.imgUrl"
-                    aspect-ratio="16/9"
-                    height="200"
-                    alt="封面图预览"
-                  >
-                  </v-img>
-                  <div v-else class="d-flex align-center justify-center fill-height text-grey">
-                    <v-icon icon="mdi-image" size="large" class="mr-2"></v-icon>
-                    <span>封面预览</span>
-                  </div>
-                </v-card>
-              </v-col>
-
-              <v-col v-if="isShowUploadFaceImage" cols="12" md="6">
-                <v-card variant="outlined" class="pa-4">
-                  <v-file-input
-                    :rules="rules"
-                    accept="image/png, image/jpeg, image/bmp"
-                    placeholder="选择图片文件"
-                    prepend-icon="mdi-camera"
-                    label="自定义封面"
-                    variant="outlined"
-                    density="comfortable"
-                    chips
-                    show-size
-                    @update:model-value="setFile"
-                  ></v-file-input>
-                  <v-btn
-                    block
-                    color="primary"
-                    class="mt-2"
-                    :disabled="!files.length"
-                    @click="uploadFile"
-                  >
-                    <v-icon icon="mdi-cloud-upload" class="mr-1"></v-icon>
-                    上传
-                  </v-btn>
-                </v-card>
-              </v-col>
-            </v-row>
-
-            <!-- 分区选择 -->
-            <v-row>
-              <v-col cols="12" md="6">
-                <v-select
-                  v-model="selectedMainCategory"
-                  :items="category"
-                  label="主分区"
-                  variant="outlined"
-                  density="comfortable"
-                  @update:model-value="getMainCategory"
-                  prepend-inner-icon="mdi-shape-outline"
-                  placeholder="请选择主分区"
-                ></v-select>
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-select
-                  v-model="selectedSubCategory"
-                  :items="categoryChildren"
-                  label="子分区"
-                  variant="outlined"
-                  density="comfortable"
-                  @update:model-value="getVideoCategory"
-                  prepend-inner-icon="mdi-tag-outline"
-                  placeholder="请选择子分区"
-                  :disabled="!categoryChildren.length"
-                ></v-select>
-              </v-col>
-            </v-row>
-
-            <!-- 标题和简介 -->
-            <v-row>
-              <v-col cols="12">
-                <v-text-field
-                  v-model="article.title"
-                  placeholder="为你的视频添加一个吸引人的标题"
-                  label="标题"
-                  variant="outlined"
-                  density="comfortable"
-                  counter="100"
-                  :rules="[
-                    (v) => !!v || '标题不能为空',
-                    (v) => (v && v.length <= 100) || '标题不能超过100个字符',
-                  ]"
-                  prepend-inner-icon="mdi-format-title"
-                ></v-text-field>
-              </v-col>
-            </v-row>
-
-            <v-row>
-              <v-col cols="12">
-                <v-textarea
-                  v-model="article.describe"
-                  label="简介"
-                  variant="outlined"
-                  counter="1000"
-                  auto-grow
-                  rows="5"
-                  placeholder="填写更全面的视频信息，让更多人找到你的视频"
-                  prepend-inner-icon="mdi-text-box-outline"
-                  :rules="[(v) => !v || v.length <= 1000 || '简介不能超过1000个字符']"
-                ></v-textarea>
-              </v-col>
-            </v-row>
-
-            <!-- 标签 -->
-            <v-row>
-              <v-col cols="12">
-                <v-combobox
-                  v-model="article.tag"
-                  label="标签"
-                  placeholder="添加标签让更多人找到你的视频（最多6个）"
-                  multiple
-                  chips
-                  closable-chips
-                  variant="outlined"
-                  density="comfortable"
-                  prepend-inner-icon="mdi-tag-multiple-outline"
-                  :rules="[(v) => !v || v.length <= 6 || '最多只能添加6个标签']"
-                ></v-combobox>
-              </v-col>
-            </v-row>
-
-            <!-- 提交按钮 -->
-            <v-row class="mt-4">
-              <v-col cols="12" class="d-flex justify-end">
-                <v-btn
-                  color="primary"
-                  size="large"
-                  rounded
-                  min-width="120"
-                  :loading="isSubmitting"
-                  :disabled="isSubmitting || !isFormValid"
-                  @click="publis"
-                >
-                  <v-icon icon="mdi-send" class="mr-1"></v-icon>
-                  立即投稿
-                </v-btn>
-              </v-col>
-            </v-row>
-          </v-container>
-        </v-card>
-      </v-col>
-    </v-row>
+    <UploadSubmitBar
+      :missing="missingLabels"
+      :ready="isFormValid"
+      :submitting="isSubmitting"
+      :submit-text="editCode !== -1 ? '保存修改' : '立即投稿'"
+      @submit="publis"
+    />
 
     <!-- 视频缩略图截取弹窗 -->
     <VideoThumbnailCapture
@@ -303,29 +176,34 @@
 
     <!-- 消息提示：统一由 useMessage + AppSnackbar 承载 -->
     <AppSnackbar :state="toast" />
-  </v-container>
+  </div>
 </template>
 
 <script>
 import FilePondUpdate from '@/components/upload/FilepondUpload.vue'
 import VideoThumbnailCapture from '@/components/upload/VideoThumbnailCapture.vue'
+import UploadSectionCard from '@/components/upload/UploadSectionCard.vue'
+import CoverUploadPanel from '@/components/upload/CoverUploadPanel.vue'
+import UploadSubmitBar from '@/components/upload/UploadSubmitBar.vue'
 import StringUtils from '@/utils/string-utils'
 import AppSnackbar from '@/components/common/AppSnackbar.vue'
 import { useMessage } from '@/composables/useMessage'
-import { uploadCover } from '@/utils/upload'
 export default {
   components: {
     FilePondUpdate,
     VideoThumbnailCapture,
+    UploadSectionCard,
+    CoverUploadPanel,
+    UploadSubmitBar,
     AppSnackbar,
   },
+  emits: ['checklist'],
   setup() {
-    const { toast, showSuccessMessage, showErrorMessage } = useMessage()
-    return { toast, showSuccessMessage, showErrorMessage }
+    const { toast, showMessage, showSuccessMessage, showErrorMessage } = useMessage()
+    return { toast, showMessage, showSuccessMessage, showErrorMessage }
   },
   data() {
     return {
-      rules: [(value) => !value || value.size < 2000000 || '封面图大小不能超过2MB'],
       article: {
         title: '',
         describe: '',
@@ -335,7 +213,6 @@ export default {
         video: {},
         imageId: '',
       },
-      videPhotoList: [],
       categoryMap: {
         Set: function (key, value) {
           this[key] = value
@@ -355,9 +232,6 @@ export default {
       selectedMainCategory: null,
       selectedSubCategory: null,
       nowCategory: {},
-      files: [],
-      isShowUploadFaceImage: false,
-      isShowUploadFaceButton: false,
       isSubmitting: false,
       videoFile: null,
       showThumbnailCapture: false,
@@ -366,14 +240,41 @@ export default {
     }
   },
   computed: {
+    basicDone() {
+      return this.article.category !== -1 && !!(this.article.title || '').trim()
+    },
+    tagDone() {
+      return this.article.tag.length > 0 && this.article.tag.length <= 6
+    },
     isFormValid() {
       return (
-        this.article.title &&
-        this.article.imgUrl &&
-        this.article.tag.length > 0 &&
-        this.article.category !== -1 &&
-        this.article.video.id
+        !!this.article.video.id &&
+        this.basicDone &&
+        this.tagDone &&
+        !!this.article.imgUrl
       )
+    },
+    /** 右侧「发布检查清单」的数据源 */
+    checklist() {
+      return [
+        { key: 'video', label: '上传视频', done: !!this.article.video.id },
+        { key: 'cover', label: '上传封面', done: !!this.article.imgUrl },
+        { key: 'category', label: '选择分区', done: this.article.category !== -1 },
+        { key: 'title', label: '填写标题', done: !!(this.article.title || '').trim() },
+        { key: 'tag', label: '添加标签', done: this.tagDone },
+      ]
+    },
+    missingLabels() {
+      return this.checklist.filter((item) => !item.done && !item.optional).map((item) => item.label)
+    },
+  },
+  watch: {
+    checklist: {
+      immediate: true,
+      deep: true,
+      handler(value) {
+        this.$emit('checklist', value)
+      },
     },
   },
   created() {
@@ -432,7 +333,6 @@ export default {
       })
     },
     fileAdd(file) {
-      console.log(file)
       // 保存视频文件供缩略图截取使用
       try {
         // 检查是否是FilePond的File Item对象
@@ -442,8 +342,6 @@ export default {
         } else if (file instanceof File) {
           // 直接是File对象
           this.videoFile = file
-        } else {
-          console.warn('未识别的文件对象类型:', file)
         }
       } catch (error) {
         console.error('处理文件时出错:', error)
@@ -470,13 +368,16 @@ export default {
     },
     thumbnailSelected(file) {
       if (file) {
-        this.files = [file]
-        this.uploadFile()
+        // 截取到的画面直接交给封面组件上传
+        this.$refs.coverPanel.upload(file)
       }
     },
-    setAutoFaceImage(item) {
-      this.article.imgUrl = item.fileUrl
-      this.article.imageId = item.id
+
+    // 重新选择视频文件
+    changeVideo() {
+      this.showUploadFlie = true
+      this.article.video = {}
+      this.videoFile = null
     },
 
     publis() {
@@ -485,7 +386,7 @@ export default {
         return
       }
       if (
-        this.article.title === '' ||
+        !this.article.title ||
         !this.article.imgUrl ||
         this.article.tag.length === 0 ||
         this.article.category === -1
@@ -512,15 +413,13 @@ export default {
             this.editCode !== -1 ? '更新成功' : '投稿成功，等待审核通过后你就可以看到你的视频了'
           )
           this.$router.push('/studio')
-        } else if(json.status === 4002) {
+        } else if (json.status === 4002) {
           this.showErrorMessage(StringUtils.dataErrorMessage(json.data))
         } else {
           this.showErrorMessage(json.message || '提交失败')
         }
       })
     },
-
-    // showSuccessMessage / showErrorMessage 由 useMessage 提供（见 setup），此处不再重复实现
 
     formatFileSize(bytes) {
       if (bytes === 0) return '0 B'
@@ -530,45 +429,11 @@ export default {
       return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
     },
 
-    confirmDeleteVideo() {
-      if (confirm('确定要删除当前视频吗？删除后需要重新上传视频文件。')) {
-        //this.deleteVideo()
-        this.showUploadFlie = true
-        this.article.video = {}
-      }
-    },
-
-    deleteVideo() {
-      // 保存视频ID用于后端删除
-      const videoId = this.article.video.id
-
-      // 清空前端视频数据
-      this.article.video = {}
-      this.videoFile = null
-
-      // 向后端发送删除请求
-      this.httpPost(`/article/video/delete/${videoId}`, {}, (json) => {
-        if (json.status === 200) {
-          this.showSuccessMessage('视频已删除，请重新上传视频文件')
-          // 重置FilePond
-          this.$refs.videoUploadTool.handleFilePondInit()
-        } else {
-          this.showErrorMessage(json.message || '删除视频失败')
-        }
-      })
-    },
-
-    setFile(value) {
-      this.files = []
-      if (value) this.files.push(value)
-    },
-
     videoUploadSuccess(value) {
       if (value.status === 200) {
         // 设置封面图和视频
         for (let i = 0; i < value.data.length; i++) {
           if (value.data[i].type === 5) {
-            this.videPhotoList.push(value.data[i])
             continue
           }
           if (value.data[i].type === 0) {
@@ -589,7 +454,7 @@ export default {
             }
           }
         }
-        this.isShowUploadFaceButton = true
+        this.showUploadFlie = false
         this.showSuccessMessage('上传视频成功')
       } else {
         this.showErrorMessage(
@@ -606,19 +471,6 @@ export default {
         } else {
           this.article.title = title
         }
-      }
-    },
-
-    async uploadFile() {
-      try {
-        const { imageId, imgUrl } = await uploadCover(this.files, {
-          emptyMessage: '请先选择视频封面，然后上传！',
-        })
-        this.article.imageId = imageId
-        this.article.imgUrl = imgUrl
-        this.showSuccessMessage('封面上传成功')
-      } catch (error) {
-        this.showErrorMessage(error?.message || '封面上传失败')
       }
     },
 
@@ -658,29 +510,9 @@ export default {
 }
 </script>
 
-<style>
-.thumbnail-card {
-  overflow: hidden;
-  transition: all 0.3s;
-}
-
-.thumbnail-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.thumbnail-img {
-  transition: all 0.3s;
-}
-
-.thumbnail-card:hover .thumbnail-img {
-  opacity: 0.9;
-}
-
-.thumbnail-preview {
-  border-radius: 8px;
-  overflow: hidden;
-  transition: all 0.3s;
+<style scoped>
+.video-file {
+  border: 1px solid rgb(var(--v-theme-outline));
+  background-color: rgb(var(--v-theme-surface-sunken));
 }
 </style>
-  

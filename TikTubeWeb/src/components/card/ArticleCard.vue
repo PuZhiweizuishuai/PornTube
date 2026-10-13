@@ -8,7 +8,17 @@
     @click="openArticle"
   >
     <div class="d-flex align-center pa-3">
-      <div class="article-card__mark rounded-lg me-3" :style="markStyle">
+      <!-- 有封面就显示封面，没有再退回按 id 散色的渐变占位 -->
+      <v-img
+        v-if="article.imgUrl"
+        :src="article.imgUrl"
+        :alt="article.title"
+        :aspect-ratio="16 / 9"
+        width="96"
+        cover
+        class="article-card__thumb rounded-lg me-3 flex-shrink-0"
+      />
+      <div v-else class="article-card__mark rounded-lg me-3" :style="markStyle">
         <v-icon icon="mdi-book-open-outline" size="22" />
       </div>
       <div class="article-card__body">
@@ -195,6 +205,12 @@ export default {
 /* ---------- 紧凑卡 ---------- */
 .article-card--compact {
   height: 100%;
+}
+
+.article-card__thumb {
+  /* v-img 自身带 flex-grow: 1，不压住会把 96px 拉成半张卡片宽 */
+  flex: 0 0 96px;
+  width: 96px;
 }
 
 .article-card__mark {

@@ -105,9 +105,9 @@
           <template #activator="{ props }">
             <v-btn v-bind="props" icon variant="text" @click="goTo('/notification')">
               <v-badge
-                v-if="notificationCount > 0"
+                v-if="notificationStore.unreadCount > 0"
                 color="error"
-                :content="String(notificationCount)"
+                :content="String(notificationStore.unreadCount)"
                 offset-x="4"
                 offset-y="4"
               >
@@ -150,9 +150,9 @@
 import { nextTick, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDisplay } from 'vuetify'
-import http from '@/api/index'
 import { useUserStore } from '@/stores/userStore'
 import { useWebInfoStore } from '@/stores/webInfoStore'
+import { useNotificationStore } from '@/stores/notificationStore'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import AppBarHead from '@/components/user/AppBarHead.vue'
 
@@ -171,10 +171,10 @@ const emit = defineEmits(['toggle-nav', 'search'])
 const router = useRouter()
 const userStore = useUserStore()
 const webInfoStore = useWebInfoStore()
+const notificationStore = useNotificationStore()
 const { smAndUp } = useDisplay()
 
 const searchText = ref('')
-const notificationCount = ref(0)
 const mobileSearchOpen = ref(false)
 const mobileSearchField = ref(null)
 
@@ -183,21 +183,8 @@ watch(smAndUp, (isDesktop) => {
   if (isDesktop) mobileSearchOpen.value = false
 })
 
-async function fetchNotificationCount() {
-  if (!userStore.isLogin) {
-    notificationCount.value = 0
-    return
-  }
-  try {
-    const json = await http.get('/notification/count')
-    notificationCount.value = json?.data || 0
-  } catch {
-    // 未登录 / 接口异常都不该让顶栏报错
-    notificationCount.value = 0
-  }
-}
-
-watch(() => userStore.isLogin, fetchNotificationCount, { immediate: true })
+// 未读数放在 store 里：消息页标记已读后会直接刷新角标
+watch(() => userStore.isLogin, () => notificationStore.refreshUnreadCount(), { immediate: true })
 
 function goTo(path) {
   router.push(path)

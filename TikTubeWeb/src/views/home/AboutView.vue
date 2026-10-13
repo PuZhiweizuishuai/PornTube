@@ -157,7 +157,7 @@
           </a>
         </div>
         <div class="d-flex align-center">
-          <v-icon color="red" class="mr-3">mdi-gitee</v-icon>
+          <v-icon color="red" class="mr-3">mdi-git</v-icon>
           <span class="text-body-1">码云 Issues: </span>
           <a
             href="https://gitee.com/puzhiweizuishuai/VideoWeb/issues"
