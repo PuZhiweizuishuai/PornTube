@@ -1,7 +1,7 @@
 package com.buguagaoshu.tiktube.service.impl;
 
 import com.buguagaoshu.tiktube.cache.TotpLoginChallengeCache;
-import com.buguagaoshu.tiktube.cache.WebSettingCache;
+import com.buguagaoshu.tiktube.cache.WebConfigCache;
 import com.buguagaoshu.tiktube.config.WebConstant;
 import com.buguagaoshu.tiktube.dto.LoginDetails;
 import com.buguagaoshu.tiktube.dto.PasswordDto;
@@ -79,7 +79,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
 
     private final TwoFactorAuthenticationServer twoFactorAuthenticationServer;
 
-    private final WebSettingCache webSettingCache;
+    private final WebConfigCache webConfigCache;
 
     private final CountLimitRepository countLimitRepository;
 
@@ -95,7 +95,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
                            InvitationCodeService invitationCodeService,
                            FileTableService fileTableService,
                            TwoFactorAuthenticationServer twoFactorAuthenticationServer,
-                           WebSettingCache webSettingCache,
+                           WebConfigCache webConfigCache,
                            CountLimitRepository countLimitRepository,
                            TotpLoginChallengeCache totpLoginChallengeCache,
                            IpUtil ipUtil) {
@@ -105,7 +105,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
         this.invitationCodeService = invitationCodeService;
         this.fileTableService = fileTableService;
         this.twoFactorAuthenticationServer = twoFactorAuthenticationServer;
-        this.webSettingCache = webSettingCache;
+        this.webConfigCache = webConfigCache;
         this.countLimitRepository = countLimitRepository;
         this.totpLoginChallengeCache = totpLoginChallengeCache;
         this.ipUtil = ipUtil;
@@ -293,7 +293,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
     @Transactional(rollbackFor = Exception.class)
     public ReturnCodeEnum register(UserEntity userEntity, HttpServletRequest request) {
         // 验证码校验在关闭邮箱验证码时启用，启用邮箱验证码后以邮箱验证码为主
-        if (!webSettingCache.getWebConfigData().getOpenEmail()) {
+        if (!webConfigCache.getWebConfigData().getOpenEmail()) {
             verifyCodeService.verify(request.getSession().getId(), userEntity.getVerifyCode());
         }
 
@@ -328,7 +328,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
         } else {
             // 邀请码校验
             InvitationCodeEntity check = invitationCodeService.check(userEntity.getInvitationCode());
-            if (webSettingCache.getWebConfigData().getOpenEmail()) {
+            if (webConfigCache.getWebConfigData().getOpenEmail()) {
                 verifyCodeService.verify(userEntity.getMail(), userEntity.getEmailCode());
             }
 

@@ -1,6 +1,6 @@
 package com.buguagaoshu.tiktube.support;
 
-import com.buguagaoshu.tiktube.cache.WebSettingCache;
+import com.buguagaoshu.tiktube.cache.WebConfigCache;
 import com.buguagaoshu.tiktube.dto.ArticleDraft;
 import com.buguagaoshu.tiktube.entity.ArticleEntity;
 import com.buguagaoshu.tiktube.enums.ArticleStatusEnum;
@@ -31,11 +31,11 @@ public class ArticleEntityFactory {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    private final WebSettingCache webSettingCache;
+    private final WebConfigCache webConfigCache;
 
     @Autowired
-    public ArticleEntityFactory(WebSettingCache webSettingCache) {
-        this.webSettingCache = webSettingCache;
+    public ArticleEntityFactory(WebConfigCache webConfigCache) {
+        this.webConfigCache = webConfigCache;
     }
 
     /**
@@ -88,7 +88,7 @@ public class ArticleEntityFactory {
         if (forcePending) {
             return ExamineTypeEnum.PENDING_REVIEW.getCode();
         }
-        if (webSettingCache.getWebConfigData().getOpenExamine()) {
+        if (webConfigCache.getWebConfigData().getOpenExamine()) {
             return ExamineTypeEnum.PENDING_REVIEW.getCode();
         }
         return ExamineTypeEnum.SUCCESS.getCode();

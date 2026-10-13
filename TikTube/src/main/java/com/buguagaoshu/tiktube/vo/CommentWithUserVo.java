@@ -59,6 +59,11 @@ public class CommentWithUserVo {
      */
     private Integer type;
 
+    /**
+     * 当前登录用户是否点赞过该评论；未登录时为 null
+     */
+    private Boolean liked;
+
 
     /**
      *

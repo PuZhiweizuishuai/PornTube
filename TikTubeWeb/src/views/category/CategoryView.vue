@@ -50,20 +50,56 @@
       </v-row>
     </v-card>
 
-    <v-divider class="mb-6"></v-divider>
+    <v-divider class="mb-2"></v-divider>
+
+    <!-- 视频 / 文章 切换标签，参考 YouTube 频道页 Tabs -->
+    <v-tabs
+      v-model="tab"
+      class="category-tabs mb-4"
+      color="on-surface"
+      slider-color="primary"
+      density="comfortable"
+      @update:model-value="tabChange"
+    >
+      <v-tab value="video" class="text-none">
+        <v-icon icon="mdi-video-outline" start class="me-1" />
+        视频
+      </v-tab>
+      <v-tab value="text" class="text-none">
+        <v-icon icon="mdi-text-box-outline" start class="me-1" />
+        文章
+      </v-tab>
+    </v-tabs>
 
     <!-- 视频卡片 -->
-    <v-row v-if="videoList.length > 0">
-      <v-col cols="12" sm="6" md="4" lg="3" xxl="2" v-for="item in videoList" :key="item.id">
-        <VideoCared :video="item" />
-      </v-col>
-    </v-row>
-    <v-row v-else class="mt-4">
-      <v-col cols="12" class="text-center">
-        <v-icon size="x-large" color="grey" class="mb-2">mdi-video-off</v-icon>
-        <p class="text-body-1">暂无视频内容</p>
-      </v-col>
-    </v-row>
+    <template v-if="tab === 'video'">
+      <v-row v-if="videoList.length > 0">
+        <v-col cols="12" sm="6" md="4" lg="3" xxl="2" v-for="item in videoList" :key="item.id">
+          <VideoCared :video="item" />
+        </v-col>
+      </v-row>
+      <v-row v-else class="mt-4">
+        <v-col cols="12" class="text-center">
+          <v-icon size="x-large" color="grey" class="mb-2">mdi-video-off</v-icon>
+          <p class="text-body-1">暂无视频内容</p>
+        </v-col>
+      </v-row>
+    </template>
+
+    <!-- 文章卡片 -->
+    <template v-else>
+      <v-row v-if="textList.length > 0">
+        <v-col cols="12" sm="6" md="4" lg="3" xxl="2" v-for="item in textList" :key="item.id">
+          <ArticleCard :text="item" />
+        </v-col>
+      </v-row>
+      <v-row v-else class="mt-4">
+        <v-col cols="12" class="text-center">
+          <v-icon size="x-large" color="grey" class="mb-2">mdi-book-open-outline</v-icon>
+          <p class="text-body-1">暂无文章内容</p>
+        </v-col>
+      </v-row>
+    </template>
 
     <!-- 分页部分 -->
     <v-container v-if="length > 1">
@@ -82,17 +118,21 @@
   
 <script>
 import VideoCared from '@/components/card/VideoCard.vue'
+import ArticleCard from '@/components/card/ArticleCard.vue'
 import Pagination from '@/components/common/Pagination.vue'
 
 export default {
   name: 'CategoryView',
   components: {
     VideoCared,
+    ArticleCard,
     Pagination,
   },
   data() {
     return {
+      tab: 'video',
       videoList: [],
+      textList: [],
       page: 1,
       size: 24,
       length: 0,
@@ -119,8 +159,8 @@ export default {
       }
       this.categoryId = this.categoryList.id
       this.showChileName = false
-      this.getVideoList()
-      // this.$router.push({ params: { id: this.categoryList.id }})
+      this.resetLists()
+      this.fetchNowTab()
     },
     getCategory() {
       this.httpGet(`/category/tree?category=${this.categoryId}`, (json) => {
@@ -141,6 +181,25 @@ export default {
         }
       }
     },
+    // 切换分区后两个列表都要重新拉取
+    resetLists() {
+      this.page = 1
+      this.length = 0
+      this.videoList = []
+      this.textList = []
+    },
+    tabChange() {
+      this.page = 1
+      this.length = 0
+      this.fetchNowTab()
+    },
+    fetchNowTab() {
+      if (this.tab === 'video') {
+        this.getVideoList()
+      } else {
+        this.getTextList()
+      }
+    },
     getVideoList() {
       this.httpGet(
         `/article/category/${this.categoryId}?page=${this.page}&limit=${this.size}&type=0`,
@@ -157,17 +216,34 @@ export default {
         }
       )
     },
+    getTextList() {
+      this.httpGet(
+        `/article/category/${this.categoryId}?page=${this.page}&limit=${this.size}&type=2`,
+        (json) => {
+          if (json.data == null) {
+            this.textList = []
+            this.page = 1
+            this.length = 0
+          } else {
+            this.textList = json.data.list
+            this.page = json.data.currPage
+            this.length = json.data.totalPage
+          }
+        }
+      )
+    },
     setCategory(value) {
       this.categoryId = value.id
       this.showChileName = true
       this.categoryChiled = value
-      this.getVideoList()
+      this.resetLists()
+      this.fetchNowTab()
       // this.$router.push({ params: { id: this.categoryList.id }})
     },
     pageChange(value) {
       this.page = value
       this.$router.push({ query: { page: this.page } })
-      this.getVideoList()
+      this.fetchNowTab()
       window.scrollTo({ top: 0, behavior: 'smooth' })
     },
     back() {
@@ -187,5 +263,14 @@ a {
   background-color: rgb(var(--v-theme-primary)) !important;
   color: rgb(var(--v-theme-on-primary)) !important;
 }
+
+/* YouTube 频道页风格的标签栏 */
+.category-tabs .v-tab {
+  opacity: 1;
+  letter-spacing: normal;
+}
+
+.category-tabs .v-tab--selected {
+  font-weight: 600;
+}
 </style>
-  

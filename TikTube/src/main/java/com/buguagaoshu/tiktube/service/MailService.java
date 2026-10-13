@@ -1,6 +1,6 @@
 package com.buguagaoshu.tiktube.service;
 
-import com.buguagaoshu.tiktube.cache.WebSettingCache;
+import com.buguagaoshu.tiktube.cache.WebConfigCache;
 import com.buguagaoshu.tiktube.model.MailConfigData;
 import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
@@ -20,11 +20,11 @@ import java.util.Properties;
 public class MailService {
     private final JavaMailSenderImpl javaMailSender;
 
-    private final WebSettingCache webSettingCache;
+    private final WebConfigCache webConfigCache;
 
     @Autowired
-    public MailService(WebSettingCache webSettingCache) {
-        this.webSettingCache = webSettingCache;
+    public MailService(WebConfigCache webConfigCache) {
+        this.webConfigCache = webConfigCache;
         this.javaMailSender = new JavaMailSenderImpl();
     }
 
@@ -32,7 +32,7 @@ public class MailService {
      * 初始化邮件配置
      * */
     public void initMainConfig() {
-        MailConfigData mailConfig = webSettingCache.getWebConfigData().getMailConfig();
+        MailConfigData mailConfig = webConfigCache.getWebConfigData().getMailConfig();
         javaMailSender.setDefaultEncoding("utf-8");
         javaMailSender.setHost(mailConfig.getHost());              // 设置邮箱服务器
         javaMailSender.setPort(mailConfig.getPort());                        // 设置端口
@@ -55,7 +55,7 @@ public class MailService {
         try {
             // 创建 MimeMessageHelper
             MimeMessageHelper helper = new MimeMessageHelper(message, false);
-            helper.setFrom(webSettingCache.getWebConfigData().getMailConfig().getUsername(), webSettingCache.getWebConfigData().getName());
+            helper.setFrom(webConfigCache.getWebConfigData().getMailConfig().getUsername(), webConfigCache.getWebConfigData().getName());
             // 收件人邮箱
             helper.setTo(to);
             // 邮件标题
@@ -195,12 +195,12 @@ public class MailService {
                 </html>
                 """;
         // 替换占位符
-        html = html.replace("{{webname}}", webSettingCache.getWebConfigData().getName())
+        html = html.replace("{{webname}}", webConfigCache.getWebConfigData().getName())
                 .replace("{{验证码}}", verificationCode)
-                .replace("{{webname2}}", webSettingCache.getWebConfigData().getName())
+                .replace("{{webname2}}", webConfigCache.getWebConfigData().getName())
                 .replace("{{年份}}", String.valueOf(java.time.Year.now().getValue()))
-                .replace("{{url}}", webSettingCache.getWebConfigData().getBaseUrl());
+                .replace("{{url}}", webConfigCache.getWebConfigData().getBaseUrl());
         return html;
-        // return "欢迎使用：" + webSettingCache.getWebConfigData().getName() + "，你的验证码是：" + verificationCode;
+        // return "欢迎使用：" + webConfigCache.getWebConfigData().getName() + "，你的验证码是：" + verificationCode;
     }
 }

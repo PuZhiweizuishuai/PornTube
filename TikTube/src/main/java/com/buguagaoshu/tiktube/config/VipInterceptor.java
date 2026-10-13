@@ -1,6 +1,6 @@
 package com.buguagaoshu.tiktube.config;
 
-import com.buguagaoshu.tiktube.cache.WebSettingCache;
+import com.buguagaoshu.tiktube.cache.WebConfigCache;
 import com.buguagaoshu.tiktube.enums.RoleTypeEnum;
 import com.buguagaoshu.tiktube.enums.ReturnCodeEnum;
 import com.buguagaoshu.tiktube.utils.IpUtil;
@@ -101,12 +101,12 @@ public class VipInterceptor implements HandlerInterceptor {
 
     private final IpUtil ipUtil;
 
-    private final WebSettingCache webSettingCache;
+    private final WebConfigCache webConfigCache;
 
     @Autowired
-    public VipInterceptor(IpUtil ipUtil, WebSettingCache webSettingCache) {
+    public VipInterceptor(IpUtil ipUtil, WebConfigCache webConfigCache) {
         this.ipUtil = ipUtil;
-        this.webSettingCache = webSettingCache;
+        this.webConfigCache = webConfigCache;
     }
 
     @Override
@@ -123,7 +123,7 @@ public class VipInterceptor implements HandlerInterceptor {
             return true;
         }
         PostApi postApi = match(servletPath);
-        WebConfigData webConfigData = webSettingCache.getWebConfigData();
+        WebConfigData webConfigData = webConfigCache.getWebConfigData();
         if (postApi == null || (webConfigData != null && postApi.openTo(webConfigData))) {
             return true;
         }

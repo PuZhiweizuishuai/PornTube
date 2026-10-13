@@ -1,7 +1,7 @@
 package com.buguagaoshu.tiktube.service.impl;
 
 import com.buguagaoshu.tiktube.cache.CountRecorder;
-import com.buguagaoshu.tiktube.cache.WebSettingCache;
+import com.buguagaoshu.tiktube.cache.WebConfigCache;
 import com.buguagaoshu.tiktube.dto.ArtDanmakuDto;
 import com.buguagaoshu.tiktube.entity.FileTableEntity;
 import com.buguagaoshu.tiktube.enums.ArticleStatusEnum;
@@ -42,7 +42,7 @@ public class DanmakuServiceImpl extends ServiceImpl<DanmakuDao, DanmakuEntity> i
 
     private final CountRecorder countRecorder;
 
-    private final WebSettingCache webSettingCache;
+    private final WebConfigCache webConfigCache;
 
     private final IpUtil ipUtil;
 
@@ -54,13 +54,13 @@ public class DanmakuServiceImpl extends ServiceImpl<DanmakuDao, DanmakuEntity> i
     public DanmakuServiceImpl(ArticleService articleService,
                               FileTableService fileTableService,
                               CountRecorder countRecorder,
-                              WebSettingCache webSettingCache,
+                              WebConfigCache webConfigCache,
                               IpUtil ipUtil, AiExaminePipe aiExaminePipe,
                               CurrentUserResolver currentUserResolver) {
         this.articleService = articleService;
         this.fileTableService = fileTableService;
         this.countRecorder = countRecorder;
-        this.webSettingCache = webSettingCache;
+        this.webConfigCache = webConfigCache;
         this.ipUtil = ipUtil;
         this.aiExaminePipe = aiExaminePipe;
         this.currentUserResolver = currentUserResolver;
@@ -123,10 +123,10 @@ public class DanmakuServiceImpl extends ServiceImpl<DanmakuDao, DanmakuEntity> i
         // 将十六进制字符串转换为十进制整数
         danmakuEntity.setColorDec(Long.parseLong(cleanHex, 16));
         // 如果开启弹幕审核
-        if (webSettingCache.getWebConfigData().getOpenDanmakuExam()) {
+        if (webConfigCache.getWebConfigData().getOpenDanmakuExam()) {
             danmakuEntity.setStatus(TypeCode.EXAM);
             this.save(danmakuEntity);
-            if (webSettingCache.getWebConfigData().getOpenAIConfig()) {
+            if (webConfigCache.getWebConfigData().getOpenAIConfig()) {
                 aiExaminePipe.submitDanmaku(danmakuEntity);
             }
             countRecorder.recordDanmaku(fileTableEntity.getArticleId(), 1L);

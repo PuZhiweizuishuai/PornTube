@@ -1,6 +1,6 @@
 package com.buguagaoshu.tiktube.service.impl;
 
-import com.buguagaoshu.tiktube.cache.WebSettingCache;
+import com.buguagaoshu.tiktube.cache.WebConfigCache;
 import com.buguagaoshu.tiktube.config.MyConfigProperties;
 import com.buguagaoshu.tiktube.service.TwoFactorAuthenticationServer;
 import com.buguagaoshu.tiktube.vo.TwoFactorData;
@@ -26,7 +26,7 @@ public class TwoFactorAuthenticationServerImpl implements TwoFactorAuthenticatio
 
     private final RecoveryCodeGenerator recoveryCodeGenerator;
 
-    private final WebSettingCache webSettingCache;
+    private final WebConfigCache webConfigCache;
 
     private final SystemTimeProvider timeProvider;
 
@@ -36,8 +36,8 @@ public class TwoFactorAuthenticationServerImpl implements TwoFactorAuthenticatio
 
     @Autowired
     public TwoFactorAuthenticationServerImpl(MyConfigProperties myConfigProperties,
-                                             WebSettingCache webSettingCache) {
-        this.webSettingCache = webSettingCache;
+                                             WebConfigCache webConfigCache) {
+        this.webConfigCache = webConfigCache;
 
         // 生成 128 位密钥
         this.secretGenerator = new DefaultSecretGenerator(128);
@@ -57,7 +57,7 @@ public class TwoFactorAuthenticationServerImpl implements TwoFactorAuthenticatio
         QrData data = new QrData.Builder()
                 .label(email)
                 .secret(twoFactorData.getSecret())
-                .issuer(webSettingCache.getWebConfigData().getName())
+                .issuer(webConfigCache.getWebConfigData().getName())
                 .algorithm(HashingAlgorithm.SHA1)
                 .digits(6)
                 .period(30)

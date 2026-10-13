@@ -1,7 +1,7 @@
 package com.buguagaoshu.tiktube.service.impl;
 
 import com.buguagaoshu.tiktube.cache.CountRecorder;
-import com.buguagaoshu.tiktube.cache.WebSettingCache;
+import com.buguagaoshu.tiktube.cache.WebConfigCache;
 import com.buguagaoshu.tiktube.entity.ArticleEntity;
 import com.buguagaoshu.tiktube.entity.UserEntity;
 import com.buguagaoshu.tiktube.enums.*;
@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -28,6 +29,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 
 import com.buguagaoshu.tiktube.dao.CommentDao;
+import com.buguagaoshu.tiktube.dao.LikeTableDao;
 import com.buguagaoshu.tiktube.entity.CommentEntity;
 import com.buguagaoshu.tiktube.service.CommentService;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,7 +46,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, CommentEntity> i
 
     private final NotificationService notificationService;
 
-    private final WebSettingCache webSettingCache;
+    private final WebConfigCache webConfigCache;
 
     private final CountRecorder countRecorder;
 
@@ -52,20 +54,28 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, CommentEntity> i
 
     private final AiExaminePipe aiExaminePipe;
 
+    /**
+     * 只用于批量查点赞状态：注入 LikeTableDao 而不是 LikeTableService，
+     * 后者依赖 CommentService，会构成构造器循环依赖
+     */
+    private final LikeTableDao likeTableDao;
+
     @Autowired
     public CommentServiceImpl(ArticleService articleService,
                               UserService userService,
                               NotificationService notificationService,
-                              WebSettingCache webSettingCache,
+                              WebConfigCache webConfigCache,
                               CountRecorder countRecorder,
-                              IpUtil ipUtil, AiExaminePipe aiExaminePipe) {
+                              IpUtil ipUtil, AiExaminePipe aiExaminePipe,
+                              LikeTableDao likeTableDao) {
         this.articleService = articleService;
         this.userService = userService;
         this.notificationService = notificationService;
-        this.webSettingCache = webSettingCache;
+        this.webConfigCache = webConfigCache;
         this.countRecorder = countRecorder;
         this.ipUtil = ipUtil;
         this.aiExaminePipe = aiExaminePipe;
+        this.likeTableDao = likeTableDao;
     }
 
 
@@ -74,11 +84,13 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, CommentEntity> i
         Long article = Long.parseLong((String) params.get("article"));
         Integer type = Integer.parseInt((String) params.get("type"));
         Integer sort = Integer.parseInt((String) params.get("sort"));
+        // 列表接口对游客开放，未登录时只跳过点赞状态查询
+        Long userId = JwtUtil.getUserIdOrNull(request);
         if (type == CommentType.SECOND_COMMENT) {
             Long fatherId = Long.parseLong((String) params.get("fatherId"));
-            return commentList(params, article, fatherId, 2, sort);
+            return commentList(params, article, fatherId, 2, sort, userId);
         } else {
-            return commentList(params, article, 0, 1, sort);
+            return commentList(params, article, 0, 1, sort, userId);
         }
     }
 
@@ -150,12 +162,12 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, CommentEntity> i
         commentEntity.setCity(ipUtil.getCity(ip));
         commentEntity.setComment(commentVo.getComment());
         // 如果开启评论审核
-        if (webSettingCache.getWebConfigData().getOpenCommentExam()) {
+        if (webConfigCache.getWebConfigData().getOpenCommentExam()) {
             commentEntity.setStatus(TypeCode.EXAM);
             // 审核通过后再展示
             this.save(commentEntity);
             // 是否开启AI审核
-            if (webSettingCache.getWebConfigData().getOpenAIConfig()) {
+            if (webConfigCache.getWebConfigData().getOpenAIConfig()) {
                 aiExaminePipe.submitComment(commentEntity);
             }
             countRecorder.recordArticleComment(articleEntity.getId(), 1L);
@@ -206,7 +218,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, CommentEntity> i
     }
 
     @Override
-    public PageUtils commentList(Map<String, Object> params, long articleId, long fatherId, int type, Integer sort) {
+    public PageUtils commentList(Map<String, Object> params, long articleId, long fatherId, int type, Integer sort, Long userId) {
         QueryWrapper<CommentEntity> wrapper = new QueryWrapper<>();
         wrapper.eq("article_id", articleId);
         wrapper.eq("type", type);
@@ -235,6 +247,9 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, CommentEntity> i
         userSet.addAll(pUserSet);
         Map<Long, UserEntity> userMap = userService.listByIds(userSet).stream().collect(Collectors.toMap(UserEntity::getId, u -> u));
 
+        // 一次批量查出本页评论的点赞状态，前端就不必为每条评论各发一次 /like/status
+        Set<Long> likedIds = likedCommentIds(page.getRecords(), userId);
+
         List<CommentWithUserVo> commentWithUserVoList = new ArrayList<>();
 
         for (CommentEntity comment : page.getRecords()) {
@@ -246,6 +261,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, CommentEntity> i
             BeanUtils.copyProperties(userMap.get(comment.getUserId()), commentWithUserVo);
             commentWithUserVo.setId(comment.getId());
             commentWithUserVo.setCreateTime(comment.getCreateTime());
+            commentWithUserVo.setLiked(userId == null ? null : likedIds.contains(comment.getId()));
             UserEntity p = userMap.get(comment.getParentUserId());
             if (p != null) {
                 commentWithUserVo.setParentUserName(p.getUsername());
@@ -335,6 +351,19 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, CommentEntity> i
     public void addCount(String col, long commentId, long count) {
         // col 会被拼进 update 语句，只允许计数列白名单
         this.baseMapper.addCount(SQLFilter.checkedCountColumn(col), commentId, count);
+    }
+
+    /**
+     * 一次查出本页评论中当前用户已点赞的评论 ID；未登录返回空集，评论 VO 的 liked 保持 null
+     */
+    private Set<Long> likedCommentIds(List<CommentEntity> comments, Long userId) {
+        if (userId == null || userId <= 0) {
+            return Set.of();
+        }
+        Set<Long> commentIds = comments.stream().map(CommentEntity::getId).collect(Collectors.toSet());
+        // type = 1 表示点赞对象是评论
+        List<Long> likedIds = likeTableDao.selectLikedObjIds(commentIds, 1, userId);
+        return likedIds == null ? Set.of() : new HashSet<>(likedIds);
     }
 
 }

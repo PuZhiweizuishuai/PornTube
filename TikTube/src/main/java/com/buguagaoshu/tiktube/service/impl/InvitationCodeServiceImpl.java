@@ -1,6 +1,6 @@
 package com.buguagaoshu.tiktube.service.impl;
 
-import com.buguagaoshu.tiktube.cache.WebSettingCache;
+import com.buguagaoshu.tiktube.cache.WebConfigCache;
 import com.buguagaoshu.tiktube.enums.ReturnCodeEnum;
 import com.buguagaoshu.tiktube.exception.InvitationCodeException;
 import com.buguagaoshu.tiktube.utils.JwtUtil;
@@ -28,12 +28,12 @@ import jakarta.servlet.http.HttpServletRequest;
 public class InvitationCodeServiceImpl extends ServiceImpl<InvitationCodeDao, InvitationCodeEntity> implements InvitationCodeService {
 
 
-    private final WebSettingCache webSettingCache;
+    private final WebConfigCache webConfigCache;
 
 
     @Autowired
-    public InvitationCodeServiceImpl(WebSettingCache webSettingCache) {
-        this.webSettingCache = webSettingCache;
+    public InvitationCodeServiceImpl(WebConfigCache webConfigCache) {
+        this.webConfigCache = webConfigCache;
     }
 
     @Override
@@ -58,7 +58,7 @@ public class InvitationCodeServiceImpl extends ServiceImpl<InvitationCodeDao, In
     @Override
     public InvitationCodeEntity check(String invitationCode) {
         // 开启邀请码注册的情况下需要校验邀请码
-        if (webSettingCache.getWebConfigData().getOpenInvitationRegister()) {
+        if (webConfigCache.getWebConfigData().getOpenInvitationRegister()) {
             InvitationCodeEntity code
                     = this.getOne(new QueryWrapper<InvitationCodeEntity>().eq("code", invitationCode));
             if (code == null || code.getUseStatus() == 0) {

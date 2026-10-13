@@ -12,5 +12,17 @@
         <result property="type" column="type"/>
     </resultMap>
 
+    <!-- 批量查询当前用户在一批对象中已点赞的对象 ID，供列表接口一次带出点赞状态 -->
+    <select id="selectLikedObjIds" resultType="java.lang.Long">
+        select like_obj_id
+        from like_table
+        where user_id = #{userId}
+        and type = #{type}
+        and like_obj_id in
+        <foreach collection="objIds" item="objId" open="(" separator="," close=")">
+            #{objId}
+        </foreach>
+    </select>
+
 
 </mapper>

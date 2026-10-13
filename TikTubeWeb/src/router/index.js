@@ -8,7 +8,10 @@ const router = createRouter({
   // 换页回到顶部；浏览器前进/后退时恢复原滚动位置
   scrollBehavior(to, from, savedPosition) {
     if (to.hash) return { el: to.hash, behavior: 'smooth' }
-    if (savedPosition) return savedPosition
+    if (savedPosition) {
+      restoreScrollPosition(to, savedPosition)
+      return false
+    }
     return { top: 0 }
   },
   routes: [
@@ -358,6 +361,78 @@ const router = createRouter({
     }
   ],
 })
+
+/**
+ * 恢复历史滚动位置（自己滚，不用 vue-router 的一次性恢复）。
+ *
+ * 列表页（首页 / 分区 / 时下流行 …）的卡片是组件 created() 里异步拉回来的，
+ * 后退时页面过渡（mode="out-in"）会先移除旧页面、再挂上空的新页面，
+ * 文档高度在这一瞬不够容纳目标位置，浏览器把滚动截断成 0，
+ * 等内容长回来之后已经没人再滚回去了。
+ *
+ * 所以这里在过渡期间反复把位置「按住」：每轮都尽量往目标滚，直到真正到位
+ * 且文档不再长高才收手。不能一到位就停 —— 旧页面还撑高着文档时滚到目标没有
+ * 意义，它一移除位置就又没了。超时或用户自己操作（滚动 / 点击 / 按键）时交还控制权。
+ *
+ * @param {object} to 本次要进入的路由
+ * @param {object} savedPosition 历史里记录的位置
+ * @param {number} [timeout] 最长按住毫秒数
+ */
+let restoreTimer = null
+
+// 至少按住这么久再考虑收手：out-in 过渡（离场 140ms + 入场 220ms）期间旧页面还撑高着文档
+const MIN_HOLD_MS = 500
+
+function stopHolding() {
+  clearTimeout(restoreTimer)
+  window.removeEventListener('wheel', onUserInput)
+  window.removeEventListener('touchstart', onUserInput)
+  window.removeEventListener('pointerdown', onUserInput)
+  window.removeEventListener('keydown', onUserInput)
+}
+
+// 只认真人的操作：播放器 / 组件加载时也会派发合成事件，别被它们打断
+function onUserInput(event) {
+  if (event.isTrusted) stopHolding()
+}
+
+function restoreScrollPosition(to, savedPosition, timeout = 4000) {
+  const left = savedPosition.left ?? savedPosition.x ?? 0
+  const top = savedPosition.top ?? savedPosition.y ?? 0
+  stopHolding()
+  // 用户自己滚了就让给他，不要抢
+  window.addEventListener('wheel', onUserInput, { passive: true })
+  window.addEventListener('touchstart', onUserInput, { passive: true })
+  window.addEventListener('pointerdown', onUserInput)
+  window.addEventListener('keydown', onUserInput)
+
+  let lastHeight = -1
+  let quietTicks = 0
+  const startedAt = performance.now()
+
+  const tick = () => {
+    // 用户又跳去别的页面了，别再去滚它
+    if (router.currentRoute.value.fullPath !== to.fullPath) return stopHolding()
+    const height = document.documentElement.scrollHeight
+    quietTicks = height === lastHeight ? quietTicks + 1 : 0
+    lastHeight = height
+    // 内容还没长出来时只能滚到当前能到的最大位置，等它长够再滚到真正的目标
+    const target = Math.min(top, Math.max(0, height - window.innerHeight))
+    if (Math.abs(window.scrollY - target) > 1) {
+      window.scrollTo(left, target)
+    } else if (
+      performance.now() - startedAt > MIN_HOLD_MS &&
+      target === top &&
+      quietTicks >= 3
+    ) {
+      return stopHolding() // 过渡已结束、内容不再变化且确实回到位了
+    }
+    if (performance.now() - startedAt > timeout) return stopHolding()
+    restoreTimer = setTimeout(tick, 30)
+  }
+
+  tick()
+}
 
 // 导航守卫：权限判断一律以 Pinia 为唯一数据源，不再裸读 localStorage
 router.beforeEach((to, from, next) => {

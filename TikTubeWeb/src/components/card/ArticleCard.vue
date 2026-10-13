@@ -72,7 +72,7 @@
       <v-chip class="article-card__badge text-caption" size="x-small" variant="flat">文章</v-chip>
     </div>
 
-    <div class="d-flex pt-3 pb-1">
+    <div class="d-flex pt-3 px-2 pb-3">
       <v-avatar :size="36" class="mt-1 me-3 flex-shrink-0">
         <v-img :src="article.avatarUrl" :alt="article.username" cover />
       </v-avatar>

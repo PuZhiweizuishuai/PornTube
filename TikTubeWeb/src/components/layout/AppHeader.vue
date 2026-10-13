@@ -120,27 +120,18 @@
 
         <AppBarHead v-if="userStore.isLogin" />
 
+        <!-- 未登录一律用文字按钮，圆形账号图标容易被当成占位头像 -->
         <v-btn
-          v-else-if="smAndUp"
-          class="ml-1"
-          prepend-icon="mdi-account-circle"
+          v-else
+          class="app-header__login ml-1"
           variant="tonal"
           color="primary"
           rounded="pill"
+          aria-label="登录"
           @click="goTo('/login')"
         >
           登录
         </v-btn>
-
-        <!-- 移动端只留图标，避免顶栏被挤出横向滚动 -->
-        <v-btn
-          v-else
-          icon="mdi-account-circle"
-          variant="text"
-          color="primary"
-          aria-label="登录"
-          @click="goTo('/login')"
-        />
       </div>
     </template>
   </v-app-bar>
@@ -233,5 +224,14 @@ function openGithub() {
 
 .app-header__mobile-search {
   min-width: 0;
+}
+
+/* 顶栏不换行、也不该横向滚动：窄屏把登录按钮的默认最小宽度收掉，
+   让搜索 / 主题 / 投稿 / 通知 / 登录在 360px 宽的机型上也放得下 */
+@media (max-width: 400px) {
+  .app-header__login {
+    min-width: 0;
+    padding-inline: 10px;
+  }
 }
 </style>

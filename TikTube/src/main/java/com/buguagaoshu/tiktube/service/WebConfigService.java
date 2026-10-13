@@ -2,7 +2,7 @@ package com.buguagaoshu.tiktube.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
-import com.buguagaoshu.tiktube.cache.WebSettingCache;
+import com.buguagaoshu.tiktube.cache.WebConfigCache;
 import com.buguagaoshu.tiktube.config.WebConfig;
 import com.buguagaoshu.tiktube.config.WebConfigData;
 import com.buguagaoshu.tiktube.dao.WebConfigDao;
@@ -19,14 +19,14 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class WebConfigService extends ServiceImpl<WebConfigDao, WebConfigEntity> {
 
-    private final WebSettingCache webSettingCache;
+    private final WebConfigCache webConfigCache;
 
     private final MailService mailService;
 
     @Autowired
-    public WebConfigService(WebSettingCache webSettingCache,
+    public WebConfigService(WebConfigCache webConfigCache,
                             MailService mailService) {
-        this.webSettingCache = webSettingCache;
+        this.webConfigCache = webConfigCache;
         this.mailService = mailService;
     }
 
@@ -66,7 +66,7 @@ public class WebConfigService extends ServiceImpl<WebConfigDao, WebConfigEntity>
         webConfigEntity.setCreateUser(userId);
         this.save(webConfigEntity);
         // 更新缓存
-        webSettingCache.update(webConfigData);
+        webConfigCache.update(webConfigData);
         if (webConfigData.getOpenEmail()) {
             mailService.initMainConfig();
         }

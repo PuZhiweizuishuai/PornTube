@@ -67,6 +67,26 @@ public class JwtUtil {
         return (long) userId;
     }
 
+    /**
+     * 与 getUserId 相同的识别顺序（会话优先，其次解析 TOKEN），但游客访问时返回 null 而不是抛异常，
+     * 供 /api/comment/** 这类登录拦截器放行的接口按需识别用户。
+     */
+    public static Long getUserIdOrNull(HttpServletRequest request) {
+        Object userId = request.getSession().getAttribute(WebConstant.USER_ID);
+        if (userId != null) {
+            return (long) userId;
+        }
+        Claims user = getUser(request);
+        if (user == null) {
+            return null;
+        }
+        try {
+            return Long.parseLong(user.getId());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     public static String getRole(HttpServletRequest request) {
         String userRole = (String) request.getSession().getAttribute(WebConstant.ROLE_KEY);
         if (userRole == null) {

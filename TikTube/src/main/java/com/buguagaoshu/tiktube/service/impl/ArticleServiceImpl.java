@@ -69,7 +69,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
     private static final int MAX_PENDING_PLAY_KEYS = 5000;
 
     private final CategoryCache categoryCache;
-    private final WebSettingCache webSettingCache;
+    private final WebConfigCache webConfigCache;
     private final FileTableService fileTableService;
     private final UserService userService;
     private final UserRoleService userRoleService;
@@ -102,7 +102,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
 
     @Autowired
     public ArticleServiceImpl(CategoryCache categoryCache,
-                              WebSettingCache webSettingCache,
+                              WebConfigCache webConfigCache,
                               FileTableService fileTableService,
                               UserService userService,
                               UserRoleService userRoleService,
@@ -117,7 +117,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
                               HotCache hotCache,
                               VideoCatalogCache videoCatalogCache) {
         this.categoryCache = categoryCache;
-        this.webSettingCache = webSettingCache;
+        this.webConfigCache = webConfigCache;
         this.fileTableService = fileTableService;
         this.userService = userService;
         this.userRoleService = userRoleService;
@@ -850,35 +850,9 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, ArticleEntity> i
     @Override
     public Boolean hasThisVideoPlayPower(FileTableEntity file, Long userId, HttpServletRequest request) {
         // 记录播放历史并更新播放计数
-        long result = playRecordingService.saveHistory(file, userId, ipUtil.getUa(request));
-
+        playRecordingService.saveHistory(file, userId, ipUtil.getUa(request));
 
         return true;
-                /*
-        // TODO 代码有待完善，故注释
-        //  原有会员限制代码，已注释
-        if (userId == -1) {
-            return false;
-        }
-        UserRoleEntity userRoleEntity = userRoleService.findByUserId(userId);
-        String role = userRoleEntity.getRole();
-        // 如果是管理员或VIP，则只记录播放信息，不记录播放次数
-        if (RoleTypeEnum.ADMIN.getRole().equals(role) || RoleTypeEnum.VIP.getRole().equals(role)) {
-            playRecordingService.saveHistory(file, userId, IpUtil.getUa(request));
-            return true;
-        }
-        // TODO 修改为非会员可以重复观看这几个视频
-        if (webSettingCache.getWebSettingEntity().getOpenNoVipLimit() == 1) {
-            if (playRecordingService.todayPlayCount(userId) <= webSettingCache.getWebSettingEntity().getNoVipViewCount()) {
-                playRecordingService.saveHistory(file, userId, IpUtil.getUa(request));
-                return true;
-            }
-            return false;
-        } else {
-            playRecordingService.saveHistory(file, userId, IpUtil.getUa(request));
-            return true;
-        }
-        */
     }
 
     @Override

@@ -1,7 +1,7 @@
 package com.buguagaoshu.tiktube.config;
 
 import com.buguagaoshu.tiktube.cache.CategoryCache;
-import com.buguagaoshu.tiktube.cache.WebSettingCache;
+import com.buguagaoshu.tiktube.cache.WebConfigCache;
 import com.buguagaoshu.tiktube.service.AIConfigServer;
 import com.buguagaoshu.tiktube.service.CategoryService;
 import com.buguagaoshu.tiktube.service.MailService;
@@ -56,7 +56,7 @@ public class WebConfig implements WebMvcConfigurer {
     }
 
     @Bean
-    public CommandLineRunner dataLoader(WebSettingCache webSettingCache,
+    public CommandLineRunner dataLoader(WebConfigCache webConfigCache,
                                         WebConfigService webConfigService,
                                         CategoryService categoryService,
                                         CategoryCache categoryCache,
@@ -72,7 +72,7 @@ public class WebConfig implements WebMvcConfigurer {
                 log.info("分类信息缓存完成！");
                 log.info("开始获取最新的 Web 设置");
                 WebConfigData webConfigData = webConfigService.initConfig();
-                webSettingCache.update(webConfigData);
+                webConfigCache.update(webConfigData);
                 log.info("设置获取完成！");
                 // 如果开启了邮箱服务，初始化邮件信息
                 if (webConfigData.getOpenEmail()) {

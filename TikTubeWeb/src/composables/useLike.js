@@ -6,7 +6,8 @@
  * 这里抽成 composable + BaseCommentCard 组件统一承载。
  *
  * 用法：
- *   const like = useLike(() => props.comment.id, { type: 1, initialCount: props.comment.likeCount })
+ *   const like = useLike(() => props.comment.id, { type: 1, count: () => props.comment.likeCount,
+ *                                                   liked: () => props.comment.liked })
  *   like.liked        // ref<boolean>
  *   like.count        // ref<number>
  *   await like.toggle()  // -> { ok, needLogin, liked, message }
@@ -20,7 +21,8 @@ import { useUserStore } from '@/stores/userStore'
  * @param {object} [options]
  * @param {number} [options.type=1] 业务类型：1 评论  2 稿件 ...（沿用后端约定）
  * @param {number|Function} [options.count] 初始点赞数
- * @param {boolean} [options.auto=true] 目标变化时自动重新查询点赞状态
+ * @param {boolean|Function} [options.liked] 列表接口一并返回的点赞状态；有效时不再单独发状态查询请求
+ * @param {boolean} [options.auto=true] 目标变化时自动同步点赞状态
  * @param {string} [options.action='点赞'] 文案主体，用于生成 '点赞成功'/'取消点赞成功'
  */
 export function useLike(target, options = {}) {
@@ -45,6 +47,21 @@ export function useLike(target, options = {}) {
     if (typeof target === 'function') return target()
     if (target && typeof target === 'object' && 'value' in target) return target.value
     return target
+  }
+
+  /** 列表接口一并返回的点赞状态，null / undefined 表示服务端没给，需要回退单条查询 */
+  function serverLiked() {
+    return typeof options.liked === 'function' ? options.liked() : options.liked
+  }
+
+  function syncLiked() {
+    const fromServer = serverLiked()
+    if (fromServer === null || fromServer === undefined) {
+      liked.value = false
+      check()
+      return
+    }
+    liked.value = !!fromServer
   }
 
   const isLogin = computed(() => {
@@ -149,14 +166,8 @@ export function useLike(target, options = {}) {
   }
 
   if (auto) {
-    watch(
-      () => resolveTargetId(),
-      () => {
-        liked.value = false
-        check()
-      },
-      { immediate: true }
-    )
+    // 服务端随列表给出点赞状态时直接采用，评论量再大也不会产生逐条的状态请求
+    watch([resolveTargetId, serverLiked], syncLiked, { immediate: true })
   }
 
   return { liked, likeCount, count: likeCount, loading, isLogin, check, toggle, dislike, syncCount }

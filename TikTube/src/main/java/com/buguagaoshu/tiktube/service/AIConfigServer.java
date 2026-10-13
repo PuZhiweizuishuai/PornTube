@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.buguagaoshu.tiktube.cache.AIConfigCache;
 import com.buguagaoshu.tiktube.cache.CountRecorder;
-import com.buguagaoshu.tiktube.cache.WebSettingCache;
+import com.buguagaoshu.tiktube.cache.WebConfigCache;
 import com.buguagaoshu.tiktube.dao.AiConfigDao;
 import com.buguagaoshu.tiktube.entity.AiConfigEntity;
 import com.buguagaoshu.tiktube.enums.ReturnCodeEnum;
@@ -58,16 +58,16 @@ public class AIConfigServer extends ServiceImpl<AiConfigDao, AiConfigEntity> {
 
     private final WebConfigService webConfigService;
 
-    private final WebSettingCache webSettingCache;
+    private final WebConfigCache webConfigCache;
 
     private final CountRecorder countRecorder;
 
     @Autowired
     public AIConfigServer(WebConfigService webConfigService,
-                          WebSettingCache webSettingCache,
+                          WebConfigCache webConfigCache,
                           CountRecorder countRecorder) {
         this.webConfigService = webConfigService;
-        this.webSettingCache = webSettingCache;
+        this.webConfigCache = webConfigCache;
         this.countRecorder = countRecorder;
     }
 
@@ -80,7 +80,7 @@ public class AIConfigServer extends ServiceImpl<AiConfigDao, AiConfigEntity> {
     }
 
     public ReturnCodeEnum openAIConfig(long userId, String ip) {
-        if (this.webSettingCache.getWebConfigData().getOpenAIConfig()) {
+        if (this.webConfigCache.getWebConfigData().getOpenAIConfig()) {
             return ReturnCodeEnum.SUCCESS;
         }
         // 更新缓存
@@ -137,7 +137,7 @@ public class AIConfigServer extends ServiceImpl<AiConfigDao, AiConfigEntity> {
 
         if (list.isEmpty()) {
             log.info("未发现可用 AI 配置！系统将关闭 AI 服务！");
-            webSettingCache.getWebConfigData().setOpenAIConfig(false);
+            webConfigCache.getWebConfigData().setOpenAIConfig(false);
             return;
         }
 

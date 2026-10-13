@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Data
-public class WebSettingCache {
+public class WebConfigCache {
     /**
      * 原始配置数据
      * */

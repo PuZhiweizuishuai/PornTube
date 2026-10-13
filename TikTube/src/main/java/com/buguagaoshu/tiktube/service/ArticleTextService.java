@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.buguagaoshu.tiktube.cache.CategoryCache;
 import com.buguagaoshu.tiktube.cache.CountRecorder;
 import com.buguagaoshu.tiktube.cache.PlayCountRecorder;
-import com.buguagaoshu.tiktube.cache.WebSettingCache;
+import com.buguagaoshu.tiktube.cache.WebConfigCache;
 import com.buguagaoshu.tiktube.dao.ArticleTextDao;
 import com.buguagaoshu.tiktube.dto.TextArticleDto;
 import com.buguagaoshu.tiktube.entity.*;
@@ -43,7 +43,7 @@ import java.util.Map;
 public class ArticleTextService extends ServiceImpl<ArticleTextDao, ArticleTextEntity> {
     private final ArticleService articleService;
     private final CategoryCache categoryCache;
-    private final WebSettingCache webSettingCache;
+    private final WebConfigCache webConfigCache;
     private final FileTableService fileTableService;
     private final UserService userService;
     private final IpUtil ipUtil;
@@ -67,7 +67,7 @@ public class ArticleTextService extends ServiceImpl<ArticleTextDao, ArticleTextE
     @Autowired
     public ArticleTextService(ArticleService articleService,
                               CategoryCache categoryCache,
-                              WebSettingCache webSettingCache,
+                              WebConfigCache webConfigCache,
                               FileTableService fileTableService,
                               UserService userService,
                               IpUtil ipUtil,
@@ -80,7 +80,7 @@ public class ArticleTextService extends ServiceImpl<ArticleTextDao, ArticleTextE
                               ArticleViewEnricher articleViewEnricher) {
         this.articleService = articleService;
         this.categoryCache = categoryCache;
-        this.webSettingCache = webSettingCache;
+        this.webConfigCache = webConfigCache;
         this.fileTableService = fileTableService;
         this.userService = userService;
         this.ipUtil = ipUtil;

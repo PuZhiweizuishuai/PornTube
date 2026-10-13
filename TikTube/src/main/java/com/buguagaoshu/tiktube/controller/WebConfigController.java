@@ -1,15 +1,13 @@
 package com.buguagaoshu.tiktube.controller;
 
 import com.buguagaoshu.tiktube.TikTubeApplication;
-import com.buguagaoshu.tiktube.cache.WebSettingCache;
+import com.buguagaoshu.tiktube.cache.WebConfigCache;
 import com.buguagaoshu.tiktube.config.WebConfig;
 import com.buguagaoshu.tiktube.config.WebConfigData;
 import com.buguagaoshu.tiktube.entity.OSSConfigEntity;
-import com.buguagaoshu.tiktube.entity.WebSettingEntity;
 import com.buguagaoshu.tiktube.repository.RedisRepository;
 import com.buguagaoshu.tiktube.repository.impl.FileRepositoryInOSS;
 import com.buguagaoshu.tiktube.service.WebConfigService;
-import com.buguagaoshu.tiktube.service.WebSettingService;
 import com.buguagaoshu.tiktube.service.impl.OssConfigService;
 import com.buguagaoshu.tiktube.utils.IpUtil;
 import com.buguagaoshu.tiktube.utils.JwtUtil;
@@ -28,8 +26,8 @@ import java.util.Map;
  * create          2020-09-05 20:14
  */
 @RestController
-public class WebSettingController {
-    private final WebSettingCache webSettingCache;
+public class WebConfigController {
+    private final WebConfigCache webConfigCache;
 
     private final WebConfigService webConfigService;
 
@@ -41,12 +39,12 @@ public class WebSettingController {
     private final IpUtil ipUtil;
 
     @Autowired
-    public WebSettingController(WebSettingCache webSettingCache,
+    public WebConfigController(WebConfigCache webConfigCache,
                                 WebConfigService webConfigService,
                                 OssConfigService ossConfigService,
                                 FileRepositoryInOSS repositoryInOSS,
                                 IpUtil ipUtil) {
-        this.webSettingCache = webSettingCache;
+        this.webConfigCache = webConfigCache;
         this.webConfigService = webConfigService;
         this.ossConfigService = ossConfigService;
         this.repositoryInOSS = repositoryInOSS;
@@ -61,7 +59,7 @@ public class WebSettingController {
 
     @GetMapping("/api/web/info")
     public ResponseDetails webInfo() {
-        return ResponseDetails.ok().put("data", webSettingCache.getUserWebConfigData());
+        return ResponseDetails.ok().put("data", webConfigCache.getUserWebConfigData());
     }
 
 
@@ -76,7 +74,7 @@ public class WebSettingController {
 
     @GetMapping("/api/admin/setting/info")
     public ResponseDetails webInfoForAdmin() {
-        return ResponseDetails.ok().put("data", webSettingCache.getWebConfigData());
+        return ResponseDetails.ok().put("data", webConfigCache.getWebConfigData());
     }
 
     

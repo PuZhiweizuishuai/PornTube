@@ -67,7 +67,12 @@ const { toast, showMessage } = useMessage()
 // 拆解后可以直接在模板里用 liked / likeCount（顶层 ref 会自动解包）
 const { liked, likeCount, loading: likeLoading, toggle: toggleLikeRequest } = useLike(
   () => props.comment?.id,
-  { type: props.likeType, count: () => props.comment?.likeCount || 0 }
+  {
+    type: props.likeType,
+    count: () => props.comment?.likeCount || 0,
+    // 点赞状态由评论列表接口批量带出，卡片不再各发一次 /like/status
+    liked: () => props.comment?.liked,
+  }
 )
 
 const uaLabel = computed(() => getUaBrief(props.comment?.ua))

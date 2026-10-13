@@ -137,6 +137,8 @@ export function useCommentList(options = {}) {
           created.username = created.username || userStore.userData.username
           created.userId = created.userId || userStore.userData.id
         }
+        // 自己刚发的评论必然未点赞，补上状态标记，卡片就不会再为它单发一次点赞查询
+        if (created.liked === undefined || created.liked === null) created.liked = false
         items.value.unshift(created)
         total.value += 1
         draft.value = ''

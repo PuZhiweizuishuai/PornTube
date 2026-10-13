@@ -29,8 +29,10 @@ public interface CommentService extends IService<CommentEntity> {
 
     /**
      * 获取稿件评论列表
+     *
+     * @param userId 当前登录用户，用于批量带出点赞状态；未登录传 null
      * */
-    PageUtils commentList(Map<String, Object> params, long articleId, long fatherId, int type, Integer sort);
+    PageUtils commentList(Map<String, Object> params, long articleId, long fatherId, int type, Integer sort, Long userId);
 
 
     /**

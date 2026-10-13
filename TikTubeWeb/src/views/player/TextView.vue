@@ -13,6 +13,16 @@
         <v-col :cols="colsWidth">
           <!-- 文本标题 -->
           <v-card flat class="px-4 pt-3 pb-2">
+            <!-- 分区标签：参考 YouTube，标题上方点击进入分区页 -->
+            <router-link
+              v-if="textData.childrenCategory"
+              :to="`/v/${textData.childrenCategory.id}`"
+              class="text-category-pill text-decoration-none d-inline-flex align-center mb-2"
+            >
+              <v-icon icon="mdi-tag-outline" size="16" class="me-1" />
+              {{ categoryText }}
+            </router-link>
+
             <v-card-title class="text-h5 px-0">
               {{ textData.title }}
             </v-card-title>
@@ -72,23 +82,27 @@
               </div>
             </v-card-actions>
 
-            <!-- 文本分类信息 -->
+            <!-- 发布信息与举报 -->
             <v-card-subtitle class="px-0 py-2">
-              <router-link
-                v-if="textData.childrenCategory.fatherId !== 0"
-                :to="`/v/${textData.fatherCategory.id}`"
-                class="category-link text-decoration-none"
-              >
-                {{ textData.fatherCategory.name }}
-              </router-link>
-              /
-              <router-link
-                :to="`/v/${textData.childrenCategory.id}`"
-                class="category-link text-decoration-none"
-              >
-                {{ textData.childrenCategory.name }}
-              </router-link>
-              &nbsp;&nbsp;&nbsp;&nbsp; 发布于：
+              <template v-if="textData.childrenCategory">
+                分区：
+                <router-link
+                  v-if="textData.childrenCategory.fatherId !== 0"
+                  :to="`/v/${textData.fatherCategory.id}`"
+                  class="category-link text-decoration-none"
+                >
+                  {{ textData.fatherCategory.name }}
+                </router-link>
+                <span v-if="textData.childrenCategory.fatherId !== 0">/</span>
+                <router-link
+                  :to="`/v/${textData.childrenCategory.id}`"
+                  class="category-link text-decoration-none"
+                >
+                  {{ textData.childrenCategory.name }}
+                </router-link>
+                &nbsp;&nbsp;&nbsp;&nbsp;
+              </template>
+              发布于：
               {{ TimeUtil.renderTime(textData.createTime) }}
 
               <v-btn
@@ -107,8 +121,7 @@
 
           <!-- 文本内容显示区域 -->
           <v-card class="my-2" variant="elevated">
-            <v-card-title class="pt-4">文章内容</v-card-title>
-            <v-divider></v-divider>
+
             <v-card-text>
               <!-- 循环展示所有段落内容 -->
               <div v-for="(segment, index) in textData.text" :key="index" class="mb-6">
@@ -288,6 +301,16 @@ export default {
       password: '',
       showPassword: false,
     }
+  },
+  computed: {
+    categoryText() {
+      const child = this.textData && this.textData.childrenCategory
+      if (!child) {
+        return ''
+      }
+      const father = this.textData.fatherCategory
+      return father && child.fatherId !== 0 ? `${father.name} / ${child.name}` : child.name
+    },
   },
   created() {
     window.scrollTo({
@@ -533,6 +556,21 @@ export default {
 <style>
 .category-link {
   color: #1867c0;
+}
+
+/* 标题上方的分区标签，YouTube 风格胶囊 */
+.text-category-pill {
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: rgb(var(--v-theme-on-surface));
+  background-color: rgb(var(--v-theme-surface-variant));
+  transition: opacity 0.15s ease;
+}
+
+.text-category-pill:hover {
+  opacity: 0.75;
 }
 
 /* 文本描述：长串无空格内容也要换行，不被 flex 撑破 */
