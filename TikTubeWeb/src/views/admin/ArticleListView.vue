@@ -428,14 +428,16 @@ export default {
 
       try {
         const json = await http.post('/studio/article/delete', this.selectedItem)
-        // 该接口用 data 里的结果码区分：0=成功 1=没有权限 其它=已经删除
-        if (json?.data == 0) {
+        if (json?.status !== 200) {
+          this.showMessage(json?.message || '删除失败', 'error')
+        } else if (json?.data == 0) {
+          // 该接口用 data 里的结果码区分：0=成功 1=没有权限 其它=已经删除
           this.showMessage('删除成功', 'success')
           this.table.items = this.table.items.filter((item) => item.id !== this.selectedItem.id)
         } else if (json?.data == 1) {
-          this.showMessage('没有权限', 'success')
+          this.showMessage('没有权限', 'error')
         } else {
-          this.showMessage('已经删除', 'success')
+          this.showMessage('已经删除', 'info')
         }
         this.deleteDialog = false
         this.selectedItem = null

@@ -427,19 +427,22 @@ export default {
       if (!this.selectedItem) return
 
       this.httpPost('/studio/article/delete', this.selectedItem, (json) => {
+        this.deleteDialog = false
+        const item = this.selectedItem
+        this.selectedItem = null
+        // 投稿内容被管理端关闭、登录失效等都会走这里，接口本身不再返回 data
+        if (json.status !== 200) {
+          this.showNotification(json.message || '删除失败', 'error')
+          return
+        }
+        // 该接口用 data 里的结果码区分：0=删除成功 1=没有权限 其它=已经删除
         if (json.data == 0) {
           this.showNotification('删除成功', 'success')
-          this.articles = this.articles.filter((item) => item.id !== this.selectedItem.id)
-          this.deleteDialog = false
-          this.selectedItem = null
+          this.articles = this.articles.filter((article) => article.id !== item.id)
         } else if (json.data == 1) {
-          this.showNotification('没有权限', 'success')
-          this.deleteDialog = false
-          this.selectedItem = null
+          this.showNotification('没有权限', 'error')
         } else {
-          this.showNotification('已经删除', 'success')
-          this.deleteDialog = false
-          this.selectedItem = null
+          this.showNotification('已经删除', 'info')
         }
       })
     },

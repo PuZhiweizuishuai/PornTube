@@ -40,6 +40,7 @@ public enum ReturnCodeEnum {
     NEED_EXAM(1020, "内容需要审核"),
     REPEATED_REPORTING(1021, "重复举报！"),
     COUNT_LIMIT(1022, "次数过多，请稍后重试"),
+    POST_NOT_OPEN(1023, "管理员未开放该功能，请联系管理员！"),
 
     LACK_ID(4000, "缺少ID"),
     NOT_RUN(4001, "没有在运行"),

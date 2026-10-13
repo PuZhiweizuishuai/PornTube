@@ -46,6 +46,23 @@ public class WebConfigData {
     private Boolean openInvitationRegister = false;
 
     /**
+     * 投稿权限总开关：是否允许普通用户（非 VIP、非管理员）投稿
+     * 关闭后普通用户连修改、删除自己已发布的内容一起被禁止，系统对普通用户完全只读，
+     * 适合把系统作为演示环境部署到公网
+     */
+    private Boolean openNormalUserPost = false;
+
+    /**
+     * 总开关打开时，是否允许普通用户投稿视频
+     */
+    private Boolean openNormalUserPostVideo = false;
+
+    /**
+     * 总开关打开时，是否允许普通用户投稿文章
+     */
+    private Boolean openNormalUserPostArticle = false;
+
+    /**
      * 网页简短的描述
      */
     private String webDescribe;
@@ -97,6 +114,9 @@ public class WebConfigData {
         webConfigData.setOpenNoVipLimit(false);
         webConfigData.setNoVipViewCount(false);
         webConfigData.setOpenInvitationRegister(false);
+        webConfigData.setOpenNormalUserPost(false);
+        webConfigData.setOpenNormalUserPostVideo(false);
+        webConfigData.setOpenNormalUserPostArticle(false);
         webConfigData.setWebDescribe("一个牛逼的视频网站!");
         webConfigData.setOpenUploadVideoAddViewCount(false);
         webConfigData.setOpenExamine(true);

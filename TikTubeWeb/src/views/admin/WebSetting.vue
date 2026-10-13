@@ -152,6 +152,58 @@
 
     <v-card class="mx-auto mb-4" elevation="2">
       <v-toolbar color="red-darken-3" dark>
+        <v-toolbar-title>投稿权限设置</v-toolbar-title>
+      </v-toolbar>
+      <v-card-text>
+        <v-alert
+          type="info"
+          variant="tonal"
+          density="compact"
+          class="mb-4"
+          text="这些开关只作用于「普通用户」，VIP 用户与管理员不受限制。总开关关闭后普通用户完全只读：不能投稿、不能上传视频与封面等素材，也不能修改、删除自己已发布的内容，适合把系统作为演示环境部署到公网。"
+        />
+        <v-row>
+          <v-col cols="12" md="6">
+            <v-switch
+              v-model="setting.openNormalUserPost"
+              :false-value="false"
+              :true-value="true"
+              color="red-darken-3"
+              label="允许普通用户投稿（总开关）"
+              hint="关闭后普通用户不能投稿，也不能修改、删除自己已发布的内容"
+              persistent-hint
+            />
+          </v-col>
+          <template v-if="setting.openNormalUserPost">
+            <v-col cols="12" md="6">
+              <v-switch
+                v-model="setting.openNormalUserPostVideo"
+                :false-value="false"
+                :true-value="true"
+                color="red-darken-3"
+                label="允许普通用户投稿视频"
+                hint="包含发布视频、上传视频文件与视频封面"
+                persistent-hint
+              />
+            </v-col>
+            <v-col cols="12" md="6">
+              <v-switch
+                v-model="setting.openNormalUserPostArticle"
+                :false-value="false"
+                :true-value="true"
+                color="red-darken-3"
+                label="允许普通用户投稿文章"
+                hint="包含发布文章、上传文章封面与正文内的图片素材"
+                persistent-hint
+              />
+            </v-col>
+          </template>
+        </v-row>
+      </v-card-text>
+    </v-card>
+
+    <v-card class="mx-auto mb-4" elevation="2">
+      <v-toolbar color="red-darken-3" dark>
         <v-toolbar-title>邮箱设置</v-toolbar-title>
       </v-toolbar>
       <v-card-text>

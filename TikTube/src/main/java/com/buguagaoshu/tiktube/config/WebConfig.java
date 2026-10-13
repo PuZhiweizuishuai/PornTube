@@ -92,11 +92,6 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
 
-//        registry.addInterceptor(loginInterceptor)
-//                .addPathPatterns("/api/article/video",
-//                        "/api/user/update/**",
-//                        "/api/login/log/list")
-//                .excludePathPatterns("/api/login", "/api/register", "/api/verifyImage");
         registry.addInterceptor(loginInterceptor)
                 .addPathPatterns("/api/**")
                 .excludePathPatterns(
@@ -126,19 +121,10 @@ public class WebConfig implements WebMvcConfigurer {
                 );
 
 
-         registry.addInterceptor(vipInterceptor)
-                 .addPathPatterns(
-                         // 发布视频接口
-                         "/api/article/video",
-                         // 更新视频接口
-                         "/api/article/video/update",
-                         // 删除视频接口
-                         "/api/studio/article/delete",
-                         // 用户状态更新接口
-                         "/api/upload/video",
-                         "/api/upload/photo",
-                         "/api/upload/article"
-                 );
+        // 投稿接口权限拦截：是否放行普通用户由「系统设置 - 投稿权限设置」决定，
+        // 公网演示时请在后台关闭，不要再注释这里的注册配置
+        registry.addInterceptor(vipInterceptor)
+                .addPathPatterns(VipInterceptor.postApiPaths());
     }
 
     @Bean
