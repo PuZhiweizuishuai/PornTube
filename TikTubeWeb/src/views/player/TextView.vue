@@ -256,6 +256,14 @@
       <v-dialog max-width="600" v-model="shareDialog">
         <ShareCard :article="textData" />
       </v-dialog>
+
+      <!-- 收藏夹选择弹窗 -->
+      <FavoriteDialog
+        v-model="favoriteDialog"
+        :article-id="id"
+        @favorited="onFavorited"
+        @error="(msg) => showMessage(msg, 'error')"
+      />
     </v-container>
   </div>
 </template>
@@ -268,6 +276,7 @@ import ShareCard from '@/components/card/ShareCard.vue'
 import ShowMarkdown from '@/components/vditor/ShowMarkdown.vue'
 import Power from '@/utils/check-power'
 import OpinionCard from '@/components/card/OpinionCard.vue'
+import FavoriteDialog from '@/components/common/FavoriteDialog.vue'
 
 export default {
   name: 'TextView',
@@ -276,6 +285,7 @@ export default {
     ShareCard,
     ShowMarkdown,
     OpinionCard,
+    FavoriteDialog,
   },
   data() {
     return {
@@ -297,6 +307,7 @@ export default {
         color: 'success',
       },
       shareDialog: false,
+      favoriteDialog: false,
       showReportDialog: false,
       password: '',
       showPassword: false,
@@ -408,17 +419,26 @@ export default {
         this.showMessage('请先登录后再收藏', 'warning')
         return
       }
-      this.httpPost('/favorites/toggle', { articeId: this.id }, (json) => {
-        if (json.data.id != null) {
-          this.showMessage('收藏成功！', 'success')
-          this.isFavorited = true
-          this.textData.favoriteCount += 1
-        } else {
-          this.showMessage('取消收藏成功！', 'info')
-          this.isFavorited = false
-          this.textData.favoriteCount -= 1
-        }
-      })
+      if (this.isFavorited) {
+        // 已收藏：直接取消收藏
+        this.httpPost('/favorites/toggle', { articeId: this.id }, (json) => {
+          if (json.status === 200 && json.data.id == null) {
+            this.showMessage('取消收藏成功！', 'info')
+            this.isFavorited = false
+            this.textData.favoriteCount -= 1
+          } else {
+            this.showMessage(json.message || '操作失败', 'error')
+          }
+        })
+        return
+      }
+      // 未收藏：弹出收藏夹选择框
+      this.favoriteDialog = true
+    },
+    onFavorited() {
+      this.showMessage('收藏成功！', 'success')
+      this.isFavorited = true
+      this.textData.favoriteCount += 1
     },
     checkFavorites() {
       if (this.userInfo.userData == null) {

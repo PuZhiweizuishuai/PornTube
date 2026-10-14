@@ -55,10 +55,14 @@
             </div>
           </template>
 
-          <!-- 收藏时间 -->
+          <!-- 收藏时间 / 所属收藏夹 -->
           <div class="mt-auto text-medium-emphasis">
             <v-icon size="small" class="mr-1">mdi-clock-outline</v-icon>
             <span class="text-caption">收藏于 {{ formatDate(favorite.createTime) }}</span>
+            <template v-if="labelName">
+              <v-icon size="small" class="ml-3 mr-1">mdi-bookmark-outline</v-icon>
+              <span class="text-caption">{{ labelName }}</span>
+            </template>
           </div>
 
           <!-- 删除的收藏操作按钮 -->
@@ -91,6 +95,11 @@ export default {
     favorite: {
       type: Object,
       required: true,
+    },
+    labelName: {
+      type: String,
+      required: false,
+      default: '',
     },
   },
   methods: {

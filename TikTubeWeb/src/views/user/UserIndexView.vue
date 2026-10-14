@@ -112,6 +112,65 @@
         </v-card-text>
       </v-card>
 
+      <!-- 公开收藏夹 -->
+      <template v-else-if="type === 5">
+        <!-- 收藏夹列表 -->
+        <v-row v-if="!openedLabel" class="mt-6">
+          <v-col v-if="!favLabels.length" cols="12">
+            <div class="channel__empty">
+              <v-icon icon="mdi-bookmark-multiple-outline" size="32" class="text-medium-emphasis mb-2" />
+              <span class="text-body-2 text-medium-emphasis">这个用户还没有公开收藏夹</span>
+            </div>
+          </v-col>
+          <v-col v-for="label in favLabels" :key="label.id" cols="12" sm="6" md="4" lg="3">
+            <v-card class="fav-label-card pa-4" rounded="lg" border @click="openFavLabel(label)">
+              <div class="d-flex align-center">
+                <v-icon icon="mdi-bookmark-multiple" color="primary" size="32" class="mr-3" />
+                <div class="min-width-0">
+                  <div class="text-subtitle-1 font-weight-bold text-truncate">{{ label.name }}</div>
+                  <div class="text-body-2 text-medium-emphasis">{{ label.count }} 个收藏</div>
+                </div>
+              </div>
+            </v-card>
+          </v-col>
+        </v-row>
+
+        <!-- 收藏夹内容 -->
+        <template v-else>
+          <div class="d-flex align-center mt-6">
+            <v-btn icon="mdi-arrow-left" variant="text" size="small" @click="openedLabel = null" />
+            <h2 class="text-h6 font-weight-medium ml-2">{{ openedLabel.name }}</h2>
+            <v-chip size="small" variant="tonal" color="primary" class="ml-3">{{ openedLabel.count }} 个收藏</v-chip>
+          </div>
+          <v-progress-linear v-if="labelLoading" indeterminate color="primary" class="mt-4" rounded />
+          <template v-else>
+            <section v-if="labelVideoItems.length" class="mt-4">
+              <h3 class="text-subtitle-1 font-weight-medium mb-2">视频</h3>
+              <v-row>
+                <v-col v-for="item in labelVideoItems" :key="item.articleEntity.id" cols="12" sm="6" md="4" lg="3" xxl="2">
+                  <VideoCard :video="item.articleEntity" :show-author="false" />
+                </v-col>
+              </v-row>
+            </section>
+            <section v-if="labelArticleItems.length" :class="labelVideoItems.length ? 'mt-6' : 'mt-4'">
+              <h3 class="text-subtitle-1 font-weight-medium mb-2">文章</h3>
+              <v-row>
+                <v-col v-for="item in labelArticleItems" :key="item.articleEntity.id" cols="12" sm="6" md="4" lg="3" xxl="2">
+                  <ArticleCard :text="item.articleEntity" />
+                </v-col>
+              </v-row>
+            </section>
+            <div v-if="!labelVideoItems.length && !labelArticleItems.length" class="channel__empty">
+              <v-icon icon="mdi-bookmark-outline" size="32" class="text-medium-emphasis mb-2" />
+              <span class="text-body-2 text-medium-emphasis">这个收藏夹还没有可展示的内容</span>
+            </div>
+            <div v-if="labelLength > 1" class="channel__pager">
+              <Pagination v-model="labelPage" :total-visible="7" :length="labelLength" rounded="circle" @update:model-value="labelPageChange" />
+            </div>
+          </template>
+        </template>
+      </template>
+
       <!-- 内容列表 -->
       <template v-else>
         <section v-if="videoItems.length" class="mt-6">
@@ -154,7 +213,7 @@
         </div>
       </template>
 
-      <div v-if="type !== 4" class="channel__pager">
+      <div v-if="type !== 4 && type !== 5" class="channel__pager">
         <Pagination
           v-model="page"
           :total-visible="7"
@@ -185,11 +244,12 @@ import ArticleCard from '@/components/card/ArticleCard.vue'
 import Pagination from '@/components/common/Pagination.vue'
 import { formatCount, formatDay } from '@/utils/format'
 
-// 分页签与接口 type 参数的对应关系（-1 混合 / 0 视频 / 2 文章 / 4 只看简介）
+// 分页签与接口 type 参数的对应关系（-1 混合 / 0 视频 / 2 文章 / 4 只看简介 / 5 公开收藏夹）
 const TABS = [
   { type: -1, title: '首页' },
   { type: 0, title: '视频' },
   { type: 2, title: '讨论' },
+  { type: 5, title: '收藏夹' },
   { type: 4, title: '简介' },
 ]
 
@@ -215,6 +275,12 @@ export default {
       type: -1,
       loginUser: useUserStore().userData,
       isFollowed: false, // 是否已关注
+      favLabels: [],
+      openedLabel: null,
+      labelList: [],
+      labelPage: 1,
+      labelLength: 1,
+      labelLoading: false,
       snackbar: {
         show: false,
         text: '',
@@ -232,6 +298,12 @@ export default {
     isEmpty() {
       return !this.videoItems.length && !this.articleItems.length
     },
+    labelVideoItems() {
+      return this.labelList.filter((item) => item.articleEntity && Number(item.articleEntity.type) === 0)
+    },
+    labelArticleItems() {
+      return this.labelList.filter((item) => item.articleEntity && Number(item.articleEntity.type) === 2)
+    },
     aboutRows() {
       const info = this.userInfo || {}
       return [
@@ -247,7 +319,13 @@ export default {
   watch: {
     type() {
       this.page = 1
+      this.openedLabel = null
       if (this.type === 4) return
+      if (this.type === 5) {
+        this.getPublicLabels()
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+        return
+      }
       this.geVideoList()
       window.scrollTo({ top: 0, behavior: 'smooth' })
     },
@@ -355,6 +433,45 @@ export default {
       } else {
         this.followUser()
       }
+    },
+    // 公开收藏夹
+    getPublicLabels() {
+      this.httpGet(`/favorites/label/public/list?userId=${this.id}`, (json) => {
+        if (json.status === 200) {
+          this.favLabels = json.data || []
+        }
+      })
+    },
+    openFavLabel(label) {
+      this.openedLabel = label
+      this.labelPage = 1
+      this.getLabelArticles()
+    },
+    getLabelArticles() {
+      if (!this.openedLabel) return
+      this.labelLoading = true
+      this.httpGet(
+        `/favorites/label/public/article/list?labelId=${this.openedLabel.id}&page=${this.labelPage}&limit=${this.size}`,
+        (json) => {
+          this.labelLoading = false
+          if (json.status === 200) {
+            this.labelList = json.data.list
+            this.labelPage = json.data.currPage
+            this.labelLength = json.data.totalPage
+          } else {
+            this.showMessage(json.message || '加载收藏夹失败', 'error')
+          }
+        },
+        () => {
+          this.labelLoading = false
+          this.showMessage('加载收藏夹失败', 'error')
+        }
+      )
+    },
+    labelPageChange(page) {
+      this.labelPage = page
+      this.getLabelArticles()
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     },
     // 显示消息提示
     showMessage(text, color = 'success') {
@@ -464,6 +581,20 @@ export default {
   flex-direction: column;
   align-items: center;
   padding: 64px 0;
+}
+
+.fav-label-card {
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.fav-label-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(var(--v-border-color), 1);
+}
+
+.min-width-0 {
+  min-width: 0;
 }
 
 .channel__pager {

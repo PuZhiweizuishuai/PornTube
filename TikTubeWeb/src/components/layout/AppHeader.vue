@@ -10,22 +10,28 @@
       v-if="mobileSearchOpen"
       class="app-header__mobile-search d-flex align-center ga-1 flex-grow-1"
     >
-      <v-text-field
-        ref="mobileSearchField"
-        v-model="searchText"
-        class="flex-grow-1"
-        density="compact"
-        variant="solo-filled"
-        flat
-        hide-details
-        single-line
-        rounded="pill"
-        bg-color="surface-variant"
-        placeholder="搜索"
-        prepend-inner-icon="mdi-magnify"
-        @keydown="onSearchKeydown"
-        @keydown.esc="closeMobileSearch"
-      />
+      <SearchHistoryMenu v-model="historyMenuOpen" @select="searchFromHistory">
+        <template #activator="{ activatorProps, open }">
+          <v-text-field
+            ref="mobileSearchField"
+            v-model="searchText"
+            v-bind="activatorProps"
+            class="flex-grow-1"
+            density="compact"
+            variant="solo-filled"
+            flat
+            hide-details
+            single-line
+            rounded="pill"
+            bg-color="surface-variant"
+            placeholder="搜索"
+            prepend-inner-icon="mdi-magnify"
+            @focus="open"
+            @keydown="onSearchKeydown"
+            @keydown.esc="closeMobileSearch"
+          />
+        </template>
+      </SearchHistoryMenu>
       <v-btn icon="mdi-magnify" variant="text" aria-label="搜索" @click="doSearch" />
     </div>
 
@@ -47,19 +53,25 @@
 
       <!-- 搜索区：YouTube 式的居中胶囊输入框 -->
       <div class="app-header__search d-none d-sm-flex align-center ga-1 flex-grow-0">
-        <v-text-field
-          v-model="searchText"
-          density="compact"
-          variant="solo-filled"
-          flat
-          hide-details
-          single-line
-          rounded="pill"
-          bg-color="surface-variant"
-          placeholder="搜索"
-          prepend-inner-icon="mdi-magnify"
-          @keydown="onSearchKeydown"
-        />
+        <SearchHistoryMenu v-model="historyMenuOpen" @select="searchFromHistory">
+          <template #activator="{ activatorProps, open }">
+            <v-text-field
+              v-model="searchText"
+              v-bind="activatorProps"
+              density="compact"
+              variant="solo-filled"
+              flat
+              hide-details
+              single-line
+              rounded="pill"
+              bg-color="surface-variant"
+              placeholder="搜索"
+              prepend-inner-icon="mdi-magnify"
+              @focus="open"
+              @keydown="onSearchKeydown"
+            />
+          </template>
+        </SearchHistoryMenu>
         <v-tooltip location="bottom" text="搜索">
           <template #activator="{ props }">
             <v-btn v-bind="props" icon="mdi-magnify" variant="text" @click="doSearch" />
@@ -146,6 +158,8 @@ import { useWebInfoStore } from '@/stores/webInfoStore'
 import { useNotificationStore } from '@/stores/notificationStore'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import AppBarHead from '@/components/user/AppBarHead.vue'
+import SearchHistoryMenu from '@/components/layout/SearchHistoryMenu.vue'
+import { addSearchHistory } from '@/utils/search-history'
 
 defineProps({
   /** 点击品牌 LOGO 跳转的地址 */
@@ -168,6 +182,7 @@ const { smAndUp } = useDisplay()
 const searchText = ref('')
 const mobileSearchOpen = ref(false)
 const mobileSearchField = ref(null)
+const historyMenuOpen = ref(false)
 
 // 切回桌面档位后搜索条不再有意义
 watch(smAndUp, (isDesktop) => {
@@ -189,14 +204,22 @@ async function openMobileSearch() {
 
 function closeMobileSearch() {
   mobileSearchOpen.value = false
+  historyMenuOpen.value = false
 }
 
 function doSearch() {
   const key = searchText.value.trim()
   if (!key) return
+  addSearchHistory(key)
+  historyMenuOpen.value = false
   emit('search', key)
   searchText.value = ''
   closeMobileSearch()
+}
+
+function searchFromHistory(key) {
+  searchText.value = key
+  doSearch()
 }
 
 function onSearchKeydown(event) {

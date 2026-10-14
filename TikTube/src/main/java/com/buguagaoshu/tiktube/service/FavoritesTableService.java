@@ -18,8 +18,7 @@ public interface FavoritesTableService extends IService<FavoritesTableEntity> {
     PageUtils queryPage(Map<String, Object> params);
 
     /**
-     * 新增收藏
-     * TODO 收藏夹功能
+     * 新增收藏（未指定收藏夹时归入默认收藏夹）
      * */
     FavoritesTableEntity toggleFavorites(FavoritesTableEntity favorite, Long userId);
 

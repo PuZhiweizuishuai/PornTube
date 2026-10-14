@@ -20,7 +20,9 @@ import com.buguagaoshu.tiktube.utils.PageUtils;
 import com.buguagaoshu.tiktube.utils.Query;
 
 import com.buguagaoshu.tiktube.dao.FavoritesTableDao;
+import com.buguagaoshu.tiktube.entity.FavoritesLabelEntity;
 import com.buguagaoshu.tiktube.entity.FavoritesTableEntity;
+import com.buguagaoshu.tiktube.service.FavoritesLabelService;
 import com.buguagaoshu.tiktube.service.FavoritesTableService;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,13 +36,17 @@ public class FavoritesTableServiceImpl extends ServiceImpl<FavoritesTableDao, Fa
 
     final PlayCountRecorder playCountRecorder;
 
+    final FavoritesLabelService favoritesLabelService;
+
     @Autowired
     public FavoritesTableServiceImpl(ArticleService articleService,
                                      CountRecorder countRecorder,
-                                     PlayCountRecorder playCountRecorder) {
+                                     PlayCountRecorder playCountRecorder,
+                                     FavoritesLabelService favoritesLabelService) {
         this.articleService = articleService;
         this.countRecorder = countRecorder;
         this.playCountRecorder = playCountRecorder;
+        this.favoritesLabelService = favoritesLabelService;
     }
 
     @Override
@@ -62,12 +68,12 @@ public class FavoritesTableServiceImpl extends ServiceImpl<FavoritesTableDao, Fa
         FavoritesTableEntity one = this.getOne(wrapper);
         // 没有收藏过，增加收藏
         if (one == null) {
+            Long labelId = resolveLabelId(favorite.getFavoritesLabelId(), userId);
             FavoritesTableEntity favoritesTableEntity = new FavoritesTableEntity();
             favoritesTableEntity.setUserId(userId);
             favoritesTableEntity.setArticeId(favorite.getArticeId());
             favoritesTableEntity.setCreateTime(System.currentTimeMillis());
-            // TODO 待实现收藏标签
-            favoritesTableEntity.setFavoritesLabelId(null);
+            favoritesTableEntity.setFavoritesLabelId(labelId);
             this.save(favoritesTableEntity);
             countRecorder.recordArticleFavorite(favorite.getArticeId(), 1);
             // articleService.addCount("favorite_count", favorite.getArticeId(), 1);
@@ -94,6 +100,10 @@ public class FavoritesTableServiceImpl extends ServiceImpl<FavoritesTableDao, Fa
     public PageUtils userFavorites(Map<String, Object> params, Long userId) {
         QueryWrapper<FavoritesTableEntity> wrapper = new QueryWrapper<>();
         wrapper.eq("user_id", userId);
+        Object labelId = params.get("labelId");
+        if (labelId != null && !labelId.toString().trim().isEmpty()) {
+            wrapper.eq("favorites_label_id", labelId);
+        }
         wrapper.orderByDesc("create_time");
         IPage<FavoritesTableEntity> page = this.page(
                 new Query<FavoritesTableEntity>().getPage(params),
@@ -127,6 +137,20 @@ public class FavoritesTableServiceImpl extends ServiceImpl<FavoritesTableDao, Fa
             favoritesAndArticleList.add(favoritesAndArticle);
         }
         return new PageUtils(favoritesAndArticleList, page.getTotal(), page.getSize(), page.getCurrent());
+    }
+
+    /**
+     * 收藏归属收藏夹：未指定（或指定为空）时归入默认收藏夹，指定时校验归属
+     * */
+    private Long resolveLabelId(Long labelId, Long userId) {
+        if (labelId == null) {
+            return favoritesLabelService.getOrCreateDefaultLabel(userId).getId();
+        }
+        FavoritesLabelEntity label = favoritesLabelService.getById(labelId);
+        if (label == null || !label.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("收藏夹不存在");
+        }
+        return label.getId();
     }
 
 }

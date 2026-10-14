@@ -162,7 +162,9 @@ CREATE TABLE `favorites_table`  (
   -- (用户, 稿件) 唯一，toggleFavorites / checkFavorites 的 getOne 查询与防重复收藏
   UNIQUE INDEX `uk_favorites_user_article`(`user_id`, `artice_id`) USING BTREE,
   -- 创作中心按天统计收藏新增
-  INDEX `idx_fav_article_time`(`artice_id`, `create_time`) USING BTREE
+  INDEX `idx_fav_article_time`(`artice_id`, `create_time`) USING BTREE,
+  -- 公开收藏夹内容列表 / 删除收藏夹时迁移收藏
+  INDEX `idx_favorites_label`(`favorites_label_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '收藏' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -174,9 +176,13 @@ CREATE TABLE `favorites_label`  (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL COMMENT '收藏夹名称',
   `user_id` bigint NOT NULL COMMENT '所属用户ID',
+  `is_public` int NOT NULL DEFAULT 0 COMMENT '是否公开【0 私密， 1 公开，公开收藏夹在用户首页可见】',
+  `is_default` int NOT NULL DEFAULT 0 COMMENT '是否默认收藏夹【0 否， 1 是，每个用户至多一个，不可删除】',
   `create_time` bigint NOT NULL COMMENT '创建时间（毫秒时间戳）',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_favorites_label_user`(`user_id`) USING BTREE
+  INDEX `idx_favorites_label_user`(`user_id`) USING BTREE,
+  -- 用户首页展示公开收藏夹
+  INDEX `idx_favorites_label_public`(`user_id`, `is_public`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '收藏夹分组' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------

@@ -7,6 +7,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,7 +49,7 @@ public class RedisRepository {
         if (!isAvailable()) return false;
         try {
             if (time > 0) {
-                redisTemplate.expire(key, time, TimeUnit.SECONDS);
+                redisTemplate.expire(key, Duration.ofSeconds(time));
             }
             return true;
         } catch (Exception e) {
@@ -204,7 +205,7 @@ public class RedisRepository {
         if (!isAvailable()) return false;
         try {
             if (time > 0) {
-                redisTemplate.opsForValue().set(key, value, time, TimeUnit.SECONDS);
+                redisTemplate.opsForValue().set(key, value, Duration.ofSeconds(time));
             } else {
                 set(key, value);
             }

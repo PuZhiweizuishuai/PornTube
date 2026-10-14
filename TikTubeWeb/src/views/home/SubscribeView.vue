@@ -84,15 +84,15 @@
                       :elevation="isHovering ? 3 : 0"
                       class="ma-2 rounded-lg"
                       width="120"
-                      height="160"
+                      height="180"
                       :class="isHovering ? 'on-hover' : ''"
                       @click="goToUserPage(user.id)"
                     >
-                      <div class="d-flex flex-column align-center py-3 px-2 h-100 mb-2">
+                      <div class="d-flex flex-column align-center pt-3 pb-3 px-2 h-100">
                         <v-avatar size="70" class="mb-2">
                           <v-img :src="user.avatarUrl" :alt="user.username" cover></v-img>
                         </v-avatar>
-                        <div class="text-center mb-2">
+                        <div class="text-center">
                           <div
                             class="text-subtitle-2 font-weight-medium text-truncate"
                             style="max-width: 110px"
@@ -107,7 +107,7 @@
                             size="x-small"
                             color="primary"
                             variant="flat"
-                            class="mt-2 mb-2"
+                            class="mt-2"
                             density="comfortable"
                           >
                             <v-icon start size="x-small">mdi-account-multiple-check</v-icon>

@@ -13,6 +13,7 @@ export const STORAGE_KEYS = {
   USER: 'user',
   WEB_INFO: 'webInfo',
   THEME_MODE: 'themeMode',
+  SEARCH_HISTORY: 'searchHistory',
 }
 
 function getStore() {
