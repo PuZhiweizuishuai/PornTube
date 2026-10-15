@@ -59,14 +59,10 @@ const router = createRouter({
             requireAuth: true
           }
         },
+        // 个人设置（原「自定义频道」）已并入 /settings，旧地址按分区深链跳转
         {
           path: '/user/setting',
-          name: 'UserSetting',
-          component: () => import('@/views/user/SettingView.vue'),
-          meta: {
-            title: '个人设置',
-            requireAuth: true
-          }
+          redirect: { path: '/settings', query: { section: 'profile' } },
         },
         {
           path: '/search',

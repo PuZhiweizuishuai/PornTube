@@ -68,4 +68,12 @@ public class TwoFactorAuthenticationController {
     public ResponseDetails check(@RequestBody TwoFactorData twoFactorData, HttpServletRequest request) {
         return ResponseDetails.ok().put("data", userService.checkTOTP(twoFactorData, JwtUtil.getUserId(request)));
     }
+
+    /**
+     * 取消设置：作废待确认密钥，两步验证保持原状态
+     * */
+    @PostMapping("/totp/cancel")
+    public ResponseDetails cancel(HttpServletRequest request) {
+        return ResponseDetails.ok().put("data", userService.cancelTOTP(JwtUtil.getUserId(request)));
+    }
 }

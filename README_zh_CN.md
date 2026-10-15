@@ -186,3 +186,16 @@ http://127.0.0.1:5173
 GitHub：https://github.com/PuZhiweizuishuai/TikTube
 
 码云: https://gitee.com/puzhiweizuishuai/VideoWeb
+
+## AI 开发建议
+
+建议使用 AI 修改项目前，将分支修改到 ai 分支，待测试运行无误后再修改主分支
+
+```
+git checkout ai
+git push origin ai
+git checkout master
+git merge ai
+git push origin master
+git checkout ai
+```

@@ -111,7 +111,7 @@ public interface UserService extends IService<UserEntity> {
     void updateLastPublishTime(long time, long userId);
 
     /**
-     * 开启 TOTP 两步认证
+     * 创建待确认的 TOTP 密钥（不落库），需 checkTOTP 验证验证码后才正式开启
      * @param checkOpen 检查是否已经开启了两步认证
      * */
     TwoFactorData openTOTP(Long userId, boolean checkOpen);
@@ -121,17 +121,25 @@ public interface UserService extends IService<UserEntity> {
 
 
     /**
-     * 重置两步认证密钥
+     * 恢复：校验旧恢复码后生成待确认的新密钥，同样需 checkTOTP 确认后才生效
      * */
     TwoFactorData recoveryTOTP(TwoFactorData twoFactorData, long userId);
 
 
+    /**
+     * 确认开启：验证码对「待确认密钥」校验通过后，密钥落库并将两步验证置为已开启
+     * */
     boolean checkTOTP(TwoFactorData twoFactorData, long userId);
 
     /**
-     * 创建新的两步认证密钥
+     * 重新生成：先用当前生效密钥校验旧验证码，新密钥存为待确认，确认前旧密钥继续有效
      * */
     TwoFactorData createNewTOTP(TwoFactorData twoFactorData, long userId);
+
+    /**
+     * 用户关闭设置弹窗时作废待确认密钥
+     * */
+    boolean cancelTOTP(long userId);
 
     /**
      * 封禁用户

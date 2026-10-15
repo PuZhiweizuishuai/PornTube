@@ -39,7 +39,6 @@ export default {
         { icon: 'mdi-account', text: '个人主页', id: 0 },
         { icon: 'mdi-cash', text: '付费会员', id: 3 },
         { icon: 'mdi-application', text: '创作中心', id: 1 },
-        { icon: 'mdi-wrench', text: '自定义频道', id: 4 },
         { icon: 'mdi-cog-outline', text: '设置', id: 5 },
         { icon: 'mdi-logout', text: '退出', id: 2 },
       ],
@@ -58,11 +57,8 @@ export default {
         case 3:
           this.$router.push('/vip')
           break
-        case 4:
-          if (this.$route.path === '/user/setting') return
-          this.$router.push('/user/setting')
-          break
         case 5:
+          if (this.$route.path === '/settings') return
           this.$router.push('/settings')
           break
         default:

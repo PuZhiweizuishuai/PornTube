@@ -1,97 +1,81 @@
 <template>
-  <v-row justify="center" align="center">
-    <v-col>
-      <v-card class="mx-auto" elevation="2" rounded="lg">
-        <v-card-title class="d-flex align-center py-4">
-          <v-icon icon="mdi-image" class="mr-2" size="large" color="primary" />
-          <h2>首页顶部大图修改</h2>
-        </v-card-title>
+  <v-card rounded="lg">
+    <v-card-title class="d-flex align-center">
+      <v-icon start>mdi-image-outline</v-icon>
+      首页顶部图
+    </v-card-title>
+    <v-divider />
 
-        <v-divider></v-divider>
+    <v-card-text class="pt-4">
+      <v-sheet class="mb-4 rounded overflow-hidden" elevation="1">
+        <v-img
+          :src="userInfo.userData.topImgUrl"
+          :aspect-ratio="5.98"
+          cover
+          class="bg-grey-lighten-2"
+        >
+          <template #placeholder>
+            <div class="d-flex align-center justify-center fill-height">
+              <v-progress-circular indeterminate color="primary" size="28"></v-progress-circular>
+            </div>
+          </template>
+        </v-img>
+      </v-sheet>
 
-        <v-card-text>
-          <v-row justify="center">
-            <v-col cols="12">
-              <v-sheet class="mb-4 rounded overflow-hidden" elevation="1">
-                <v-img
-                  :src="userInfo.userData.topImgUrl"
-                  :aspect-ratio="5.98"
-                  cover
-                  class="bg-grey-lighten-2"
-                >
-                  <template #placeholder>
-                    <div class="d-flex align-center justify-center fill-height">
-                      <v-progress-circular indeterminate color="primary"></v-progress-circular>
-                    </div>
-                  </template>
-                </v-img>
-              </v-sheet>
-            </v-col>
-          </v-row>
-
-          <v-row justify="center">
-            <v-col cols="12" md="9">
-              <!-- :rules="rules" -->
-              <v-file-input
-                
-                accept="image/png, image/jpeg, image/bmp"
-                placeholder="选择图片"
-                prepend-icon="mdi-camera"
-                label="首页顶部大图"
-                variant="outlined"
-                density="comfortable"
-                @update:model-value="onFileSelected"
-                show-size
-                counter
-                bg-color="surface"
-              />
-            </v-col>
-            <v-col cols="12" md="3" class="d-flex align-center">
-              <v-btn
-                color="primary"
-                @click="uploadFile"
-                prepend-icon="mdi-cloud-upload"
-                variant="elevated"
-                :loading="uploading"
-                :disabled="files.length === 0 || uploading"
-                block
-                class="ml-md-n4"
-              >
-                上传
-              </v-btn>
-            </v-col>
-          </v-row>
-        </v-card-text>
-
-        <v-divider></v-divider>
-
-        <v-card-actions class="pa-4">
+      <v-row align="center">
+        <v-col cols="12" sm="9">
+          <v-file-input
+            accept="image/png, image/jpeg, image/bmp"
+            placeholder="选择图片"
+            prepend-icon="mdi-camera"
+            label="顶部大图"
+            variant="outlined"
+            density="comfortable"
+            @update:model-value="onFileSelected"
+            show-size
+            counter
+            bg-color="surface"
+            hide-details="auto"
+          />
+        </v-col>
+        <v-col cols="12" sm="3">
           <v-btn
             color="primary"
-            @click="save"
-            prepend-icon="mdi-content-save"
-            variant="elevated"
-            size="large"
-            :disabled="userInfo.userData.fileId === undefined || uploading"
+            @click="uploadFile"
+            prepend-icon="mdi-cloud-upload"
+            :loading="uploading"
+            :disabled="files.length === 0 || uploading"
+            block
           >
-            保存
+            上传
           </v-btn>
-          <v-spacer></v-spacer>
-          <v-chip color="info" variant="outlined">
-            <v-icon start icon="mdi-information"></v-icon>
-            上传后需点击保存完成设置
-          </v-chip>
-        </v-card-actions>
-      </v-card>
-    </v-col>
+        </v-col>
+      </v-row>
+    </v-card-text>
+
+    <v-divider />
+
+    <v-card-actions class="pa-4">
+      <v-btn
+        color="primary"
+        @click="save"
+        prepend-icon="mdi-content-save"
+        :disabled="userInfo.userData.fileId === undefined || uploading"
+      >
+        保存
+      </v-btn>
+      <v-spacer />
+      <span class="text-caption text-medium-emphasis">上传后需点击保存完成设置</span>
+    </v-card-actions>
 
     <!-- 图片剪裁对话框 -->
     <v-dialog v-model="showCropper" persistent max-width="800px">
-      <v-card>
-        <v-card-title class="text-h5 d-flex align-center">
-          <v-icon icon="mdi-crop" class="mr-2" color="primary" />
+      <v-card rounded="lg">
+        <v-card-title class="d-flex align-center">
+          <v-icon start>mdi-crop</v-icon>
           剪裁顶部大图
         </v-card-title>
+        <v-divider />
         <v-card-text>
           <div class="cropper-container">
             <vue-cropper
@@ -116,10 +100,10 @@
             />
           </div>
         </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
+        <v-card-actions class="pa-4">
+          <v-spacer />
           <v-btn color="error" variant="text" @click="cancelCrop"> 取消 </v-btn>
-          <v-btn color="primary" variant="elevated" @click="confirmCrop"> 确认剪裁 </v-btn>
+          <v-btn color="primary" @click="confirmCrop"> 确认剪裁 </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -131,7 +115,7 @@
         <v-btn color="white" variant="text" @click="showMessage = false">关闭</v-btn>
       </template>
     </v-snackbar>
-  </v-row>
+  </v-card>
 </template>
   
 <script>
@@ -275,15 +259,11 @@ export default {
 }
 </script>
   
-<style>
-.v-card-title {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
-}
-
+<style scoped>
 .cropper-container {
   height: 60vh;
   width: 100%;
-  background-color: #f5f5f5;
+  background-color: rgb(var(--v-theme-surface-variant));
   overflow: hidden;
 }
 </style>

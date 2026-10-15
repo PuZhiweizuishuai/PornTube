@@ -494,7 +494,8 @@ export default {
       this.$router.push('/studio')
     },
     goToSetting() {
-      this.$router.push('/user/setting')
+      // 整合后的设置页，直达「基本信息」分区
+      this.$router.push('/settings?section=profile')
     },
   },
 }

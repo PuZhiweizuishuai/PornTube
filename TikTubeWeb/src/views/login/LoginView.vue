@@ -73,12 +73,13 @@
     </v-snackbar>
 
     <!-- 两步认证弹框 -->
-    <v-dialog v-model="showTotpDialog" persistent max-width="400">
+    <v-dialog v-model="showTotpDialog" persistent max-width="400" @after:show="focusTotpInput">
       <v-card>
         <v-card-title class="text-h5 font-weight-bold primary--text"> 两步验证 </v-card-title>
         <v-card-text>
           <p class="mb-4">请输入您的两步验证码以完成登录</p>
           <v-otp-input
+            ref="totpInput"
             v-model="totpCode"
             length="6"
             label="验证码"
@@ -351,6 +352,11 @@ export default {
       this.showTotpDialog = false
       this.totpCode = ''
       this.totpUserInfo = {}
+    },
+    focusTotpInput() {
+      // Chrome 不会对动态插入的元素应用原生 autofocus，弹窗过渡结束后手动聚焦第一个输入格
+      const el = this.$refs.totpInput?.$el?.querySelector('input')
+      el?.focus()
     },
     register(value) {
       this.httpPost('/register', value, (json) => {

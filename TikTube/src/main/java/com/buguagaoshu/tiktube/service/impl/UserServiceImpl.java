@@ -1,6 +1,7 @@
 package com.buguagaoshu.tiktube.service.impl;
 
 import com.buguagaoshu.tiktube.cache.TotpLoginChallengeCache;
+import com.buguagaoshu.tiktube.cache.TotpSetupCache;
 import com.buguagaoshu.tiktube.cache.WebConfigCache;
 import com.buguagaoshu.tiktube.config.WebConstant;
 import com.buguagaoshu.tiktube.dto.LoginDetails;
@@ -85,6 +86,8 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
 
     private final TotpLoginChallengeCache totpLoginChallengeCache;
 
+    private final TotpSetupCache totpSetupCache;
+
     private final IpUtil ipUtil;
 
 
@@ -98,6 +101,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
                            WebConfigCache webConfigCache,
                            CountLimitRepository countLimitRepository,
                            TotpLoginChallengeCache totpLoginChallengeCache,
+                           TotpSetupCache totpSetupCache,
                            IpUtil ipUtil) {
         this.userRoleService = userRoleService;
         this.verifyCodeService = verifyCodeService;
@@ -108,6 +112,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
         this.webConfigCache = webConfigCache;
         this.countLimitRepository = countLimitRepository;
         this.totpLoginChallengeCache = totpLoginChallengeCache;
+        this.totpSetupCache = totpSetupCache;
         this.ipUtil = ipUtil;
     }
 
@@ -566,6 +571,10 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
     }
 
 
+    /**
+     * 创建待确认的两步验证密钥，只写入内存缓存，不落库。
+     * 用户在弹窗中扫码后点击「确认已设置」并输入验证码，checkTOTP 验证通过才真正开启。
+     */
     @Override
     public TwoFactorData openTOTP(Long userId, boolean checkOpen) {
         UserEntity user = this.getById(userId);
@@ -575,7 +584,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
         if (user.getOtp().equals(TwoFactorAuthenticationType.TOTP)) {
             return null;
         }
-        return updateTOTP(user);
+        return holdPendingTOTP(user);
     }
 
     @Override
@@ -598,39 +607,76 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
         return false;
     }
 
-    public TwoFactorData updateTOTP(UserEntity user) {
-        TwoFactorData totpInfo = twoFactorAuthenticationServer.createTOTPInfo(user.getId(), user.getMail());
-        user.setOtp(TwoFactorAuthenticationType.TOTP);
-        user.setOtpSecret(totpInfo.getSecret());
-        user.setOtpRecovery(PasswordUtil.encode(totpInfo.getRecoveryCode()));
-        this.updateById(user);
-        return totpInfo;
-    }
-
+    /**
+     * 恢复：校验旧恢复码后同样只生成待确认密钥，确认后才替换库里的密钥与恢复码
+     */
     @Override
     public TwoFactorData recoveryTOTP(TwoFactorData twoFactorData, long userId) {
-        // 校验用户恢复码
         UserEntity user = this.getById(userId);
+        if (user == null || !user.getOtp().equals(TwoFactorAuthenticationType.TOTP)) {
+            return null;
+        }
         if (PasswordUtil.judgePassword(twoFactorData.getRecoveryCode(), user.getOtpRecovery())) {
-            return updateTOTP(user);
+            return holdPendingTOTP(user);
         }
         return null;
     }
 
+    /**
+     * 确认开启：验证码对「待确认密钥」校验，通过后密钥才落库并把两步验证置为已开启
+     */
     @Override
     public boolean checkTOTP(TwoFactorData twoFactorData, long userId) {
+        TotpSetupCache.Pending pending = totpSetupCache.take(userId);
+        if (pending == null) {
+            return false;
+        }
+        if (!twoFactorAuthenticationServer.verifyTOTPCode(userId, pending.getSecret(), twoFactorData.getCode())) {
+            return false;
+        }
         UserEntity user = this.getById(userId);
-        return twoFactorAuthenticationServer.verifyTOTPCode(userId, user.getOtpSecret(), twoFactorData.getCode());
+        if (user == null) {
+            totpSetupCache.invalidate(userId);
+            return false;
+        }
+        user.setOtp(TwoFactorAuthenticationType.TOTP);
+        user.setOtpSecret(pending.getSecret());
+        user.setOtpRecovery(PasswordUtil.encode(pending.getRecoveryCode()));
+        this.updateById(user);
+        totpSetupCache.invalidate(userId);
+        return true;
     }
 
+    /**
+     * 重新生成：先用当前已生效的密钥校验旧验证码，新密钥只存为待确认；
+     * 用户取消确认时旧密钥继续有效，不会出现「服务端已换新码但验证器里还是旧码」的锁死
+     */
     @Override
     public TwoFactorData createNewTOTP(TwoFactorData twoFactorData, long userId) {
         UserEntity user = this.getById(userId);
+        if (user == null || !user.getOtp().equals(TwoFactorAuthenticationType.TOTP)) {
+            return null;
+        }
         boolean code = twoFactorAuthenticationServer.verifyTOTPCode(userId, user.getOtpSecret(), twoFactorData.getCode());
         if (code) {
-            return updateTOTP(user);
+            return holdPendingTOTP(user);
         }
         return null;
+    }
+
+    /**
+     * 用户关闭设置弹窗时作废待确认密钥
+     */
+    @Override
+    public boolean cancelTOTP(long userId) {
+        totpSetupCache.invalidate(userId);
+        return true;
+    }
+
+    private TwoFactorData holdPendingTOTP(UserEntity user) {
+        TwoFactorData totpInfo = twoFactorAuthenticationServer.createTOTPInfo(user.getId(), user.getMail());
+        totpSetupCache.put(user.getId(), totpInfo.getSecret(), totpInfo.getRecoveryCode());
+        return totpInfo;
     }
 
     @Override
