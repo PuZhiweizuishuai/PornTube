@@ -10,8 +10,6 @@ import java.util.Map;
 
 /**
  * 视频，图片，文章 发帖表
-
-TODO 回复消息可见，加密帖子，视频等
  * 
  * @author Pu Zhiwei
  * @email puzhiweipuzhiwei@foxmail.com

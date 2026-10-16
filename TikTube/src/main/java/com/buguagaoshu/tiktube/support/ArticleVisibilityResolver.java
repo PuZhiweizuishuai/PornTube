@@ -7,6 +7,8 @@ import com.buguagaoshu.tiktube.enums.ExamineTypeEnum;
 import com.buguagaoshu.tiktube.vo.ArticleViewData;
 import org.springframework.stereotype.Component;
 
+import java.util.Objects;
+
 /**
  * 稿件可见性判定
  *
@@ -58,5 +60,19 @@ public class ArticleVisibilityResolver {
         ArticleViewData articleViewData = new ArticleViewData();
         articleViewData.setIsShow(false);
         return articleViewData;
+    }
+
+    /**
+     * 能否出现在公开列表里（首页、分类页、热门榜、推荐位）：
+     * 类型对得上、没被删除、且已通过审核。
+     *
+     * 与 {@link #isVisible} 的区别是这里不给作者和管理员开后门——列表是发给所有人看的，
+     * 不能因为「刚好是作者本人在刷列表」就把未过审的稿件漏出去
+     */
+    public boolean isPubliclyListed(ArticleEntity article, int type) {
+        return article != null
+                && article.getType() != null && article.getType() == type
+                && Objects.equals(article.getStatus(), ArticleStatusEnum.NORMAL.getCode())
+                && Objects.equals(article.getExamineStatus(), ExamineTypeEnum.SUCCESS.getCode());
     }
 }

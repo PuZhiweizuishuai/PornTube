@@ -8,7 +8,6 @@ import com.buguagaoshu.tiktube.enums.ReturnCodeEnum;
 import com.buguagaoshu.tiktube.utils.PageUtils;
 import com.buguagaoshu.tiktube.entity.ArticleEntity;
 import com.buguagaoshu.tiktube.vo.ArticleViewData;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -18,8 +17,6 @@ import java.util.Set;
 
 /**
  * 视频，图片，文章 发帖表
-
-TODO 回复消息可见，加密帖子，视频等
  *
  * @author Pu Zhiwei
  * @email puzhiweipuzhiwei@foxmail.com
@@ -36,6 +33,10 @@ public interface ArticleService extends IService<ArticleEntity> {
     ReturnCodeEnum saveVideo(VideoArticleDto videoArticleDto, HttpServletRequest request);
 
 
+    /**
+     * 视频稿件详情。不返回 null：稿件不存在或当前用户无权查看时返回
+     * {@code isShow = false} 的隐藏视图
+     */
     ArticleViewData getVideo(long id, HttpServletRequest request);
 
     /**
@@ -47,7 +48,7 @@ public interface ArticleService extends IService<ArticleEntity> {
      * 获取用户视频或其他列表
      * @param params 分页参数
      * @param id 用户ID
-     * @param type 类型
+     * @param type 稿件类型，传 -1 表示不限类型，非法值按视频处理
      * @return 分页结果
      * */
     PageUtils userArticleList(Map<String, Object> params, Long id, Integer type);
@@ -55,8 +56,10 @@ public interface ArticleService extends IService<ArticleEntity> {
 
     /**
      * 获取关注用户的稿件
+     *
+     * @param userIds 关注列表，为空时直接返回空分页（不能拼成 {@code IN ()}）
      * */
-    PageUtils fallowUserArticleList(Map<String, Object> params, Set<Long> userIds);
+    PageUtils followUserArticleList(Map<String, Object> params, Set<Long> userIds);
 
 
     /**
@@ -68,9 +71,9 @@ public interface ArticleService extends IService<ArticleEntity> {
 
 
     /**
-     * 获取待审核视频
+     * 获取待审核稿件，仅管理员可见，非管理员返回 null
      * */
-    PageUtils examineList(@RequestParam Map<String, Object> params, HttpServletRequest request);
+    PageUtils examineList(Map<String, Object> params, HttpServletRequest request);
 
     /**
      * 处理审核
@@ -85,7 +88,7 @@ public interface ArticleService extends IService<ArticleEntity> {
 
 
     /**
-     * 删除视频
+     * 删除稿件（标记删除，同时把关联文件置为删除态）
      * @return  0 删除成功
      * 1 没权限
      * 2 不存在
@@ -93,16 +96,20 @@ public interface ArticleService extends IService<ArticleEntity> {
     int deleteArticle(ArticleEntity entity, HttpServletRequest request);
 
     /**
-     * 检查视频播放权限
+     * 播放鉴权，顺带记录一次播放历史。
+     * 目前站点没有分级播放限制，恒返回 true；真正的播放授权是调用方校验过的 AES key，
+     * 这里只承担「记录播放历史」这一副作用。
+     * TODO 后期开放 VIP / 分级播放时在此处补判定
+     *
      * @param file 视频文件
-     * @param userId 用户信息和请求信息
+     * @param userId 播放者，未登录为 -1
      * @param request 获取浏览器 UA
-     *                TODO 如果后期开放非登录用户也能播放，需要修改
      * */
-    Boolean hasThisVideoPlayPower(FileTableEntity file, Long userId, HttpServletRequest request);
+    boolean hasThisVideoPlayPower(FileTableEntity file, Long userId, HttpServletRequest request);
 
     /**
-     * 返回当前分类下的视频
+     * 返回当前分类下的稿件。不返回 null，分类不存在时返回空分页
+     *
      * @param id 分类ID
      * @param params 查询参数
      * @return 视频列表
@@ -110,6 +117,9 @@ public interface ArticleService extends IService<ArticleEntity> {
     PageUtils nowCategory(Map<String, Object> params, Integer id);
 
 
+    /**
+     * 编辑页回显数据，仅作者本人与管理员可取，其余情况返回 null
+     */
     ArticleViewData getEditInfo(Long id, HttpServletRequest request);
 
 
@@ -120,12 +130,15 @@ public interface ArticleService extends IService<ArticleEntity> {
 
 
     /**
-     * 恢复视频
+     * 恢复被删除的稿件，仅管理员可操作
      * */
     boolean restore(ArticleEntity articleEntity, HttpServletRequest request);
 
 
-
+    /**
+     * 增减某个计数列。列名会被拼进 SQL，只接受
+     * {@link com.buguagaoshu.tiktube.utils.SQLFilter#COUNT_COLUMNS} 白名单内的列
+     */
     void addCount(String col, Long articleId, long count);
 
     /**
@@ -135,15 +148,4 @@ public interface ArticleService extends IService<ArticleEntity> {
      * @return 推荐的文章列表
      */
     List<ArticleViewData> getRecommendationsByArticleId(Long articleId, int limit);
-
-    /**
-     * 根据标签列表获取推荐内容，候选不足时用热门榜补位。
-     * 不知道源稿件分区时用它，否则优先用 {@link #getRecommendationsByArticleId}
-     * @param tags 标签列表
-     * @param excludeArticleId 需要排除的文章ID
-     * @param limit 推荐数量限制
-     * @return 推荐的文章列表
-     */
-    List<ArticleViewData> getRecommendationsByTags(List<String> tags, Long excludeArticleId, int limit);
 }
-

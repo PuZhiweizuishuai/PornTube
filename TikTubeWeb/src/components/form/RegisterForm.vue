@@ -44,8 +44,11 @@
       density="comfortable"
       class="mb-4"
       prepend-inner-icon="mdi-lock-outline"
-      type="password"
+      :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
+      :type="showPassword ? 'text' : 'password'"
       clearable
+      autocomplete="new-password"
+      @click:append-inner="showPassword = !showPassword"
     />
 
     <v-text-field
@@ -145,6 +148,7 @@ export default {
       snackbar: false,
       color: 'success',
       message: '分享成功',
+      showPassword: false,
       webInfo: {},
       loading: false,
       countDown: 0,

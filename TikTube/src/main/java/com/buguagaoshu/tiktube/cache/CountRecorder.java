@@ -7,7 +7,10 @@ import com.buguagaoshu.tiktube.repository.RedisRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -83,6 +86,16 @@ public class CountRecorder {
      */
     public Map<Long, Long> drain(CountFamily family) {
         return countStorage.drain(family);
+    }
+
+    /**
+     * 批量读取某个计数族里多个对象的未落库增量，Redis 模式下一次 HMGET 完成。
+     * 列表接口用它替代逐条 {@link #get}，返回值只包含有增量的对象
+     *
+     * @param ids 对象 ID，调用方需保证不含 null
+     */
+    public Map<Long, Long> getCounts(CountFamily family, Collection<Long> ids) {
+        return countStorage.getCounts(family, ids);
     }
 
     /**
@@ -214,11 +227,34 @@ public class CountRecorder {
 
         long get(CountFamily family, long id);
 
+        Map<Long, Long> getCounts(CountFamily family, Collection<Long> ids);
+
         Map<Long, Long> getSnapshot(CountFamily family);
 
         Map<Long, Long> drain(CountFamily family);
 
         void restore(CountFamily family, Map<Long, Long> snapshot);
+    }
+
+    /** 从计数表里挑出关心的那部分，缺失的 ID 不进结果，读侧按 0 处理 */
+    private static Map<Long, Long> pick(Map<Long, Long> source, Collection<Long> ids) {
+        Map<Long, Long> result = new HashMap<>(ids.size() * 2);
+        for (Long id : ids) {
+            Long value = source.get(id);
+            if (value != null) {
+                result.put(id, value);
+            }
+        }
+        return result;
+    }
+
+    /** Redis Hash 的 field 是对象 ID 的字符串形式 */
+    private static List<String> toFields(Collection<Long> ids) {
+        List<String> fields = new ArrayList<>(ids.size());
+        for (Long id : ids) {
+            fields.add(Long.toString(id));
+        }
+        return fields;
     }
 
     // 内存存储实现
@@ -240,6 +276,11 @@ public class CountRecorder {
         @Override
         public long get(CountFamily family, long id) {
             return buffers.get(family).getOrDefault(id, 0L);
+        }
+
+        @Override
+        public Map<Long, Long> getCounts(CountFamily family, Collection<Long> ids) {
+            return pick(buffers.get(family), ids);
         }
 
         @Override
@@ -275,6 +316,11 @@ public class CountRecorder {
         @Override
         public long get(CountFamily family, long id) {
             return redisRepository.hGetCount(family.redisHashKey(), Long.toString(id));
+        }
+
+        @Override
+        public Map<Long, Long> getCounts(CountFamily family, Collection<Long> ids) {
+            return toIdMap(redisRepository.hMultiGetCounts(family.redisHashKey(), toFields(ids)));
         }
 
         @Override

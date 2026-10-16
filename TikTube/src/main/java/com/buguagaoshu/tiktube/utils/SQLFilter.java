@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
 /**
  * @author Pu Zhiwei {@literal puzhiweipuzhiwei@foxmail.com}
  * create          2020-05-05 17:25
- * 拼接进 SQL 的标识符（列名、排序列）过滤
+ * 拼接进 SQL 的标识符（列名、排序列）与 LIKE 模式过滤
  */
 public class SQLFilter {
 
@@ -73,5 +73,23 @@ public class SQLFilter {
      */
     public static String checkedCountColumn(String column) {
         return checkedColumn(column, COUNT_COLUMNS);
+    }
+
+    /**
+     * 转义 LIKE 模式里的通配符。
+     * 用户输入直接拼进 LIKE 的话，一个 {@code %} 就等于无条件全表匹配，
+     * {@code _} 也能当单字符通配符用。MySQL 的 LIKE 默认转义符就是反斜杠，
+     * 值由 {@code #{}} 绑定，所以不需要额外写 ESCAPE 子句
+     *
+     * @param value 用户输入，null 按空串处理
+     * @return 可以安全拼进 LIKE 模式的字符串
+     */
+    public static String escapeLike(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_");
     }
 }

@@ -41,4 +41,23 @@ class SQLFilterTest {
         assertThrows(IllegalArgumentException.class, () -> SQLFilter.checkedCountColumn("view_count = view_count + 1 -- "));
         assertThrows(IllegalArgumentException.class, () -> SQLFilter.checkedCountColumn(null));
     }
+
+    @Test
+    void likeWildcardsAreEscaped() {
+        assertEquals("", SQLFilter.escapeLike(null));
+        assertEquals("普通关键词", SQLFilter.escapeLike("普通关键词"));
+        // 用户传一个 % 不应该变成无条件全表匹配
+        assertEquals("\\%", SQLFilter.escapeLike("%"));
+        assertEquals("\\_", SQLFilter.escapeLike("_"));
+        assertEquals("100\\%", SQLFilter.escapeLike("100%"));
+    }
+
+    @Test
+    void escapeLikeHandlesBackslashBeforeWildcards() {
+        // 反斜杠必须最先转义，否则上一步补出来的转义符会被再转义一次
+        assertEquals("\\\\", SQLFilter.escapeLike("\\"));
+        assertEquals("a\\\\b", SQLFilter.escapeLike("a\\b"));
+        assertEquals("a\\\\\\%b", SQLFilter.escapeLike("a\\%b"));
+        assertEquals("50\\%\\_off\\\\", SQLFilter.escapeLike("50%_off\\"));
+    }
 }

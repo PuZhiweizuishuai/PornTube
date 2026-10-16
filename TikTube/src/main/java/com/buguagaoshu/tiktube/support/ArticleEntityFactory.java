@@ -120,7 +120,8 @@ public class ArticleEntityFactory {
 
     private void applyCommon(ArticleEntity article, ArticleDraft draft, String imgUrl, boolean creating) {
         article.setTitle(draft.getTitle());
-        article.setDescribes(draft.getDescribe());
+        // describes 列是 NOT NULL 且无默认值，表单里简介可以为空，落库前补成空串
+        article.setDescribes(draft.getDescribe() == null ? "" : draft.getDescribe());
         article.setCategory(draft.getCategory());
         if (creating) {
             // 新建时封面为空写空串（字段为 NOT NULL）

@@ -37,7 +37,8 @@ public class TextArticleDto implements ArticleDraft {
 
 
     @NotNull(message = "至少要有一个标签")
-    private List<String> tag;
+    @Size(min = 1, max = 6, message = "标签数量必须在 1 到 6 个之间")
+    private List<@NotBlank(message = "标签不能为空") @Size(max = 30, message = "单个标签不能超过 30 个字符") String> tag;
 
     @Size(max = 3)
     @NotNull(message = "正文不能为空")

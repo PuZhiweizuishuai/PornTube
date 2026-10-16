@@ -36,4 +36,10 @@ public class MyConfigProperties {
 
     // 同一 IP 对同一视频/广告的去重窗口，毫秒，与落库间隔解耦
     private long playDedupWindowMillis = 21_600_000;
+
+    // 播放记录缓冲批量落库间隔，毫秒。观看请求只写内存，历史记录最多滞后一个间隔
+    private long playRecordFlushIntervalMillis = 60_000;
+
+    // 单条批量 upsert SQL 最多携带的播放记录数（UA 较长，比计数批量取更小的默认值）
+    private int playRecordBatchSize = 200;
 }

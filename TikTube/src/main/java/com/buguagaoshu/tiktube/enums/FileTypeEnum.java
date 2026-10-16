@@ -1,7 +1,9 @@
 package com.buguagaoshu.tiktube.enums;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 
 
@@ -23,15 +25,31 @@ public enum FileTypeEnum {
     final int code;
     final String msg;
 
-    private static final String[] videoType = {
-            ".MP4", ".MKV", ".OGM", ".WMV", ".MPG", ".WEBM", ".OGV", ".MOV", ".ASX", ".MPEG", "M4V", ".AVI", ".FLV"
-    };
+    /**
+     * 视频投稿允许的后缀（统一大写比对）
+     */
+    private static final Set<String> VIDEO_TYPE = Set.of(
+            ".MP4", ".MKV", ".OGM", ".WMV", ".MPG", ".WEBM", ".OGV", ".MOV", ".ASX", ".MPEG", ".M4V", ".AVI", ".FLV"
+    );
 
-    private static final String[] photoType = {
+    /**
+     * 图片类文件允许的后缀（统一大写比对）
+     */
+    private static final Set<String> PHOTO_TYPE = Set.of(
             ".JPEG", ".JPG", ".GIF", ".PNG", ".TIFF", ".PJP", ".JFIF", ".SVG", ".BMP", ".SVGZ", ".WEBP", ".ICO"
             , ".XBM", ".DIB", ".TIF", ".PJEPG", ".AVIF"
+    );
 
-    };
+    /**
+     * 文章（Vditor 编辑器）允许上传的附件后缀：图片，加上编辑器 accept 列表里的文档、压缩包与音视频。
+     * 刻意不含 .html/.htm/.xhtml/.xml/.js/.svg 这类能被浏览器当成文档执行的类型
+     */
+    private static final Set<String> ARTICLE_TYPE = Set.of(
+            ".JPEG", ".JPG", ".GIF", ".PNG", ".TIFF", ".TIF", ".BMP", ".WEBP", ".AVIF", ".ICO",
+            ".MP3", ".WAV", ".MP4",
+            ".ZIP", ".RAR", ".7Z", ".TXT", ".PDF",
+            ".DOC", ".DOCX", ".PPT", ".PPTX", ".XLS", ".XLSX", ".APK"
+    );
 
     FileTypeEnum(int code, String msg) {
         this.code = code;
@@ -47,29 +65,32 @@ public enum FileTypeEnum {
     }
 
     /**
-     * 获取文件后缀名
+     * 获取文件后缀名，无后缀或文件名为空时返回空串
      */
     public static String getFileSuffix(String filename) {
+        if (filename == null) {
+            return "";
+        }
         int number = filename.lastIndexOf(".");
         if (number <= 0) {
             return "";
         }
-        return filename.substring(number).toUpperCase();
+        // 用 ROOT 而不是默认 Locale：土耳其语等区域 toUpperCase 会把 i 转成 İ，导致白名单比对失效
+        return filename.substring(number).toUpperCase(Locale.ROOT);
     }
 
     /**
-     * 检查文件类型
+     * 检查文件类型，后缀为空或为 null 时按其它附件处理
      */
     public static FileTypeEnum getFileType(String suffix) {
-        for (String v : videoType) {
-            if (v.equals(suffix)) {
-                return FileTypeEnum.VIDEO;
-            }
+        if (suffix == null) {
+            return FileTypeEnum.ARTICLE;
         }
-        for (String p : photoType) {
-            if (p.equals(suffix)) {
-                return FileTypeEnum.PHOTO;
-            }
+        if (VIDEO_TYPE.contains(suffix)) {
+            return FileTypeEnum.VIDEO;
+        }
+        if (PHOTO_TYPE.contains(suffix)) {
+            return FileTypeEnum.PHOTO;
         }
         return FileTypeEnum.ARTICLE;
     }
@@ -78,19 +99,31 @@ public enum FileTypeEnum {
         return code == FileTypeEnum.PHOTO.getCode() || code == FileTypeEnum.AVATAR.getCode() || code == FileTypeEnum.TOP_IMAGE.getCode();
     }
 
+    /**
+     * 是否是文章允许的附件后缀。
+     * 白名单项都是「. + 大写字母数字」，因此校验通过的同时也保证了后缀里不会夹带
+     * 路径分隔符或 ".."（newFilename 会把后缀直接拼进落盘文件名）
+     */
+    public static boolean isArticleAttachment(String suffix) {
+        return suffix != null && ARTICLE_TYPE.contains(suffix);
+    }
 
-    private final static SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd");
+
+    /**
+     * SimpleDateFormat 非线程安全，多个上传请求并发格式化会写出错乱的日期目录，这里换成不可变的 DateTimeFormatter
+     */
+    private final static DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy/MM/dd", Locale.ROOT);
 
     public final static String ROOT = "file";
 
     public final static String OSS = "oss";
 
     public static String filePath() {
-        return ROOT + "/" + DATE_FORMAT.format(new Date());
+        return ROOT + "/" + LocalDate.now().format(DATE_FORMAT);
     }
 
     public static String ossFilePath() {
-        return DATE_FORMAT.format(new Date());
+        return LocalDate.now().format(DATE_FORMAT);
     }
 
     public static String ossFileURL(int saveLocation, String path, String fileName) {

@@ -9,6 +9,7 @@
       class="mb-4"
       prepend-inner-icon="mdi-email-outline"
       clearable
+      autocomplete="username"
     />
 
     <v-text-field
@@ -19,8 +20,11 @@
       density="comfortable"
       class="mb-4"
       prepend-inner-icon="mdi-lock-outline"
-      type="password"
+      :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
+      :type="showPassword ? 'text' : 'password'"
       clearable
+      autocomplete="current-password"
+      @click:append-inner="showPassword = !showPassword"
     />
 
     <div class="d-flex align-center mb-4">
@@ -77,6 +81,7 @@ export default {
       verifyImageUrl: '/api/verifyImage',
       username: '',
       password: '',
+      showPassword: false,
       verifyCode: '',
       rememberMe: false,
       loading: false,

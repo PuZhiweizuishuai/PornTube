@@ -230,6 +230,6 @@ public class FollowServiceImpl extends ServiceImpl<FollowDao, FollowEntity> impl
         // 提取关注用户ID
         Set<Long> userIdList = followEntities.stream().map(FollowEntity::getFollowUser).collect(Collectors.toSet());
         // 查找相关稿件
-        return articleService.fallowUserArticleList(params, userIdList);
+        return articleService.followUserArticleList(params, userIdList);
     }
 }

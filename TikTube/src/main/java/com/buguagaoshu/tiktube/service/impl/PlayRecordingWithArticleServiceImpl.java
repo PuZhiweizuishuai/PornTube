@@ -1,8 +1,6 @@
 package com.buguagaoshu.tiktube.service.impl;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.core.metadata.OrderItem;
-import com.buguagaoshu.tiktube.cache.PlayCountRecorder;
 import com.buguagaoshu.tiktube.entity.ArticleEntity;
 import com.buguagaoshu.tiktube.entity.FileTableEntity;
 import com.buguagaoshu.tiktube.entity.PlayRecordingEntity;
@@ -18,10 +16,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import jakarta.servlet.http.HttpServletRequest;
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -54,56 +55,45 @@ public class PlayRecordingWithArticleServiceImpl implements PlayRecordingWithArt
     @Override
     public PageUtils playRecordingList(Map<String, Object> params, HttpServletRequest request) {
         IPage<PlayRecordingEntity> page = playRecordingService.queryPage(params, request);
-        Set<Long> aids = page.getRecords().stream().map(PlayRecordingEntity::getArticleId).collect(Collectors.toSet());
-        List<ArticleEntity> articleEntities = articleService.listByIds(aids);
-        List<PlayRecordingWithArticleVo> play = new LinkedList<>();
-        if (articleEntities != null && !articleEntities.isEmpty()) {
-            Map<Long, ArticleEntity> articleEntityMap =  articleEntities.stream().collect(Collectors.toMap(ArticleEntity::getId, a->a));
+        List<PlayRecordingEntity> records = page.getRecords();
+        if (records.isEmpty()) {
+            return new PageUtils(Collections.emptyList(), page.getTotal(), page.getSize(), page.getCurrent());
+        }
 
-            for (PlayRecordingEntity playRecordingEntity : page.getRecords()) {
-                PlayRecordingWithArticleVo playRecordingWithArticleVo = new PlayRecordingWithArticleVo();
-                playRecordingWithArticleVo.setPlayRecordingEntity(playRecordingEntity);
+        Set<Long> aids = records.stream().map(PlayRecordingEntity::getArticleId).collect(Collectors.toSet());
+        Map<Long, ArticleEntity> articleEntityMap = articleService.listByIds(aids).stream()
+                .collect(Collectors.toMap(ArticleEntity::getId, Function.identity()));
 
-
-                ArticleEntity articleEntity = articleEntityMap.get(playRecordingEntity.getArticleId());
-
-                playRecordingWithArticleVo.setArticleEntity(articleEntity);
-                play.add(playRecordingWithArticleVo);
+        List<PlayRecordingWithArticleVo> play = new ArrayList<>(records.size());
+        for (PlayRecordingEntity playRecordingEntity : records) {
+            ArticleEntity articleEntity = articleEntityMap.get(playRecordingEntity.getArticleId());
+            // 稿件已删除时跳过：历史记录卡片直接取 articleEntity.id，带 null 进去会渲染报错
+            if (articleEntity == null) {
+                continue;
             }
+            PlayRecordingWithArticleVo playRecordingWithArticleVo = new PlayRecordingWithArticleVo();
+            playRecordingWithArticleVo.setPlayRecordingEntity(playRecordingEntity);
+            playRecordingWithArticleVo.setArticleEntity(articleEntity);
+            play.add(playRecordingWithArticleVo);
         }
         return new PageUtils(play, page.getTotal(), page.getSize(), page.getCurrent());
     }
 
     @Override
     public String savePlayLog(PlayRecordingEntity playRecording, HttpServletRequest request) {
-        long userId = JwtUtil.getUserId(request);
-
-        if (userId == playRecording.getUserId()) {
-            FileTableEntity videoFile = fileTableService.getById(playRecording.getVideoId());
-            if (videoFile == null) {
-                return "视频信息错误";
-            }
-            if (playRecording.getArticleId().equals(videoFile.getArticleId())) {
-                PlayRecordingEntity nowLog =
-                        playRecordingService.findPlayRecordingEntityByArticleIdAndVideoId(videoFile.getArticleId(), videoFile.getId(), userId);
-                if (nowLog == null) {
-                    if (playRecording.getCreateTime() == null) {
-                        playRecording.setCreateTime(System.currentTimeMillis());
-                    }
-                    playRecording.setUpdateTime(System.currentTimeMillis());
-                    playRecording.setUa(ipUtil.getUa(request));
-                    playRecordingService.save(playRecording);
-                } else {
-                    nowLog.setUa(ipUtil.getUa(request));
-                    nowLog.setVideoTime(playRecording.getVideoTime());
-                    nowLog.setUpdateTime(System.currentTimeMillis());
-                    playRecordingService.updateById(nowLog);
-                }
-                return "success";
-            }
-            return "no power";
-        } else {
+        Long userId = JwtUtil.getUserId(request);
+        if (!userId.equals(playRecording.getUserId())) {
             return "用户信息错误";
         }
+        FileTableEntity videoFile = fileTableService.getById(playRecording.getVideoId());
+        if (videoFile == null) {
+            return "视频信息错误";
+        }
+        // 上报的稿件必须属于这个分P，视频ID与稿件ID都以服务端查到的文件为准
+        if (!Objects.equals(videoFile.getArticleId(), playRecording.getArticleId())) {
+            return "no power";
+        }
+        playRecordingService.saveHistory(videoFile, userId, ipUtil.getUa(request), playRecording.getVideoTime());
+        return "success";
     }
 }

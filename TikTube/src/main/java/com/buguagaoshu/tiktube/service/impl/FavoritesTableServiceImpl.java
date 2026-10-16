@@ -1,5 +1,6 @@
 package com.buguagaoshu.tiktube.service.impl;
 
+import com.buguagaoshu.tiktube.cache.ArticleCountSnapshot;
 import com.buguagaoshu.tiktube.cache.CountRecorder;
 import com.buguagaoshu.tiktube.cache.PlayCountRecorder;
 import com.buguagaoshu.tiktube.entity.ArticleEntity;
@@ -114,6 +115,8 @@ public class FavoritesTableServiceImpl extends ServiceImpl<FavoritesTableDao, Fa
         }
         Set<Long> articleIds = page.getRecords().stream().map(FavoritesTableEntity::getArticeId).collect(Collectors.toSet());
         List<ArticleEntity> articleEntities = articleService.listByIds(articleIds);
+        // 整页只批量读一次未落库增量，不再逐条查计数
+        ArticleCountSnapshot counts = ArticleCountSnapshot.load(countRecorder, playCountRecorder, articleIds);
         Map<Long, ArticleEntity> map = new HashMap<>();
         for (ArticleEntity articleEntity : articleEntities) {
             articleEntity.setUa("");
@@ -122,10 +125,8 @@ public class FavoritesTableServiceImpl extends ServiceImpl<FavoritesTableDao, Fa
             articleEntity.setExamineUser(null);
             articleEntity.setExamineMessage("");
             if (articleEntity.getExamineStatus().equals(ExamineTypeEnum.SUCCESS.getCode()) && articleEntity.getStatus().equals(ArticleStatusEnum.NORMAL.getCode())) {
-                //articleEntity.setViewCount(articleEntity.getViewCount() + countRecorder.geta);
-
-                countRecorder.syncArticleCount(articleEntity);
-                articleEntity.setViewCount(articleEntity.getViewCount() + playCountRecorder.getPlayCount(articleEntity.getId()));
+                counts.applyTo(articleEntity);
+                articleEntity.setViewCount(articleEntity.getViewCount() + counts.playCount(articleEntity.getId()));
                 map.put(articleEntity.getId(), articleEntity);
             }
         }

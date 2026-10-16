@@ -310,7 +310,8 @@ CREATE TABLE `play_recording`  (
   `video_id` bigint NOT NULL COMMENT '视频ID（分P文件ID）',
   `ua` varchar(999) NULL DEFAULT NULL COMMENT '浏览器UA',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_play_user`(`user_id`) USING BTREE,
+  -- 用户 x 稿件 x 分P 唯一：播放记录落库走 INSERT ... ON DUPLICATE KEY UPDATE，靠这个约束去重
+  UNIQUE INDEX `uk_play_user_article_video`(`user_id`, `article_id`, `video_id`) USING BTREE,
   -- 创作中心按天统计观看人数：(稿件, 更新时间)，前缀同时覆盖按稿件查询
   INDEX `idx_play_article_update`(`article_id`, `update_time`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '播放记录（用户 x 分P 唯一，作为观看人数去重依据）' ROW_FORMAT = DYNAMIC;

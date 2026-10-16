@@ -38,8 +38,13 @@ public class VideoArticleDto implements ArticleDraft {
     private Integer category;
 
 
+    /**
+     * 上限与前端一致（6 个）；单个标签限 30 字符，
+     * 因为序列化后的 JSON 要写进 article.tag varchar(255)，超长会直接插入失败
+     */
     @NotNull(message = "至少要有一个标签")
-    private List<String> tag;
+    @Size(min = 1, max = 6, message = "标签数量必须在 1 到 6 个之间")
+    private List<@NotBlank(message = "标签不能为空") @Size(max = 30, message = "单个标签不能超过 30 个字符") String> tag;
 
 
     @NotNull(message = "视频文件必须上传")

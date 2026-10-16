@@ -1,5 +1,7 @@
 package com.buguagaoshu.tiktube.enums;
 
+import com.buguagaoshu.tiktube.utils.MyStringUtils;
+
 /**
  * @author Pu Zhiwei {@literal puzhiweipuzhiwei@foxmail.com}
  * @create 2025-04-18
@@ -22,6 +24,13 @@ public enum NotificationType {
     int type;
     String message;
 
+    /**
+     * 稿件标题与审核意见都是用户可控文本，会被拼进 linkMessage 这类按富文本渲染的字段，
+     * 必须转义后再拼接，否则作者可以用标题在别人的通知里注入脚本
+     */
+    private static final int TITLE_MAX_LENGTH = 100;
+    private static final int MESSAGE_MAX_LENGTH = 200;
+
     NotificationType(int type, String message) {
         this.type = type;
         this.message = message;
@@ -38,14 +47,20 @@ public enum NotificationType {
 
     public static String createExamineContent(String title, int type, String message) {
         return "你发布的稿件《" +
-                title +
+                MyStringUtils.safeTextForRichMessage(title, TITLE_MAX_LENGTH) +
                 "》因为：" +
-                ExamineTypeEnum.getMsg(type) + "," + message +
+                ExamineTypeEnum.getMsg(type) + "," + MyStringUtils.safeTextForRichMessage(message, MESSAGE_MAX_LENGTH) +
                 " 未通过审核，建议您：修改后再发布。";
     }
 
 
     public static String createExamineLink(String title, Long id) {
-        return "<a href=\"/studio/upload?edit=" + id + "\">" + title + "</a>";
+        return "<a href=\"/studio/upload?edit=" + id + "\">"
+                + MyStringUtils.safeTextForRichMessage(title, TITLE_MAX_LENGTH) + "</a>";
+    }
+
+    public static String createExaminePassContent(String title) {
+        return "你的稿件 《" + MyStringUtils.safeTextForRichMessage(title, TITLE_MAX_LENGTH)
+                + "》 已通过审核，现在所有人都能看见你的稿件了";
     }
 }

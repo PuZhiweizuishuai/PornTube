@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -157,6 +158,28 @@ public class RedisRepository {
         Map<String, Long> result = new HashMap<>();
         if (raw != null) {
             raw.forEach((k, v) -> result.put(fromBytes(k), Long.parseLong(fromBytes(v))));
+        }
+        return result;
+    }
+
+    /**
+     * 批量读取指定的若干计数，一次 HMGET 完成，返回值只包含存在的 field
+     */
+    public Map<String, Long> hMultiGetCounts(String key, Collection<String> fields) {
+        if (!isAvailable() || fields == null || fields.isEmpty()) return Map.of();
+        List<String> orderedFields = List.copyOf(fields);
+        byte[][] rawFields = orderedFields.stream().map(RedisRepository::toBytes).toArray(byte[][]::new);
+        List<byte[]> values = redisTemplate.execute((RedisCallback<List<byte[]>>) connection ->
+                connection.hashCommands().hMGet(toBytes(key), rawFields));
+        Map<String, Long> result = new HashMap<>();
+        if (values == null) {
+            return result;
+        }
+        for (int i = 0; i < orderedFields.size() && i < values.size(); i++) {
+            byte[] raw = values.get(i);
+            if (raw != null) {
+                result.put(orderedFields.get(i), Long.parseLong(fromBytes(raw)));
+            }
         }
         return result;
     }

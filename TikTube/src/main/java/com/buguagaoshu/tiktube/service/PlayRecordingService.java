@@ -23,18 +23,13 @@ public interface PlayRecordingService extends IService<PlayRecordingEntity> {
      * */
     IPage<PlayRecordingEntity> queryPage(Map<String, Object> params, HttpServletRequest request);
 
-
     /**
-     * 查找播放记录使用 articleId
+     * 记录一次播放：写入缓冲，由定时任务批量 upsert 落库，请求线程不同步写数据库。
+     * 同一 (用户, 稿件, 分P) 在缓冲窗口内只保留最新一次上报。
+     *
+     * @param videoTime 观看进度（秒），null 表示只刷新观看时间、不覆盖已记录的进度
      * */
-    PlayRecordingEntity findPlayRecordingEntityByArticleIdAndVideoId(Long articleId, Long videoId, Long userId);
-
-    /**
-     * 保存播放记录
-     * @return ArticleId 需要增加播放量
-     *         0 不需要增加
-     * */
-    long saveHistory(FileTableEntity file, Long userId, String ua);
+    void saveHistory(FileTableEntity file, Long userId, String ua, Double videoTime);
 
     /**
      * 今日播放历史记录列表

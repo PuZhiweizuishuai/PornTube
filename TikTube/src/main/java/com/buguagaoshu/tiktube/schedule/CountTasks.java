@@ -4,10 +4,13 @@ import com.buguagaoshu.tiktube.cache.AdsCountRecorder;
 import com.buguagaoshu.tiktube.cache.CountRecorder;
 import com.buguagaoshu.tiktube.cache.CountRecorder.CountFamily;
 import com.buguagaoshu.tiktube.cache.PlayCountRecorder;
+import com.buguagaoshu.tiktube.cache.PlayRecordBuffer;
 import com.buguagaoshu.tiktube.config.MyConfigProperties;
 import com.buguagaoshu.tiktube.dao.AiConfigDao;
 import com.buguagaoshu.tiktube.dao.ArticleDao;
 import com.buguagaoshu.tiktube.dao.CommentDao;
+import com.buguagaoshu.tiktube.dao.PlayRecordingDao;
+import com.buguagaoshu.tiktube.entity.PlayRecordingEntity;
 import com.buguagaoshu.tiktube.repository.APICurrentLimitingRepository;
 import com.buguagaoshu.tiktube.service.AIConfigServer;
 import com.buguagaoshu.tiktube.service.AdvertisementService;
@@ -18,7 +21,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -35,6 +40,8 @@ import java.util.function.Consumer;
 public class CountTasks {
     private final PlayCountRecorder playCountRecorder;
 
+    private final PlayRecordBuffer playRecordBuffer;
+
     private final CountRecorder countRecorder;
 
     private final AdsCountRecorder adsCountRecorder;
@@ -44,6 +51,8 @@ public class CountTasks {
     private final CommentDao commentDao;
 
     private final AiConfigDao aiConfigDao;
+
+    private final PlayRecordingDao playRecordingDao;
 
     private final AIConfigServer aiConfigServer;
 
@@ -57,22 +66,26 @@ public class CountTasks {
 
     @Autowired
     public CountTasks(PlayCountRecorder playCountRecorder,
+                      PlayRecordBuffer playRecordBuffer,
                       CountRecorder countRecorder,
                       AdsCountRecorder adsCountRecorder,
                       ArticleDao articleDao,
                       CommentDao commentDao,
                       AiConfigDao aiConfigDao,
+                      PlayRecordingDao playRecordingDao,
                       AIConfigServer aiConfigServer,
                       AdvertisementService advertisementService,
                       APICurrentLimitingRepository apiCurrentLimitingRepository,
                       TransactionTemplate transactionTemplate,
                       MyConfigProperties configProperties) {
         this.playCountRecorder = playCountRecorder;
+        this.playRecordBuffer = playRecordBuffer;
         this.countRecorder = countRecorder;
         this.adsCountRecorder = adsCountRecorder;
         this.articleDao = articleDao;
         this.commentDao = commentDao;
         this.aiConfigDao = aiConfigDao;
+        this.playRecordingDao = playRecordingDao;
         this.aiConfigServer = aiConfigServer;
         this.advertisementService = advertisementService;
         this.apiCurrentLimitingRepository = apiCurrentLimitingRepository;
@@ -95,7 +108,18 @@ public class CountTasks {
     @PreDestroy
     public void flushOnShutdown() {
         log.info("应用关停，执行计数缓存最终刷盘");
+        flushPlayRecords();
         flushAll();
+    }
+
+    /**
+     * 播放记录缓冲落库。观看请求只写内存，这里默认 60 秒批量 upsert 一次，
+     * 频率与计数族解耦：历史记录与续播进度最多滞后一个间隔
+     */
+    @Scheduled(fixedDelayString = "${tiktube.play-record-flush-interval-millis:60000}",
+            initialDelayString = "${tiktube.play-record-flush-interval-millis:60000}")
+    public void savePlayRecords() {
+        flushPlayRecords();
     }
 
     /**
@@ -157,6 +181,25 @@ public class CountTasks {
     }
 
     /**
+     * 播放记录落库：缓冲里每个 (用户, 稿件, 分P) 只剩最新一条，幂等 upsert 后失败整批并回缓冲
+     */
+    private void flushPlayRecords() {
+        List<PlayRecordingEntity> snapshot = playRecordBuffer.drain();
+        if (snapshot.isEmpty()) {
+            return;
+        }
+        try {
+            transactionTemplate.executeWithoutResult(status ->
+                    forEachChunk(snapshot, configProperties.getPlayRecordBatchSize(),
+                            playRecordingDao::batchUpsert));
+            log.debug("播放记录同步完成，共 {} 条", snapshot.size());
+        } catch (Exception e) {
+            playRecordBuffer.restore(snapshot);
+            log.error("播放记录同步失败，{} 条已并回缓冲，下一轮重试", snapshot.size(), e);
+        }
+    }
+
+    /**
      * 单个计数域的落库：独立小事务，失败只回滚本域并把快照并回缓冲
      */
     private <K> void flush(String domain, Map<K, Long> snapshot,
@@ -193,5 +236,21 @@ public class CountTasks {
         if (!chunk.isEmpty()) {
             action.accept(chunk);
         }
+    }
+
+    /**
+     * 列表分片执行，避免单条多值 INSERT 过大
+     */
+    private <T> void forEachChunk(List<T> list, int batchSize, Consumer<List<T>> action) {
+        int size = Math.max(1, batchSize);
+        if (list.size() <= size) {
+            action.accept(list);
+            return;
+        }
+        List<List<T>> chunks = new ArrayList<>((list.size() + size - 1) / size);
+        for (int from = 0; from < list.size(); from += size) {
+            chunks.add(list.subList(from, Math.min(from + size, list.size())));
+        }
+        chunks.forEach(action);
     }
 }

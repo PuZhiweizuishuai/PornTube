@@ -65,7 +65,7 @@
         </v-col>
       </v-row>
     </v-container>
-    <v-snackbar v-model="showMessage" :timeout="3000" color="error" location="top" rounded="pill">
+    <v-snackbar v-model="showMessage" :timeout="3000" :color="messageColor" location="top" rounded="pill">
       {{ message }}
       <template v-slot:actions>
         <v-btn color="white" variant="text" @click="showMessage = false"> 关闭 </v-btn>
@@ -99,29 +99,24 @@
     </v-dialog>
 
     <!-- 忘记密码弹框 -->
-    <v-dialog v-model="showForgotPasswordDialog" max-width="500" transition="dialog-top-transition">
-      <v-card elevation="4" rounded="lg">
-        <v-toolbar color="primary" density="comfortable">
-          <v-toolbar-title class="text-h6 text-white d-flex align-center">
-            <v-icon class="mr-2">mdi-lock-reset</v-icon>
-            忘记密码
-          </v-toolbar-title>
-          <v-spacer></v-spacer>
-          <v-btn icon @click="showForgotPasswordDialog = false">
-            <v-icon>mdi-close</v-icon>
-          </v-btn>
-        </v-toolbar>
+    <v-dialog v-model="showForgotPasswordDialog" max-width="500" scrollable>
+      <v-card rounded="lg">
+        <v-card-title class="d-flex align-center">
+          <v-icon start>mdi-lock-reset</v-icon>
+          忘记密码
+          <v-spacer />
+          <v-btn icon="mdi-close" variant="text" size="small" @click="showForgotPasswordDialog = false" />
+        </v-card-title>
+        <v-divider />
 
-        <v-card-text class="py-6">
+        <v-card-text class="pt-4">
           <!-- 管理员未配置邮箱 -->
-          <div v-if="webInfo.openEmail == 0" class="text-center pa-4">
-            <v-icon size="64" color="warning" class="mb-4">mdi-alert-circle</v-icon>
-            <h3 class="text-h5 mb-2">无法找回密码</h3>
-            <p class="text-body-1">管理员未配置找回密码规则，请联系管理员处理。</p>
+          <div v-if="webInfo.openEmail == 0" class="text-center py-6">
+            <v-icon size="56" color="warning" class="mb-3">mdi-alert-circle-outline</v-icon>
+            <p class="text-body-1 mb-0">管理员未配置找回密码规则，请联系管理员处理。</p>
           </div>
 
-          <!-- 正常找回密码表单 -->
-          <v-form v-else ref="forgotPasswordForm" @submit.prevent="submitForgotPassword">
+          <v-form v-else ref="forgotPasswordForm" lazy-validation @submit.prevent="submitForgotPassword">
             <v-text-field
               v-model="forgotPassword.mail"
               label="邮箱"
@@ -132,8 +127,10 @@
               class="mb-4"
               prepend-inner-icon="mdi-email-outline"
               clearable
+              autocomplete="email"
             />
-            <div class="d-flex align-center mb-6">
+
+            <div class="d-flex align-center mb-4">
               <v-img
                 :src="verifyImageUrl"
                 alt="验证码"
@@ -144,8 +141,8 @@
               />
               <v-text-field
                 v-model="forgotPassword.verifyCode"
-                label="验证码"
-                placeholder="验证码"
+                label="图形验证码"
+                placeholder="图形验证码"
                 :rules="[(v) => !!v || '验证码不能为空']"
                 density="comfortable"
                 prepend-inner-icon="mdi-text-box-check-outline"
@@ -153,7 +150,6 @@
               />
             </div>
 
-            <!-- 邮箱验证码 -->
             <v-row class="mb-4">
               <v-col cols="8">
                 <v-text-field
@@ -169,10 +165,11 @@
               <v-col cols="4">
                 <v-btn
                   color="primary"
+                  variant="tonal"
                   :disabled="countDown > 0"
-                  @click="sendForgotPasswordEmailVerify"
                   class="mt-2"
                   block
+                  @click="sendForgotPasswordEmailVerify"
                 >
                   {{ countDown > 0 ? `${countDown}秒` : '发送验证码' }}
                 </v-btn>
@@ -185,13 +182,16 @@
               placeholder="请输入新密码"
               :rules="[
                 (v) => !!v || '新密码不能为空',
-                (v) => (v && v.length >= 6) || '密码长度不能小于6个字符',
+                (v) => (v && v.length >= 6 && v.length <= 64) || '密码长度需在 6 到 64 个字符之间',
               ]"
+              :type="showNewPassword ? 'text' : 'password'"
+              :append-inner-icon="showNewPassword ? 'mdi-eye-off' : 'mdi-eye'"
               density="comfortable"
               class="mb-4"
               prepend-inner-icon="mdi-lock-outline"
-              type="password"
               clearable
+              autocomplete="new-password"
+              @click:append-inner="showNewPassword = !showNewPassword"
             />
 
             <v-text-field
@@ -202,30 +202,29 @@
                 (v) => !!v || '确认密码不能为空',
                 (v) => v === forgotPassword.newPassword || '两次密码不一致',
               ]"
+              :type="showConfirmPassword ? 'text' : 'password'"
+              :append-inner-icon="showConfirmPassword ? 'mdi-eye-off' : 'mdi-eye'"
               density="comfortable"
-              class="mb-4"
               prepend-inner-icon="mdi-lock-check-outline"
-              type="password"
               clearable
+              autocomplete="new-password"
+              @click:append-inner="showConfirmPassword = !showConfirmPassword"
             />
-
-
           </v-form>
         </v-card-text>
 
+        <v-divider />
         <v-card-actions class="pa-4">
-          <v-spacer></v-spacer>
+          <v-spacer />
+          <v-btn color="grey-darken-1" variant="text" @click="showForgotPasswordDialog = false"> 取消 </v-btn>
           <v-btn
+            v-if="webInfo.openEmail != 0"
             color="primary"
-            @click="submitForgotPassword"
-            variant="elevated"
-            rounded="lg"
             prepend-icon="mdi-check"
+            :loading="forgotPasswordLoading"
+            @click="submitForgotPassword"
           >
-            提交
-          </v-btn>
-          <v-btn color="grey" @click="showForgotPasswordDialog = false" variant="text" class="ml-2">
-            取消
+            重置密码
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -239,6 +238,15 @@ import RegisterFrom from '@/components/form/RegisterForm.vue'
 import { useWebInfoStore } from '@/stores/webInfoStore'
 import { useUserStore } from '@/stores/userStore'
 import StringUtils from '@/utils/string-utils'
+
+const createForgotPasswordForm = () => ({
+  mail: '',
+  emailCode: '',
+  newPassword: '',
+  confirmPassword: '',
+  verifyCode: '',
+})
+
 export default {
   name: 'LoginView',
   components: {
@@ -253,6 +261,7 @@ export default {
       moveMessage: '没有账号，创建账号',
       showLogin: true,
       message: '',
+      messageColor: 'error',
       showMessage: false,
       webInfo: {},
       totpCode: '',
@@ -261,15 +270,11 @@ export default {
       // 忘记密码相关数据
       showForgotPasswordDialog: false,
       forgotPasswordLoading: false,
+      showNewPassword: false,
+      showConfirmPassword: false,
       countDown: 0,
       timer: null,
-      forgotPassword: {
-        mail: '',
-        emailCode: '',
-        newPassword: '',
-        confirmPassword: '',
-        verifyCode: '',
-      },
+      forgotPassword: createForgotPasswordForm(),
     }
   },
   created() {
@@ -309,14 +314,11 @@ export default {
             this.$router.push(redirect || '/')
           }
         } else if (json.status === 4002) {
-          this.message = StringUtils.dataErrorMessage(json.data)
-          this.showMessage = true
+          this.notify(StringUtils.dataErrorMessage(json.data))
         } else if (json.status === 1001) {
-          this.message = json.data
-          this.showMessage = true
+          this.notify(json.data)
         } else {
-          this.message = json.message
-          this.showMessage = true
+          this.notify(json.message)
         }
       })
     },
@@ -336,14 +338,11 @@ export default {
           // 如果有重定向参数，则跳转到指定页面，否则跳转到首页
           this.$router.push(redirect || '/')
         } else if (json.status === 4002) {
-          this.message = StringUtils.dataErrorMessage(json.data)
-          this.showMessage = true
+          this.notify(StringUtils.dataErrorMessage(json.data))
         } else if (json.status === 1001) {
-          this.message = json.data
-          this.showMessage = true
+          this.notify(json.data)
         } else {
-          this.message = json.message
-          this.showMessage = true
+          this.notify(json.message)
         }
       })
     },
@@ -361,15 +360,12 @@ export default {
     register(value) {
       this.httpPost('/register', value, (json) => {
         if (json.status === 200) {
-          this.message = '注册成功，即将为你跳转到登录页面！'
-          this.showMessage = true
+          this.notify('注册成功，即将为你跳转到登录页面！', 'success')
           this.moveRegister()
         } else if (json.status === 4002) {
-          this.message = StringUtils.dataErrorMessage(json.data)
-          this.showMessage = true
+          this.notify(StringUtils.dataErrorMessage(json.data))
         } else {
-          this.message = json.message
-          this.showMessage = true
+          this.notify(json.message)
         }
       })
     },
@@ -390,16 +386,19 @@ export default {
       this.$router.push('/')
     },
 
+    // 消息提示：默认按失败展示，成功路径显式传 success
+    notify(message, color = 'error') {
+      this.message = message
+      this.messageColor = color
+      this.showMessage = true
+    },
+
     // 打开忘记密码弹窗
     openForgotPasswordDialog() {
+      this.forgotPassword = createForgotPasswordForm()
+      this.showNewPassword = false
+      this.showConfirmPassword = false
       this.showForgotPasswordDialog = true
-      this.forgotPassword = {
-        mail: '',
-        emailCode: '',
-        newPassword: '',
-        confirmPassword: '',
-        verifyCode: '',
-      }
       this.getVerifyImage()
     },
 
@@ -409,27 +408,22 @@ export default {
       var re =
         /^(([^()[\]\\.,;:\s@]+(\.[^()[\]\\.,;:\s@]+)*)|(.+))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
       if (!re.test(this.forgotPassword.mail)) {
-        this.message = '邮箱格式错误'
-        this.showMessage = true
+        this.notify('邮箱格式错误')
         return
       }
 
       if (this.forgotPassword.verifyCode == '' || this.forgotPassword.verifyCode.length < 4) {
-        this.message = '验证码不能为空且不能小于4个字符'
-        this.color = 'error'
-        this.snackbar = true
+        this.notify('验证码不能为空且不能小于4个字符')
         return
       }
 
       // 发送邮箱验证码
       this.httpPost('/verify/send', { mail: this.forgotPassword.mail, verifyCode: this.forgotPassword.verifyCode }, (json) => {
         if (json.status === 200) {
-          this.message = '邮箱验证码发送成功，请查收'
-          this.showMessage = true
+          this.notify('邮箱验证码发送成功，请查收', 'success')
           this.startCountDown()
         } else {
-          this.message = json.message || '邮箱验证码发送失败'
-          this.showMessage = true
+          this.notify(json.message || '邮箱验证码发送失败')
         }
       })
     },
@@ -453,39 +447,10 @@ export default {
     },
 
     // 提交忘记密码表单
-    submitForgotPassword() {
-      // 表单验证
-      if (
-        !this.forgotPassword.mail ||
-        !this.forgotPassword.emailCode ||
-        !this.forgotPassword.newPassword ||
-        !this.forgotPassword.confirmPassword ||
-        !this.forgotPassword.verifyCode
-      ) {
-        this.message = '请填写所有必填项'
-        this.showMessage = true
-        return
-      }
+    async submitForgotPassword() {
+      const { valid } = await this.$refs.forgotPasswordForm.validate()
+      if (!valid) return
 
-      if (this.forgotPassword.newPassword !== this.forgotPassword.confirmPassword) {
-        this.message = '两次输入的密码不一致'
-        this.showMessage = true
-        return
-      }
-
-      if (this.forgotPassword.newPassword.length < 6) {
-        this.message = '密码长度不能小于6个字符'
-        this.showMessage = true
-        return
-      }
-
-      if (this.forgotPassword.newPassword.length > 64) {
-        this.message = '密码长度不能超过64个字符'
-        this.showMessage = true
-        return
-      }
-
-      // 提交数据
       this.forgotPasswordLoading = true
       const data = {
         mail: this.forgotPassword.mail,
@@ -497,12 +462,10 @@ export default {
       this.httpPost('/user/forgot/password', data, (json) => {
         this.forgotPasswordLoading = false
         if (json.status === 200) {
-          this.message = '密码重置成功，请使用新密码登录'
-          this.showMessage = true
+          this.notify('密码重置成功，请使用新密码登录', 'success')
           this.showForgotPasswordDialog = false
         } else {
-          this.message = json.message || '密码重置失败'
-          this.showMessage = true
+          this.notify(json.message || '密码重置失败')
           this.getVerifyImage()
         }
       })

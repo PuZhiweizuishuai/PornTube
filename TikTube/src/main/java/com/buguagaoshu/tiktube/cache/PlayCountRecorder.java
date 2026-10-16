@@ -5,8 +5,11 @@ import com.buguagaoshu.tiktube.repository.RedisRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -53,6 +56,16 @@ public class PlayCountRecorder {
     }
 
     /**
+     * 批量读取多个视频未落库的播放增量，Redis 模式下一次 HMGET 完成。
+     * 列表接口用它替代逐条 getPlayCount，返回值只包含有增量的视频
+     *
+     * @param videoIds 视频 ID，调用方需保证不含 null
+     */
+    public Map<Long, Long> getPlayCounts(Collection<Long> videoIds) {
+        return playStorage.getPlayCounts(videoIds);
+    }
+
+    /**
      * 原子取走当前播放增量缓冲，返回的 Map 与后续写入完全隔离
      */
     public Map<Long, Long> drainPlayMap() {
@@ -66,6 +79,27 @@ public class PlayCountRecorder {
         playStorage.restorePlayMap(snapshot);
     }
 
+    /** 从计数表里挑出关心的那部分，缺失的 ID 不进结果，读侧按 0 处理 */
+    private static Map<Long, Long> pick(Map<Long, Long> source, Collection<Long> ids) {
+        Map<Long, Long> result = new HashMap<>(ids.size() * 2);
+        for (Long id : ids) {
+            Long value = source.get(id);
+            if (value != null) {
+                result.put(id, value);
+            }
+        }
+        return result;
+    }
+
+    /** Redis Hash 的 field 是稿件 ID 的字符串形式 */
+    private static List<String> toFields(Collection<Long> ids) {
+        List<String> fields = new ArrayList<>(ids.size());
+        for (Long id : ids) {
+            fields.add(Long.toString(id));
+        }
+        return fields;
+    }
+
     // 播放存储接口
     private interface PlayStorage {
         void recordPlay(Long videoId, String ipAddress);
@@ -73,6 +107,8 @@ public class PlayCountRecorder {
         Map<Long, Long> getPlayMap();
 
         long getPlayCount(Long videoId);
+
+        Map<Long, Long> getPlayCounts(Collection<Long> videoIds);
 
         Map<Long, Long> drainPlayMap();
 
@@ -118,6 +154,11 @@ public class PlayCountRecorder {
         @Override
         public long getPlayCount(Long videoId) {
             return playCounts.get().getOrDefault(videoId, 0L);
+        }
+
+        @Override
+        public Map<Long, Long> getPlayCounts(Collection<Long> videoIds) {
+            return pick(playCounts.get(), videoIds);
         }
 
         @Override
@@ -176,6 +217,11 @@ public class PlayCountRecorder {
         @Override
         public long getPlayCount(Long videoId) {
             return redisRepository.hGetCount(PLAY_COUNT_HASH_KEY, Long.toString(videoId));
+        }
+
+        @Override
+        public Map<Long, Long> getPlayCounts(Collection<Long> videoIds) {
+            return toIdMap(redisRepository.hMultiGetCounts(PLAY_COUNT_HASH_KEY, toFields(videoIds)));
         }
 
         @Override

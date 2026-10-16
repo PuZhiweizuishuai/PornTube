@@ -16,4 +16,23 @@
         <result property="ua" column="ua"/>
     </resultMap>
 
+    <!--
+        批量写入播放记录，唯一索引 uk_play_user_article_video 命中时改为更新：
+        create_time 保持首次播放时间，video_time 只在本次上报带进度时才覆盖
+        （字节流鉴权路径上报的进度为空，不能把已记录的续播位置擦掉）
+    -->
+    <insert id="batchUpsert">
+        INSERT INTO play_recording
+            (article_id, video_id, user_id, video_time, create_time, update_time, ua)
+        VALUES
+        <foreach collection="list" item="p" separator=",">
+            (#{p.articleId}, #{p.videoId}, #{p.userId}, #{p.videoTime},
+             #{p.createTime}, #{p.updateTime}, #{p.ua})
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+            update_time = VALUES(update_time),
+            video_time  = IFNULL(VALUES(video_time), video_time),
+            ua          = VALUES(ua)
+    </insert>
+
 </mapper>
