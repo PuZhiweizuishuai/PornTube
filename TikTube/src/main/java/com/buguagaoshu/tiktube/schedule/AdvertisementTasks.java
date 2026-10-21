@@ -23,7 +23,8 @@ public class AdvertisementTasks {
     @Scheduled(fixedRate = 3600000)
     public void updateAds() {
         log.info("更新广告缓存");
-        advertisementService.getNowAdvertisement();
+        // 每个实例都有自己的定时器，这里不广播，避免开启 open-redis 后互相触发重复查询
+        advertisementService.getNowAdvertisement(false);
         log.info("广告缓存更新完成");
     }
 }

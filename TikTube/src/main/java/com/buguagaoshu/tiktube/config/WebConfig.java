@@ -1,10 +1,7 @@
 package com.buguagaoshu.tiktube.config;
 
-import com.buguagaoshu.tiktube.cache.CategoryCache;
-import com.buguagaoshu.tiktube.cache.WebConfigCache;
 import com.buguagaoshu.tiktube.service.AIConfigServer;
 import com.buguagaoshu.tiktube.service.CategoryService;
-import com.buguagaoshu.tiktube.service.MailService;
 import com.buguagaoshu.tiktube.service.WebConfigService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,8 +37,9 @@ public class WebConfig implements WebMvcConfigurer {
     /**
      * 默认文件保存位置 0 为 本地
      * 其它数字依照数据库中 OSS 配置文件判断
+     * 开启 open-redis 后由调度线程跨实例同步，上传线程要能立刻看见新值
      * */
-    public static int FILE_SAVE_LOCATION = 0;
+    public static volatile int FILE_SAVE_LOCATION = 0;
 
 
     @Autowired
@@ -56,28 +54,18 @@ public class WebConfig implements WebMvcConfigurer {
     }
 
     @Bean
-    public CommandLineRunner dataLoader(WebConfigCache webConfigCache,
-                                        WebConfigService webConfigService,
+    public CommandLineRunner dataLoader(WebConfigService webConfigService,
                                         CategoryService categoryService,
-                                        CategoryCache categoryCache,
-                                        AIConfigServer aiConfigServer,
-                                        MailService mailService) {
+                                        AIConfigServer aiConfigServer) {
         return new CommandLineRunner() {
             @Override
             public void run(String... args) throws Exception {
                 log.info("开始缓存分类信息");
-                categoryCache.setCategoryEntities(categoryService.listWithTree());
-                categoryCache.setCategoryEntityMap(categoryService.categoryEntityMap());
-                categoryCache.setCategoryMapWithChildren(categoryService.categoryEntityMapWithChildren(categoryCache.getCategoryEntities()));
+                categoryService.refreshCache();
                 log.info("分类信息缓存完成！");
                 log.info("开始获取最新的 Web 设置");
-                WebConfigData webConfigData = webConfigService.initConfig();
-                webConfigCache.update(webConfigData);
+                webConfigService.refreshCache();
                 log.info("设置获取完成！");
-                // 如果开启了邮箱服务，初始化邮件信息
-                if (webConfigData.getOpenEmail()) {
-                    mailService.initMainConfig();
-                }
                 // 输出Redis状态信息
                 if (myConfigProperties.getOpenRedis()) {
                     log.info("Redis缓存已启用");

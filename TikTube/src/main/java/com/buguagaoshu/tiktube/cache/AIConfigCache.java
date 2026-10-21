@@ -13,10 +13,10 @@ import java.util.Map;
  */
 @Slf4j
 public class AIConfigCache {
-    public static Map<Long, AiConfigEntity> aiConfigCache = new HashMap<>();
+    public static volatile Map<Long, AiConfigEntity> aiConfigCache = new HashMap<>();
 
 
-    public static Map<Long, List<AiConfigEntity>> typeAICache = new HashMap<>();
+    public static volatile Map<Long, List<AiConfigEntity>> typeAICache = new HashMap<>();
 
 
     public static AiConfigEntity getTypeConfig(long type, Map<Long, Long> cacheUseToken) {

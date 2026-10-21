@@ -1,6 +1,8 @@
 package com.buguagaoshu.tiktube.service.impl;
 
 import com.buguagaoshu.tiktube.cache.CategoryCache;
+import com.buguagaoshu.tiktube.cache.SharedCache;
+import com.buguagaoshu.tiktube.cache.SharedCacheVersionStore;
 import com.buguagaoshu.tiktube.service.ArticleService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,10 +32,15 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
 
     final ArticleService articleService;
 
+    final SharedCacheVersionStore versionStore;
+
     @Autowired
-    public CategoryServiceImpl(CategoryCache categoryCache, ArticleService articleService) {
+    public CategoryServiceImpl(CategoryCache categoryCache,
+                               ArticleService articleService,
+                               SharedCacheVersionStore versionStore) {
         this.categoryCache = categoryCache;
         this.articleService = articleService;
+        this.versionStore = versionStore;
     }
 
     @Override
@@ -84,7 +91,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
         }
         result.put("info", "删除成功！");
         this.removeById(categoryEntity);
-        updateCache();
+        refreshCache();
         return result;
     }
 
@@ -105,14 +112,15 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
         }
         this.save(entity);
         // 更新缓存
-        updateCache();
+        refreshCache();
         return entity;
     }
 
-    private void updateCache() {
-        categoryCache.setCategoryEntities(listWithTree());
-        categoryCache.setCategoryEntityMap(categoryEntityMap());
-        categoryCache.setCategoryMapWithChildren(categoryEntityMapWithChildren(categoryCache.getCategoryEntities()));
+    @Override
+    public void refreshCache() {
+        List<CategoryEntity> entities = listWithTree();
+        categoryCache.update(entities, categoryEntityMap(), categoryEntityMapWithChildren(entities));
+        versionStore.markUpdated(SharedCache.CATEGORY);
     }
 
     @Override
@@ -128,7 +136,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
 
         result.put("info", "修改成功！");
         this.updateById(entity);
-        updateCache();
+        refreshCache();
         return result;
     }
 

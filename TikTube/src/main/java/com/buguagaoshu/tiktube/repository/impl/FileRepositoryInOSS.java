@@ -1,6 +1,8 @@
 package com.buguagaoshu.tiktube.repository.impl;
 
 
+import com.buguagaoshu.tiktube.cache.SharedCache;
+import com.buguagaoshu.tiktube.cache.SharedCacheVersionStore;
 import com.buguagaoshu.tiktube.config.WebConfig;
 import com.buguagaoshu.tiktube.config.WebConstant;
 import com.buguagaoshu.tiktube.entity.OSSConfigEntity;
@@ -39,69 +41,76 @@ import java.util.UUID;
 public class FileRepositoryInOSS {
     private final OssConfigService ossConfigService;
 
-    Map<Integer, S3Client> s3Clients = new HashMap<>();
+    private final SharedCacheVersionStore versionStore;
 
-    Map<Integer, S3Presigner> s3Presigners = new HashMap<>();
+    /**
+     * 三张表必须整体替换：先 clear 再逐个填充会让并发上传读到空表，
+     * 进而按 FILE_SAVE_LOCATION=0 走本地落盘，或在找不到客户端时上传失败
+     */
+    private volatile Map<Integer, S3Client> s3Clients = new HashMap<>();
 
-    Map<Integer, OSSConfigEntity> configEntityMap = new HashMap<>();
+    private volatile Map<Integer, S3Presigner> s3Presigners = new HashMap<>();
+
+    private volatile Map<Integer, OSSConfigEntity> configEntityMap = new HashMap<>();
 
     @Autowired
-    public FileRepositoryInOSS(OssConfigService ossConfigService) {
+    public FileRepositoryInOSS(OssConfigService ossConfigService, SharedCacheVersionStore versionStore) {
         this.ossConfigService = ossConfigService;
+        this.versionStore = versionStore;
         // 初始化时更新客户端
         updateS3Client();
     }
 
     /**
-     * 当对象存储配置发生变化后，更新客户端
+     * 当对象存储配置发生变化后，更新客户端，并把新版本广播给其他实例
      * 更新 S3 客户端
      * */
     public void updateS3Client() {
-        List<S3Client> outdatedClients = new ArrayList<>(s3Clients.values());
-        List<S3Presigner> outdatedPresigners = new ArrayList<>(s3Presigners.values());
-        s3Clients.clear();
-        s3Presigners.clear();
-        configEntityMap.clear();
-        boolean flag = false;
+        Map<Integer, S3Client> newClients = new HashMap<>();
+        Map<Integer, S3Presigner> newPresigners = new HashMap<>();
+        Map<Integer, OSSConfigEntity> newConfigEntityMap = new HashMap<>();
+        int saveLocation = 0;
         // 获取所有对象存储配置
         List<OSSConfigEntity> ossConfigEntities = this.ossConfigService.listAllOssConfigs();
-        if (ossConfigEntities == null || ossConfigEntities.isEmpty()) {
-            WebConfig.FILE_SAVE_LOCATION = 0;
-            closeOutdated(outdatedClients, outdatedPresigners);
-            return;
-        }
-        // 创建客户端并保存
-        for (OSSConfigEntity ossConfigEntity : ossConfigEntities) {
-            configEntityMap.put(ossConfigEntity.getId(), ossConfigEntity);
-            try {
-                if (Integer.valueOf(1).equals(ossConfigEntity.getStatus())) {
-                    WebConfig.FILE_SAVE_LOCATION = ossConfigEntity.getId();
-                    flag = true;
-                }
-                S3Client s3Client = this.ossConfigService.buildS3Client(ossConfigEntity);
-                s3Clients.put(ossConfigEntity.getId(), s3Client);
-                s3Presigners.put(ossConfigEntity.getId(), this.ossConfigService.buildS3Presigner(ossConfigEntity));
+        if (ossConfigEntities != null) {
+            // 创建客户端并保存
+            for (OSSConfigEntity ossConfigEntity : ossConfigEntities) {
+                newConfigEntityMap.put(ossConfigEntity.getId(), ossConfigEntity);
+                try {
+                    if (Integer.valueOf(1).equals(ossConfigEntity.getStatus())) {
+                        saveLocation = ossConfigEntity.getId();
+                    }
+                    S3Client s3Client = this.ossConfigService.buildS3Client(ossConfigEntity);
+                    newClients.put(ossConfigEntity.getId(), s3Client);
+                    newPresigners.put(ossConfigEntity.getId(), this.ossConfigService.buildS3Presigner(ossConfigEntity));
 
-                // 检查存储桶是否存在，不存在则创建
-                if (!bucketExists(s3Client, ossConfigEntity.getBucketName())
-                        && Integer.valueOf(1).equals(ossConfigEntity.getStatus())) {
-                    s3Client.createBucket(
-                            CreateBucketRequest.builder()
-                                    .bucket(ossConfigEntity.getBucketName())
-                                    .build()
-                    );
-                    log.info("创建存储桶成功: {}", ossConfigEntity.getBucketName());
-                }
+                    // 检查存储桶是否存在，不存在则创建
+                    if (!bucketExists(s3Client, ossConfigEntity.getBucketName())
+                            && Integer.valueOf(1).equals(ossConfigEntity.getStatus())) {
+                        s3Client.createBucket(
+                                CreateBucketRequest.builder()
+                                        .bucket(ossConfigEntity.getBucketName())
+                                        .build()
+                        );
+                        log.info("创建存储桶成功: {}", ossConfigEntity.getBucketName());
+                    }
 
-                log.info("初始化对象存储客户端成功: {}", ossConfigEntity.getConfigName());
-            } catch (Exception e) {
-                log.error("初始化对象存储客户端失败: {}, 错误信息: {}", ossConfigEntity.getConfigName(), e.getMessage(), e);
+                    log.info("初始化对象存储客户端成功: {}", ossConfigEntity.getConfigName());
+                } catch (Exception e) {
+                    log.error("初始化对象存储客户端失败: {}, 错误信息: {}", ossConfigEntity.getConfigName(), e.getMessage(), e);
+                }
             }
         }
-        if (!flag) {
-            WebConfig.FILE_SAVE_LOCATION = 0;
-        }
+
+        List<S3Client> outdatedClients = new ArrayList<>(s3Clients.values());
+        List<S3Presigner> outdatedPresigners = new ArrayList<>(s3Presigners.values());
+        // 先换表再换落盘位置，保证读到新位置的线程一定拿得到对应的客户端
+        configEntityMap = newConfigEntityMap;
+        s3Clients = newClients;
+        s3Presigners = newPresigners;
+        WebConfig.FILE_SAVE_LOCATION = saveLocation;
         closeOutdated(outdatedClients, outdatedPresigners);
+        versionStore.markUpdated(SharedCache.OSS_CONFIG);
     }
 
     /**

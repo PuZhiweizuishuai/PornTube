@@ -20,11 +20,6 @@ public class MyConfigProperties {
 
     private Boolean openRedis = false;
 
-    // Redis发布订阅的频道名称
-    private String commentChannelName = "comment_examine_channel";
-
-    private String danmakuChannelName = "danmaku_examine_channel";
-
     // 计数缓存（点赞/播放/弹幕等）批量落库间隔，毫秒
     private long countSyncIntervalMillis = 300_000;
 

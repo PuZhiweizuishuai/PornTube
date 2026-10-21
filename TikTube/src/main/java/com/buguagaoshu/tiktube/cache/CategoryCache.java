@@ -12,35 +12,33 @@ import java.util.Map;
  */
 @Component
 public class CategoryCache {
-    private List<CategoryEntity> categoryEntities;
 
-    private Map<Integer, CategoryEntity> categoryEntityMap;
+    /**
+     * 分类列表与两个索引必须一起替换：分开赋值时请求线程可能读到新列表配旧索引，
+     * 而且跨实例同步是在调度线程里重建，字段本身还需要 volatile 保证可见性
+     */
+    private volatile Snapshot snapshot = new Snapshot(List.of(), Map.of(), Map.of());
 
-    private Map<Integer, CategoryEntity> categoryMapWithChildren;
-
-    public Map<Integer, CategoryEntity> getCategoryMapWithChildren() {
-        return categoryMapWithChildren;
-    }
-
-    public void setCategoryMapWithChildren(Map<Integer, CategoryEntity> categoryMapWithChildren) {
-        this.categoryMapWithChildren = categoryMapWithChildren;
+    public void update(List<CategoryEntity> categoryEntities,
+                       Map<Integer, CategoryEntity> categoryEntityMap,
+                       Map<Integer, CategoryEntity> categoryMapWithChildren) {
+        snapshot = new Snapshot(categoryEntities, categoryEntityMap, categoryMapWithChildren);
     }
 
     public List<CategoryEntity> getCategoryEntities() {
-        return categoryEntities;
-    }
-
-    public void setCategoryEntities(List<CategoryEntity> categoryEntities) {
-        this.categoryEntities = categoryEntities;
+        return snapshot.categoryEntities();
     }
 
     public Map<Integer, CategoryEntity> getCategoryEntityMap() {
-        return categoryEntityMap;
+        return snapshot.categoryEntityMap();
     }
 
-    public void setCategoryEntityMap(Map<Integer, CategoryEntity> categoryEntityMap) {
-        this.categoryEntityMap = categoryEntityMap;
+    public Map<Integer, CategoryEntity> getCategoryMapWithChildren() {
+        return snapshot.categoryMapWithChildren();
     }
 
-
+    private record Snapshot(List<CategoryEntity> categoryEntities,
+                            Map<Integer, CategoryEntity> categoryEntityMap,
+                            Map<Integer, CategoryEntity> categoryMapWithChildren) {
+    }
 }

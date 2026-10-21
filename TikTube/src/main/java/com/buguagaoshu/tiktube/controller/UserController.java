@@ -86,8 +86,8 @@ public class UserController {
     }
 
     @PostMapping("/api/user/forgot/password")
-    public ResponseDetails forgotPassword(@RequestBody UserEntity user, HttpServletRequest request) {
-        return ResponseDetails.ok(userService.forgotPassword(user, request.getSession().getId()));
+    public ResponseDetails forgotPassword(@RequestBody UserEntity user) {
+        return ResponseDetails.ok(userService.forgotPassword(user));
     }
 
     @PostMapping("/api/user/update/avatar")

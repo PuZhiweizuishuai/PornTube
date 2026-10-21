@@ -69,7 +69,7 @@ public class SystemController {
     public ResponseDetails refreshHot(HttpServletRequest request) {
         Claims user = JwtUtil.getUser(request);
         log.info("管理员：id:{} name: {} 手动刷新热门数据", user.getId(), user.getSubject());
-        hotCache.update(articleService.hotView(WebConstant.HOT_NUM));
+        hotCache.update(articleService.hotView(WebConstant.HOT_NUM), true);
         videoCatalogCache.refresh();
         return ResponseDetails.ok();
     }
@@ -90,7 +90,7 @@ public class SystemController {
     public ResponseDetails syncAds(HttpServletRequest request) {
         Claims user = JwtUtil.getUser(request);
         log.info("管理员：id:{} name: {} 手动同步广告缓存数据", user.getId(), user.getSubject());
-        advertisementService.getNowAdvertisement();
+        advertisementService.getNowAdvertisement(true);
         return ResponseDetails.ok();
     }
 

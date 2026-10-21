@@ -27,8 +27,8 @@ public class AdsCountRecorder {
 
     @Autowired
     public AdsCountRecorder(RedisRepository redisRepository, MyConfigProperties configProperties) {
-        // 根据配置决定使用哪种存储实现
-        if (configProperties.getOpenRedis() && redisRepository.isAvailable()) {
+        // 根据配置决定使用哪种存储实现，Redis 连不上时回退内存
+        if (configProperties.getOpenRedis() && redisRepository.isReachable()) {
             this.adsStorage = new RedisAdsStorage(redisRepository, configProperties);
         } else {
             this.adsStorage = new MemoryAdsStorage(configProperties.getPlayDedupWindowMillis());

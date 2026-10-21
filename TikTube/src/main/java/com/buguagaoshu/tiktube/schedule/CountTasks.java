@@ -169,6 +169,9 @@ public class CountTasks {
         if (snapshot.isEmpty()) {
             return;
         }
+        // 取走之后到配置快照刷新之前，这部分 token 既不在缓冲也不在库里，
+        // 挂成 in-flight 让配额判断继续看见它，否则这个窗口里会超支
+        countRecorder.holdAiTokenInFlight(snapshot);
         try {
             transactionTemplate.executeWithoutResult(status ->
                     forEachChunk(snapshot, chunk -> aiConfigDao.batchUpdateCount("use_tokens", chunk)));
@@ -177,6 +180,8 @@ public class CountTasks {
         } catch (Exception e) {
             countRecorder.restore(CountFamily.AI_TOKEN, snapshot);
             log.error("同步 AI Token 计数失败，{} 条已并回缓冲，下一轮重试", snapshot.size(), e);
+        } finally {
+            countRecorder.releaseAiTokenInFlight(snapshot);
         }
     }
 

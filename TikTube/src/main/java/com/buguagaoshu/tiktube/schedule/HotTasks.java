@@ -47,7 +47,8 @@ public class HotTasks {
     @Scheduled(fixedDelay = HOT_REFRESH_MILLIS, initialDelay = 3000)
     public void hotTask() {
         log.info("开始计算当前热门内容......");
-        hotCache.update(articleService.hotView(WebConstant.HOT_NUM));
+        // 每个实例都有自己的定时器，这里不广播，避免开启 open-redis 后互相触发重复计算
+        hotCache.update(articleService.hotView(WebConstant.HOT_NUM), false);
         log.info("热门内容计算完成。");
     }
 

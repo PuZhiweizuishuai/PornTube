@@ -18,6 +18,11 @@ public class WebConstant {
     public static final String COOKIE_TOKEN = "COOKIE-TOKEN";
 
     /**
+     * 图形验证码的键，服务端下发、浏览器自动回传
+     * */
+    public static final String COOKIE_VERIFY_KEY = "COOKIE-VERIFY-KEY";
+
+    /**
      * JWT 密钥
      * 你指定的密钥字节数组仅有 144 位，而对于任何 JWT HMAC - SHA 算法来说，这是不够安全的。根据 JWT JWA 规范（RFC 7518，第 3.2 节），
      * 使用 HMAC - SHA 算法的密钥大小必须大于或等于 256 位（密钥大小必须大于或等于哈希输出大小）

@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.buguagaoshu.tiktube.cache.AIConfigCache;
 import com.buguagaoshu.tiktube.cache.CountRecorder;
+import com.buguagaoshu.tiktube.cache.SharedCache;
+import com.buguagaoshu.tiktube.cache.SharedCacheVersionStore;
 import com.buguagaoshu.tiktube.cache.WebConfigCache;
 import com.buguagaoshu.tiktube.dao.AiConfigDao;
 import com.buguagaoshu.tiktube.entity.AiConfigEntity;
@@ -62,13 +64,17 @@ public class AIConfigServer extends ServiceImpl<AiConfigDao, AiConfigEntity> {
 
     private final CountRecorder countRecorder;
 
+    private final SharedCacheVersionStore versionStore;
+
     @Autowired
     public AIConfigServer(WebConfigService webConfigService,
                           WebConfigCache webConfigCache,
-                          CountRecorder countRecorder) {
+                          CountRecorder countRecorder,
+                          SharedCacheVersionStore versionStore) {
         this.webConfigService = webConfigService;
         this.webConfigCache = webConfigCache;
         this.countRecorder = countRecorder;
+        this.versionStore = versionStore;
     }
 
     public ReturnCodeEnum clousAiExamine(long userId, String ip) {
@@ -103,7 +109,11 @@ public class AIConfigServer extends ServiceImpl<AiConfigDao, AiConfigEntity> {
         aiConfigEntity.setUpdateTime(time);
         aiConfigEntity.setUpdateUser(userId);
         aiConfigEntity.setCreateUser(userId);
-        return this.save(aiConfigEntity);
+        boolean saved = this.save(aiConfigEntity);
+        if (saved) {
+            setCacheConfig();
+        }
+        return saved;
     }
 
     public boolean updateAiConfig(AiConfigEntity aiConfigEntity, long userId) {
@@ -112,7 +122,11 @@ public class AIConfigServer extends ServiceImpl<AiConfigDao, AiConfigEntity> {
         BeanUtils.copyProperties(aiConfigEntity, byId);
         byId.setUpdateTime(time);
         byId.setUpdateUser(userId);
-        return this.updateById(byId);
+        boolean updated = this.updateById(byId);
+        if (updated) {
+            setCacheConfig();
+        }
+        return updated;
     }
 
     public List<AiConfigEntity> queryPage() {
@@ -137,7 +151,11 @@ public class AIConfigServer extends ServiceImpl<AiConfigDao, AiConfigEntity> {
 
         if (list.isEmpty()) {
             log.info("未发现可用 AI 配置！系统将关闭 AI 服务！");
+            // 空结果也要清掉旧配置并广播，否则禁用最后一条配置后各实例还会继续用它审核
+            AIConfigCache.aiConfigCache = new HashMap<>();
+            AIConfigCache.typeAICache = new HashMap<>();
             webConfigCache.getWebConfigData().setOpenAIConfig(false);
+            versionStore.markUpdated(SharedCache.AI_CONFIG);
             return;
         }
 
@@ -155,6 +173,7 @@ public class AIConfigServer extends ServiceImpl<AiConfigDao, AiConfigEntity> {
         AIConfigCache.aiConfigCache = map;
         // 将分类后的配置保存到缓存
         AIConfigCache.typeAICache = typeAICache;
+        versionStore.markUpdated(SharedCache.AI_CONFIG);
         log.info("AI 配置读取完成");
     }
 
@@ -162,7 +181,11 @@ public class AIConfigServer extends ServiceImpl<AiConfigDao, AiConfigEntity> {
     public boolean deleteAI(AiConfigEntity aiConfigEntity) {
         // 获取 AI 缓存
         if (AIConfigCache.aiConfigCache.isEmpty()) {
-            return this.removeById(aiConfigEntity.getId());
+            boolean removed = this.removeById(aiConfigEntity.getId());
+            if (removed) {
+                setCacheConfig();
+            }
+            return removed;
         } else {
             return false;
         }

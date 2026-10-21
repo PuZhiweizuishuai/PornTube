@@ -56,8 +56,8 @@ public class CountRecorder {
 
     @Autowired
     public CountRecorder(RedisRepository redisRepository, MyConfigProperties configProperties) {
-        // 根据配置决定使用哪种存储实现
-        if (configProperties.getOpenRedis() && redisRepository.isAvailable()) {
+        // 根据配置决定使用哪种存储实现，Redis 连不上时回退内存
+        if (configProperties.getOpenRedis() && redisRepository.isReachable()) {
             this.countStorage = new RedisCountStorage(redisRepository);
         } else {
             this.countStorage = new MemoryCountStorage();
@@ -217,8 +217,31 @@ public class CountRecorder {
         return countStorage.get(CountFamily.AI_TOKEN, modelId);
     }
 
+    /**
+     * 未落库的 token 增量，叠加正在落库途中的那部分。
+     * drain 之后缓冲已空、库里的 use_tokens 还没更新，配额判断若只看这两处会低估已用量而超支，
+     * 所以落库任务取走快照后先挂在这里，配置快照刷新完成再摘掉
+     */
     public Map<Long, Long> getAiModelTokenCountMap() {
-        return countStorage.getSnapshot(CountFamily.AI_TOKEN);
+        Map<Long, Long> counts = new HashMap<>(countStorage.getSnapshot(CountFamily.AI_TOKEN));
+        aiTokenInFlight.forEach((id, count) -> counts.merge(id, count, Long::sum));
+        return counts;
+    }
+
+    private final ConcurrentMap<Long, Long> aiTokenInFlight = new ConcurrentHashMap<>();
+
+    public void holdAiTokenInFlight(Map<Long, Long> snapshot) {
+        snapshot.forEach((id, count) -> aiTokenInFlight.merge(id, count, Long::sum));
+    }
+
+    public void releaseAiTokenInFlight(Map<Long, Long> snapshot) {
+        snapshot.forEach((id, count) -> aiTokenInFlight.compute(id, (key, current) -> {
+            if (current == null) {
+                return null;
+            }
+            long left = current - count;
+            return left > 0 ? left : null;
+        }));
     }
 
     // 计数存储接口

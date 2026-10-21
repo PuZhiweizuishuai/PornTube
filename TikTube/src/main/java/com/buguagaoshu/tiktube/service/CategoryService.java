@@ -24,6 +24,11 @@ public interface CategoryService extends IService<CategoryEntity> {
 
     Map<Integer, CategoryEntity> categoryEntityMap();
 
+    /**
+     * 从库里重新取一遍分类并替换内存快照，同时把新版本广播给其他实例
+     * */
+    void refreshCache();
+
 
     /**
      * 删除分类

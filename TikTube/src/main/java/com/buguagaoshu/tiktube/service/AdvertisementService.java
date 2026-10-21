@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.buguagaoshu.tiktube.cache.AdsCountRecorder;
 import com.buguagaoshu.tiktube.cache.AdvertisementCache;
+import com.buguagaoshu.tiktube.cache.SharedCache;
+import com.buguagaoshu.tiktube.cache.SharedCacheVersionStore;
 import com.buguagaoshu.tiktube.dao.AdvertisementDao;
 import com.buguagaoshu.tiktube.entity.AdvertisementEntity;
 import com.buguagaoshu.tiktube.utils.PageUtils;
@@ -28,9 +30,13 @@ public class AdvertisementService extends ServiceImpl<AdvertisementDao, Advertis
 
     private final AdsCountRecorder adsCountRecorder;
 
+    private final SharedCacheVersionStore versionStore;
+
     @Autowired
-    public AdvertisementService(AdsCountRecorder adsCountRecorder) {
+    public AdvertisementService(AdsCountRecorder adsCountRecorder,
+                               SharedCacheVersionStore versionStore) {
         this.adsCountRecorder = adsCountRecorder;
+        this.versionStore = versionStore;
     }
 
     public AdvertisementEntity save(AdvertisementEntity advertisement, long userId) {
@@ -40,7 +46,7 @@ public class AdvertisementService extends ServiceImpl<AdvertisementDao, Advertis
         advertisement.setCreateUser(userId);
         advertisement.setViewCount(0L);
         this.save(advertisement);
-        getNowAdvertisement();
+        getNowAdvertisement(true);
         return advertisement;
     }
 
@@ -48,7 +54,7 @@ public class AdvertisementService extends ServiceImpl<AdvertisementDao, Advertis
         advertisement.setUpdateTime(System.currentTimeMillis());
         advertisement.setViewCount(null);
         this.updateById(advertisement);
-        getNowAdvertisement();
+        getNowAdvertisement(true);
         return advertisement;
     }
 
@@ -86,9 +92,10 @@ public class AdvertisementService extends ServiceImpl<AdvertisementDao, Advertis
     /**
      * 获取当前有效的广告
      * 查询条件：当前时间在广告的开始时间和结束时间之间
-     * @return 当前有效的广告列表
+     *
+     * @param broadcast 是否把新版本广播给其他实例，定时任务传 false，后台增删改和手动同步传 true
      */
-    public void getNowAdvertisement() {
+    public void getNowAdvertisement(boolean broadcast) {
         long time = System.currentTimeMillis();
         QueryWrapper<AdvertisementEntity> wrapper = new QueryWrapper<>();
         // 查询条件：startTime < 当前时间 < endTime 且状态为启用(1)
@@ -98,7 +105,7 @@ public class AdvertisementService extends ServiceImpl<AdvertisementDao, Advertis
         wrapper.orderByDesc("update_time");
         List<AdvertisementEntity> list = this.list(wrapper);
         Map<Integer, List<AdvertisementEntity>> advertisementCache = new HashMap<Integer, List<AdvertisementEntity>>();
-        if (list != null && !list.isEmpty()) {
+        if (list != null) {
             // 按照 type 值进行归类
             for (AdvertisementEntity advertisement : list) {
                 Integer type = advertisement.getType();
@@ -107,8 +114,11 @@ public class AdvertisementService extends ServiceImpl<AdvertisementDao, Advertis
                 }
                 advertisementCache.get(type).add(advertisement);
             }
-            // 更新缓存
-            AdvertisementCache.advertisementCache = advertisementCache;
+        }
+        // 空结果也要覆盖：广告全部过期或删除后，不能继续展示上一份缓存
+        AdvertisementCache.advertisementCache = advertisementCache;
+        if (broadcast) {
+            versionStore.markUpdated(SharedCache.ADVERTISEMENT);
         }
     }
 

@@ -148,8 +148,8 @@ public interface UserService extends IService<UserEntity> {
 
 
     /**
-     * 忘记密码
+     * 忘记密码，凭邮箱验证码重置
      * */
-    ReturnCodeEnum forgotPassword(UserEntity user, String sessionId);
+    ReturnCodeEnum forgotPassword(UserEntity user);
 }
 

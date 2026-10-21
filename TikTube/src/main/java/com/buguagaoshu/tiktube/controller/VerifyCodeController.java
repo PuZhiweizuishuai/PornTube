@@ -6,8 +6,10 @@ import com.buguagaoshu.tiktube.repository.CountLimitRepository;
 import com.buguagaoshu.tiktube.service.UserService;
 import com.buguagaoshu.tiktube.service.VerifyCodeService;
 import com.buguagaoshu.tiktube.utils.IpUtil;
+import com.buguagaoshu.tiktube.utils.VerifyCodeKeyUtil;
 import com.buguagaoshu.tiktube.vo.ResponseDetails;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,8 +18,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.imageio.ImageIO;
-
-import jakarta.servlet.http.HttpSession;
 
 import java.awt.*;
 import java.awt.image.RenderedImage;
@@ -60,8 +60,9 @@ public class VerifyCodeController {
     }
 
     @GetMapping("/api/verifyImage")
-    public HttpEntity image(HttpSession session) throws IOException {
-        Image image = verifyCodeService.image(session.getId());
+    public HttpEntity image(HttpServletResponse response) throws IOException {
+        // 每次取图都换一个键，旧键下的验证码随 TTL 自然过期
+        Image image = verifyCodeService.image(VerifyCodeKeyUtil.issue(response));
         InputStreamResource inputStreamResource = imageToInputStreamResource(image, IMAGE_FORMAT);
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.set("Pragma", "No-cache");
@@ -79,7 +80,7 @@ public class VerifyCodeController {
     @PostMapping("/api/verify/send")
     public ResponseDetails send(@RequestBody UserEntity user, HttpServletRequest request) {
         String ip = ipUtil.getIpAddr(request);
-        verifyCodeService.verify(request.getSession().getId(), user.getVerifyCode());
+        verifyCodeService.verify(VerifyCodeKeyUtil.read(request), user.getVerifyCode());
         // 同时限制 IP 与 邮箱地址
         boolean resEmail = countLimitRepository.allowSendEmail(user.getMail());
         if (!resEmail) {

@@ -164,7 +164,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
     @Override
     public User login(LoginDetails loginDetails, HttpServletRequest request, HttpServletResponse response) {
         // 验证码判断
-        verifyCodeService.verify(request.getSession().getId(), loginDetails.getVerifyCode());
+        verifyCodeService.verify(VerifyCodeKeyUtil.read(request), loginDetails.getVerifyCode());
         // 判断用户使用的是邮箱还是手机号
         UserEntity userEntity = null;
         if (loginDetails.getUsername().contains("@")) {
@@ -299,7 +299,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
     public ReturnCodeEnum register(UserEntity userEntity, HttpServletRequest request) {
         // 验证码校验在关闭邮箱验证码时启用，启用邮箱验证码后以邮箱验证码为主
         if (!webConfigCache.getWebConfigData().getOpenEmail()) {
-            verifyCodeService.verify(request.getSession().getId(), userEntity.getVerifyCode());
+            verifyCodeService.verify(VerifyCodeKeyUtil.read(request), userEntity.getVerifyCode());
         }
 
         if (userEntity.getPassword() == null
@@ -417,7 +417,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
                                          HttpServletRequest request,
                                          HttpServletResponse response) {
         // 验证码校验
-        verifyCodeService.verify(request.getSession().getId(), passwordDto.getVerifyCode());
+        verifyCodeService.verify(VerifyCodeKeyUtil.read(request), passwordDto.getVerifyCode());
         long userId = Long.parseLong(JwtUtil.getUser(request).getId());
         UserEntity userEntity = this.getById(userId);
         if (userEntity == null) {
@@ -697,7 +697,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, UserEntity> implements
     }
 
     @Override
-    public ReturnCodeEnum forgotPassword(UserEntity user, String sessionId) {
+    public ReturnCodeEnum forgotPassword(UserEntity user) {
         String mail = user.getMail();
         String newPassword = user.getPassword();
         if (mail == null || mail.isEmpty()) {

@@ -25,9 +25,22 @@ public class HotCache {
      */
     private volatile long buildTime;
 
-    public void update(List<ArticleViewData> newHotList) {
+    private final SharedCacheVersionStore versionStore;
+
+    public HotCache(SharedCacheVersionStore versionStore) {
+        this.versionStore = versionStore;
+    }
+
+    /**
+     * @param broadcast 是否把新版本广播给其他实例。定时任务各自会算一遍，传 false 避免互相触发重复计算；
+     *                  管理员手动刷新等单点操作传 true
+     */
+    public void update(List<ArticleViewData> newHotList, boolean broadcast) {
         hotList = List.copyOf(newHotList);
         buildTime = System.currentTimeMillis();
+        if (broadcast) {
+            versionStore.markUpdated(SharedCache.HOT_RANKING);
+        }
     }
 
     /**

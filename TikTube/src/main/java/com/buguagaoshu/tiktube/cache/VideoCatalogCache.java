@@ -68,7 +68,9 @@ public class VideoCatalogCache {
     }
 
     /**
-     * 重建索引，同一时刻只允许一个构建任务在跑
+     * 重建索引，同一时刻只允许一个构建任务在跑。
+     * 索引是纯派生数据、各实例每两小时本来就会各自重建一次，所以不进跨实例版本同步：
+     * 广播它只会让管理员一次手动刷新触发所有实例同时全表投影扫描
      */
     public void refresh() {
         if (!refreshing.compareAndSet(false, true)) {

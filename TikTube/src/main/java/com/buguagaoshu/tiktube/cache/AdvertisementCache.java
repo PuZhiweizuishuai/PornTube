@@ -11,7 +11,7 @@ import java.util.Map;
  * @create 2025-05-03
  */
 public class AdvertisementCache {
-    public static Map<Integer, List<AdvertisementEntity>> advertisementCache = new HashMap<Integer, List<AdvertisementEntity>>();
+    public static volatile Map<Integer, List<AdvertisementEntity>> advertisementCache = new HashMap<Integer, List<AdvertisementEntity>>();
 
 
 }

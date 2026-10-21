@@ -76,6 +76,10 @@ public class DigitsVerifyCodeServiceImpl implements VerifyCodeService {
 
     @Override
     public void verify(String key, String code) {
+        if (key == null || key.isEmpty()) {
+            // 浏览器没带上验证码键：Cookie 过期、被清掉，或者压根没取过图
+            throw new VerifyFailedException("验证码已失效，请刷新验证码后重试！");
+        }
         String lastVerifyCodeWithTimestamp = verifyCodeRepository.find(key);
         // 如果没有验证码，则随机生成一个
         if (lastVerifyCodeWithTimestamp == null) {

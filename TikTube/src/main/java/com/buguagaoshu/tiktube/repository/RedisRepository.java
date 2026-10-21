@@ -1,9 +1,12 @@
 package com.buguagaoshu.tiktube.repository;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.connection.ReturnType;
 import org.springframework.data.redis.core.RedisCallback;
+import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.SessionCallback;
 import org.springframework.stereotype.Repository;
 
 import java.nio.charset.StandardCharsets;
@@ -20,10 +23,15 @@ import java.util.concurrent.TimeUnit;
  * @author Pu Zhiwei {@literal puzhiweipuzhiwei@foxmail.com}
  * @create 2025-05-14
  */
+@Slf4j
 @Repository
 public class RedisRepository {
 
     private RedisTemplate<String, Object> redisTemplate;
+
+    private volatile boolean reachabilityChecked;
+
+    private volatile boolean reachable;
 
     /**
      * 使用@Autowired(required = false)注解
@@ -39,6 +47,35 @@ public class RedisRepository {
      */
     public boolean isAvailable() {
         return redisTemplate != null;
+    }
+
+    /**
+     * open-redis 开启时真正 PING 一次并把结果缓存下来。
+     * <p>
+     * 选实现时只看 {@link #isAvailable()} 是不够的：Redis 配了但连不上时仍然会选中 Redis 实现，
+     * 之后每一次缓存操作都静默失败，等于整个缓存不可用。这里让这种情况在启动时就回退到内存实现。
+     * <p>
+     * 结果只在进程内判定一次，Redis 中途恢复要重启进程才会切回 Redis。
+     */
+    public boolean isReachable() {
+        if (!isAvailable()) {
+            return false;
+        }
+        if (!reachabilityChecked) {
+            synchronized (this) {
+                if (!reachabilityChecked) {
+                    try {
+                        redisTemplate.execute((RedisCallback<String>) connection -> connection.ping());
+                        reachable = true;
+                    } catch (Exception e) {
+                        log.error("Redis 已开启但连不上，缓存将回退到内存实现", e);
+                        reachable = false;
+                    }
+                    reachabilityChecked = true;
+                }
+            }
+        }
+        return reachable;
     }
 
     /**
@@ -341,6 +378,58 @@ public class RedisRepository {
             return true;
         } catch (Exception e) {
             e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * 仅当键不存在时写入并带过期时间，用于多实例抢锁
+     *
+     * @param key     键
+     * @param value   值
+     * @param seconds 过期时间(秒)
+     * @return true 抢到（键原先不存在） false 没抢到或 Redis 不可用
+     */
+    public boolean setIfAbsent(String key, Object value, long seconds) {
+        if (!isAvailable()) return false;
+        try {
+            return Boolean.TRUE.equals(
+                    redisTemplate.opsForValue().setIfAbsent(key, value, Duration.ofSeconds(seconds)));
+        } catch (Exception e) {
+            log.error("Redis 抢锁失败，key={}", key, e);
+            return false;
+        }
+    }
+
+    /**
+     * 原子替换一个 Hash：删除旧键、写入多个字段、设置过期时间都放在同一个 MULTI/EXEC 里。
+     * 用于「密钥/票据必须整份写入且带 TTL」的场景，避免进程或连接在命令之间中断留下无 TTL 的残留键
+     *
+     * @param key  键
+     * @param map  字段与值
+     * @param time 过期时间(秒)，小于等于 0 表示不设置
+     * @return true 成功 false 失败
+     */
+    public boolean replaceHashWithTtl(String key, Map<String, Object> map, long time) {
+        if (!isAvailable()) return false;
+        try {
+            Object result = redisTemplate.execute(new SessionCallback<Object>() {
+                @Override
+                @SuppressWarnings("unchecked")
+                public <K, V> Object execute(RedisOperations<K, V> operations) {
+                    RedisOperations<String, Object> ops = (RedisOperations<String, Object>) operations;
+                    ops.multi();
+                    ops.delete(key);
+                    ops.opsForHash().putAll(key, map);
+                    if (time > 0) {
+                        ops.expire(key, Duration.ofSeconds(time));
+                    }
+                    return ops.exec();
+                }
+            });
+            return result != null;
+        } catch (Exception e) {
+            log.error("Redis 原子写入 Hash 失败，key={}", key, e);
             return false;
         }
     }

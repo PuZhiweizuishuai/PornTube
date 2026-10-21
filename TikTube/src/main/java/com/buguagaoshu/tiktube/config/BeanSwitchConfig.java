@@ -27,8 +27,8 @@ public class BeanSwitchConfig {
             MyConfigProperties configProperties,
             RedisRepository redisRepositoryService) {
         
-        // 根据配置决定使用哪种存储实现
-        if (configProperties.getOpenRedis() && redisRepositoryService.isAvailable()) {
+        // 根据配置决定使用哪种存储实现，Redis 连不上时回退内存，不要让缓存在静默失败中失效
+        if (configProperties.getOpenRedis() && redisRepositoryService.isReachable()) {
             return redisRepository;
         } else {
             return memoryRepository;
@@ -44,7 +44,7 @@ public class BeanSwitchConfig {
             RedisRepository redisRepositoryService) {
         
         // 根据配置决定使用哪种存储实现
-        if (configProperties.getOpenRedis() && redisRepositoryService.isAvailable()) {
+        if (configProperties.getOpenRedis() && redisRepositoryService.isReachable()) {
             return redisRepository;
         } else {
             return sessionRepository;
@@ -60,7 +60,7 @@ public class BeanSwitchConfig {
             RedisRepository redisRepositoryService) {
         
         // 根据配置决定使用哪种存储实现
-        if (configProperties.getOpenRedis() && redisRepositoryService.isAvailable()) {
+        if (configProperties.getOpenRedis() && redisRepositoryService.isReachable()) {
             log.info("使用 Redis 接口限流配置！");
             return redisRepository;
         } else {

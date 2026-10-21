@@ -5,11 +5,18 @@ tiktube:
   # IP地址数据库
   ip-db-path: C:\\data\\code\\Spring\\PornTube\\TikTube\\ip2region_v4.xdb
   # 是否启用 redis 缓存，默认 false，开启后需在配置文件中增加 redis 配置项目
+  # 开启后：计数/限流/验证码/TOTP 等待验证状态直接存 Redis；
+  #        热门榜、分类、站点设置、AI 配置、广告、对象存储这些快照缓存改为各实例通过 Redis 版本号对齐，
+  #        读路径仍在各自内存里，发现别的实例刷新过就回源重建。
+  #        开启即表示本次部署依赖 Redis：启动时连不上会直接启动失败（避免静默回退内存导致限流/验证码各自为政），
+  #        单机运行请保持 false
   open-redis: false
   # 计数缓存（点赞/播放/弹幕等）批量落库间隔，毫秒，默认 5 分钟
   # count-sync-interval-millis: 300000
   # 同一 IP 对同一视频/广告的播放去重窗口，毫秒，默认 6 小时
   # play-dedup-window-millis: 21600000
+  # 开启 open-redis 后各实例轮询缓存版本号的间隔，毫秒，默认 15 秒，即管理员改设置的跨实例生效延迟
+  # cache-sync-interval-millis: 15000
 
 server:
   port: 8080

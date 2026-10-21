@@ -1,5 +1,7 @@
 package com.buguagaoshu.tiktube.cache;
 
+import com.buguagaoshu.tiktube.config.MyConfigProperties;
+import com.buguagaoshu.tiktube.repository.RedisRepository;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -9,9 +11,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TotpLoginChallengeCacheTest {
 
+    /**
+     * 未注入 RedisTemplate 时 isReachable() 为 false，走的是内存存储这一条分支
+     */
+    private static TotpLoginChallengeCache memoryCache() {
+        return new TotpLoginChallengeCache(new RedisRepository(), new MyConfigProperties());
+    }
+
     @Test
     void challengeIsSingleUseAndScopedToUserId() {
-        TotpLoginChallengeCache cache = new TotpLoginChallengeCache();
+        TotpLoginChallengeCache cache = memoryCache();
         String id = cache.create(7L, true, System.currentTimeMillis() + 60000);
 
         assertNotNull(id);
@@ -29,7 +38,7 @@ class TotpLoginChallengeCacheTest {
 
     @Test
     void expiredAndOverusedChallengesAreRejected() {
-        TotpLoginChallengeCache cache = new TotpLoginChallengeCache();
+        TotpLoginChallengeCache cache = memoryCache();
 
         String expired = cache.create(1L, false, System.currentTimeMillis() - 1);
         assertNull(cache.consume(expired));

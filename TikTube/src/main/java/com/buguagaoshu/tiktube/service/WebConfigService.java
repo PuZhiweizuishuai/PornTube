@@ -2,6 +2,8 @@ package com.buguagaoshu.tiktube.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
+import com.buguagaoshu.tiktube.cache.SharedCache;
+import com.buguagaoshu.tiktube.cache.SharedCacheVersionStore;
 import com.buguagaoshu.tiktube.cache.WebConfigCache;
 import com.buguagaoshu.tiktube.config.WebConfig;
 import com.buguagaoshu.tiktube.config.WebConfigData;
@@ -23,11 +25,15 @@ public class WebConfigService extends ServiceImpl<WebConfigDao, WebConfigEntity>
 
     private final MailService mailService;
 
+    private final SharedCacheVersionStore versionStore;
+
     @Autowired
     public WebConfigService(WebConfigCache webConfigCache,
-                            MailService mailService) {
+                            MailService mailService,
+                            SharedCacheVersionStore versionStore) {
         this.webConfigCache = webConfigCache;
         this.mailService = mailService;
+        this.versionStore = versionStore;
     }
 
     /**
@@ -65,12 +71,27 @@ public class WebConfigService extends ServiceImpl<WebConfigDao, WebConfigEntity>
         webConfigEntity.setJsonText(WebConfigData.createSaveData(webConfigData));
         webConfigEntity.setCreateUser(userId);
         this.save(webConfigEntity);
-        // 更新缓存
+        applyConfig(webConfigData);
+        return webConfigData;
+    }
+
+    /**
+     * 从库里重新取一份设置并应用，供启动加载与其他实例的版本同步复用
+     */
+    public void refreshCache() {
+        applyConfig(initConfig());
+    }
+
+    /**
+     * 缓存更新与保存路径上的副作用统一走这里：远端实例同步时也要重新初始化邮件配置，
+     * 否则跨实例修改 SMTP 后，那台机器仍会用旧参数发信
+     */
+    private void applyConfig(WebConfigData webConfigData) {
         webConfigCache.update(webConfigData);
+        versionStore.markUpdated(SharedCache.WEB_CONFIG);
         if (webConfigData.getOpenEmail()) {
             mailService.initMainConfig();
         }
-        return webConfigData;
     }
     
 
